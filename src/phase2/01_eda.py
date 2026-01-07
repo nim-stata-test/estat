@@ -76,7 +76,17 @@ def load_data():
     weather_raw = pd.read_parquet(PROCESSED_DIR / 'sensors_weather.parquet')
     data['weather'] = pivot_sensor_data(weather_raw)
 
-    rooms_raw = pd.read_parquet(PROCESSED_DIR / 'sensors_rooms.parquet')
+    # Room data - use prepared data from wrapper if available, otherwise raw
+    rooms_prepared_path = OUTPUT_DIR / 'rooms_prepared.parquet'
+    if rooms_prepared_path.exists():
+        print("  Using prepared room data (filtered/mapped by wrapper)")
+        rooms_raw = pd.read_parquet(rooms_prepared_path)
+    else:
+        rooms_raw = pd.read_parquet(PROCESSED_DIR / 'sensors_rooms.parquet')
+        # Apply office2 → atelier mapping if loading raw data
+        rooms_raw = rooms_raw.copy()
+        rooms_raw.loc[rooms_raw['entity_id'] == 'office2_temperature', 'entity_id'] = 'atelier_temperature'
+        rooms_raw.loc[rooms_raw['entity_id'] == 'office2_humidity', 'entity_id'] = 'atelier_humidity'
     data['rooms'] = pivot_sensor_data(rooms_raw)
 
     # Integrated dataset (overlap period only)
@@ -405,18 +415,65 @@ def analyze_heating_system(data):
     # --- COP Analysis ---
     # Get daily totals for consumed and produced heating
     # Note: These are cumulative counters, so we need to take the difference
+    # We filter out spurious spikes (>100 kWh jumps) that occur due to sensor glitches
 
     # Initialize daily_heating with default empty DataFrame
     daily_heating = pd.DataFrame()
 
     if 'consumed_heating' in hp_data.columns and 'produced_heating' in hp_data.columns:
-        # Resample to daily and get max (cumulative values)
-        daily_heating = hp_data[['consumed_heating', 'produced_heating']].resample('D').agg(['min', 'max'])
-        daily_heating.columns = ['_'.join(col) for col in daily_heating.columns]
+        # Extract non-null values and sort by time (pivoted data is sparse)
+        consumed = hp_data['consumed_heating'].dropna().sort_index()
+        produced = hp_data['produced_heating'].dropna().sort_index()
 
-        # Calculate daily deltas
-        daily_heating['consumed_delta'] = daily_heating['consumed_heating_max'] - daily_heating['consumed_heating_min']
-        daily_heating['produced_delta'] = daily_heating['produced_heating_max'] - daily_heating['produced_heating_min']
+        # Calculate daily deltas using OVERLAPPING time periods only
+        # This prevents mismatched calculations when one sensor has data gaps
+        # (e.g., after spike removal creates gaps in produced but not consumed)
+
+        daily_data = []
+        for date in pd.date_range(consumed.index.min().date(), consumed.index.max().date(), freq='D'):
+            day_start = pd.Timestamp(date, tz='UTC')
+            day_end = day_start + pd.Timedelta(days=1)
+
+            # Get readings for this day
+            consumed_day = consumed[(consumed.index >= day_start) & (consumed.index < day_end)]
+            produced_day = produced[(produced.index >= day_start) & (produced.index < day_end)]
+
+            if len(consumed_day) < 2 or len(produced_day) < 2:
+                continue
+
+            # Find overlapping time window
+            overlap_start = max(consumed_day.index.min(), produced_day.index.min())
+            overlap_end = min(consumed_day.index.max(), produced_day.index.max())
+
+            # Skip days with less than 20 hours of overlap (data quality filter)
+            overlap_hours = (overlap_end - overlap_start).total_seconds() / 3600
+            if overlap_hours < 20:
+                continue
+
+            # Get first/last values within the overlapping window
+            consumed_overlap = consumed_day[(consumed_day.index >= overlap_start) & (consumed_day.index <= overlap_end)]
+            produced_overlap = produced_day[(produced_day.index >= overlap_start) & (produced_day.index <= overlap_end)]
+
+            if len(consumed_overlap) >= 2 and len(produced_overlap) >= 2:
+                consumed_delta = consumed_overlap.iloc[-1] - consumed_overlap.iloc[0]
+                produced_delta = produced_overlap.iloc[-1] - produced_overlap.iloc[0]
+                daily_data.append({
+                    'date': date,
+                    'consumed_delta': consumed_delta,
+                    'produced_delta': produced_delta,
+                    'overlap_hours': overlap_hours
+                })
+
+        daily_heating = pd.DataFrame(daily_data)
+        if not daily_heating.empty:
+            daily_heating = daily_heating.set_index('date')
+            daily_heating.index = pd.to_datetime(daily_heating.index, utc=True)
+
+        # Filter any remaining anomalies (negative values or unrealistic daily totals)
+        daily_heating.loc[daily_heating['consumed_delta'] < 0, 'consumed_delta'] = np.nan
+        daily_heating.loc[daily_heating['produced_delta'] < 0, 'produced_delta'] = np.nan
+        daily_heating.loc[daily_heating['consumed_delta'] > 100, 'consumed_delta'] = np.nan
+        daily_heating.loc[daily_heating['produced_delta'] > 500, 'produced_delta'] = np.nan
 
         # Calculate COP (only where consumed > 0)
         mask = daily_heating['consumed_delta'] > 0
@@ -555,45 +612,56 @@ def analyze_heating_system(data):
     print("  Saved: fig06_temperature_differentials.png")
 
     # --- Figure 7: Outdoor vs Indoor Temperature ---
-    fig, axes = plt.subplots(2, 1, figsize=(14, 8))
+    fig, axes = plt.subplots(2, 1, figsize=(14, 10))
 
     # Get room temperatures
     rooms = data['rooms'].copy()
 
+    # Find all temperature sensors (exclude humidity)
+    temp_sensors = [col for col in rooms.columns if 'temperature' in col.lower()]
+
+    # Color palette for multiple rooms
+    colors = plt.cm.tab10(np.linspace(0, 1, len(temp_sensors) + 1))
+
     ax = axes[0]
     if 'outdoor_temp' in hourly.columns:
-        ax.plot(hourly.index, hourly['outdoor_temp'], label='Outdoor', color='blue', alpha=0.7)
+        ax.plot(hourly.index, hourly['outdoor_temp'], label='Outdoor', color='blue', alpha=0.8, linewidth=1.5)
 
-    if 'atelier_temperature' in rooms.columns:
-        room_hourly = rooms['atelier_temperature'].resample('h').mean()
-        ax.plot(room_hourly.index, room_hourly.values, label='Atelier', color='green', alpha=0.7)
+    # Plot all room temperature sensors
+    for i, sensor in enumerate(sorted(temp_sensors)):
+        room_hourly = rooms[sensor].resample('h').mean()
+        # Create readable label from sensor name
+        label = sensor.replace('_temperature', '').replace('_', ' ').title()
+        ax.plot(room_hourly.index, room_hourly.values, label=label, color=colors[i], alpha=0.7, linewidth=1)
 
-    if 'bric_temperature' in rooms.columns:
-        room_hourly = rooms['bric_temperature'].resample('h').mean()
-        ax.plot(room_hourly.index, room_hourly.values, label='Bric', color='orange', alpha=0.7)
-
-    ax.axhline(y=COMFORT_MIN, color='gray', linestyle='--', alpha=0.5, label=f'Comfort range ({COMFORT_MIN}-{COMFORT_MAX}C)')
+    ax.axhline(y=COMFORT_MIN, color='gray', linestyle='--', alpha=0.5)
     ax.axhline(y=COMFORT_MAX, color='gray', linestyle='--', alpha=0.5)
-    ax.set_ylabel('Temperature (C)')
-    ax.set_title('Outdoor vs Indoor Temperatures')
-    ax.legend()
+    ax.set_ylabel('Temperature (°C)')
+    ax.set_title(f'Outdoor vs Indoor Temperatures ({len(temp_sensors)} rooms)')
+    ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1), fontsize=8)
     ax.grid(True, alpha=0.3)
 
-    # Temperature difference (indoor - outdoor)
+    # Temperature difference (indoor - outdoor) for all rooms
     ax = axes[1]
-    if 'outdoor_temp' in hourly.columns and 'atelier_temperature' in rooms.columns:
-        room_hourly = rooms['atelier_temperature'].resample('h').mean()
-        combined = pd.DataFrame({
-            'outdoor': hourly['outdoor_temp'],
-            'indoor': room_hourly
-        }).dropna()
-        combined['diff'] = combined['indoor'] - combined['outdoor']
+    if 'outdoor_temp' in hourly.columns and len(temp_sensors) > 0:
+        outdoor_hourly = hourly['outdoor_temp'].resample('h').mean()
 
-        ax.fill_between(combined.index, combined['diff'], alpha=0.7, color='coral')
+        for i, sensor in enumerate(sorted(temp_sensors)):
+            room_hourly = rooms[sensor].resample('h').mean()
+            combined = pd.DataFrame({
+                'outdoor': outdoor_hourly,
+                'indoor': room_hourly
+            }).dropna()
+            combined['diff'] = combined['indoor'] - combined['outdoor']
+
+            label = sensor.replace('_temperature', '').replace('_', ' ').title()
+            ax.plot(combined.index, combined['diff'], label=label, color=colors[i], alpha=0.7, linewidth=1)
+
         ax.axhline(y=0, color='black', linestyle='-', linewidth=0.5)
-        ax.set_ylabel('Temperature Difference (C)')
+        ax.set_ylabel('Temperature Difference (°C)')
         ax.set_xlabel('Date')
-        ax.set_title('Indoor - Outdoor Temperature Difference (Atelier)')
+        ax.set_title('Indoor - Outdoor Temperature Difference (all rooms)')
+        ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1), fontsize=8)
         ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
@@ -961,330 +1029,19 @@ def generate_summary_statistics(data, energy_patterns, daily_heating):
     plt.close()
     print("  Saved: fig11_summary_statistics.png")
 
-    # --- Generate HTML Summary Report ---
-    # Collect statistics
-    stats = {
-        'generated': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'energy_start': energy.index.min().date(),
-        'energy_end': energy.index.max().date(),
-        'total_days': len(energy),
-        'pv_daily': energy['pv_generation_kwh'].mean(),
-        'consumption_daily': energy['total_consumption_kwh'].mean(),
-        'grid_import_daily': energy['external_supply_kwh'].mean(),
-        'grid_export_daily': energy['grid_feedin_kwh'].mean(),
-        'self_sufficiency': energy['self_sufficiency'].mean() * 100,
-    }
-
-    # Yearly data
-    yearly_rows = ""
-    for year in yearly.index:
-        net_grid = yearly.loc[year, 'grid_feedin_kwh'] - yearly.loc[year, 'external_supply_kwh']
-        yearly_rows += f"""
-            <tr>
-                <td>{year}</td>
-                <td>{yearly.loc[year, 'pv_generation_kwh']:,.0f}</td>
-                <td>{yearly.loc[year, 'total_consumption_kwh']:,.0f}</td>
-                <td class="{'positive' if net_grid > 0 else 'negative'}">{net_grid:+,.0f}</td>
-            </tr>"""
-
-    # COP stats
-    cop_html = "<p>No COP data available</p>"
-    if not daily_heating.empty and 'cop' in daily_heating.columns:
-        valid_cop = daily_heating['cop'].dropna()
-        if len(valid_cop) > 0:
-            cop_html = f"""
-            <table class="stats-table">
-                <tr><td>Mean COP</td><td><strong>{valid_cop.mean():.2f}</strong></td></tr>
-                <tr><td>Median COP</td><td>{valid_cop.median():.2f}</td></tr>
-                <tr><td>Range</td><td>{valid_cop.min():.2f} - {valid_cop.max():.2f}</td></tr>
-            </table>"""
-
-    # Heating electricity stats
-    heating_html = ""
-    if not daily_heating.empty and 'consumed_delta' in daily_heating.columns:
-        consumed = daily_heating['consumed_delta'].dropna()
-        consumed = consumed[consumed > 0]
-        if len(consumed) > 0:
-            heating_html = f"""
-            <h4>Daily Heating Electricity</h4>
-            <table class="stats-table">
-                <tr><td>Mean</td><td>{consumed.mean():.1f} kWh/day</td></tr>
-                <tr><td>Max</td><td>{consumed.max():.1f} kWh/day</td></tr>
-                <tr><td>Total (overlap period)</td><td>{consumed.sum():,.0f} kWh</td></tr>
-            </table>"""
-
-    # HDD stats
-    hdd_html = "<p>No heating degree day data available</p>"
-    if not hdd.empty:
-        hdd_intensity = ""
-        if 'heating_kwh' in hdd.columns:
-            total_heating = hdd['heating_kwh'].sum()
-            total_hdd = hdd['hdd'].sum()
-            if total_hdd > 0:
-                hdd_intensity = f"<tr><td>Heating intensity</td><td><strong>{total_heating/total_hdd:.2f} kWh/HDD</strong></td></tr>"
-        hdd_html = f"""
-        <table class="stats-table">
-            <tr><td>Base temperature</td><td>{BASE_TEMP_HDD}°C</td></tr>
-            <tr><td>Analysis period</td><td>{hdd.index.min().date()} to {hdd.index.max().date()}</td></tr>
-            <tr><td>Total HDD</td><td>{hdd['hdd'].sum():.0f}</td></tr>
-            <tr><td>Avg daily HDD</td><td>{hdd['hdd'].mean():.1f}</td></tr>
-            {hdd_intensity}
-        </table>"""
-
-    # Seasonal findings
+    # Seasonal findings for summary
     seasonal = energy.groupby('season').agg({
         'self_sufficiency': 'mean',
         'external_supply_kwh': 'mean'
     })
     best_season = seasonal['self_sufficiency'].idxmax()
     worst_season = seasonal['self_sufficiency'].idxmin()
-    grid_heavy_days = (energy['external_supply_kwh'] > energy['total_consumption_kwh'] * 0.5).sum()
 
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESTAT Phase 2 EDA Report</title>
-    <style>
-        :root {{
-            --primary: #2563eb;
-            --success: #16a34a;
-            --warning: #d97706;
-            --danger: #dc2626;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text: #1e293b;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-        }}
-        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            padding: 2rem;
-        }}
-        .container {{ max-width: 1400px; margin: 0 auto; }}
-        h1 {{ color: var(--primary); margin-bottom: 0.5rem; }}
-        h2 {{ color: var(--text); margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); }}
-        h3 {{ color: var(--text-muted); margin: 1.5rem 0 0.75rem; }}
-        h4 {{ margin: 1rem 0 0.5rem; }}
-        .meta {{ color: var(--text-muted); margin-bottom: 2rem; }}
-        .card {{
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }}
-        .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }}
-        .stat-box {{
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 1rem 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }}
-        .stat-box .value {{ font-size: 2rem; font-weight: bold; color: var(--primary); }}
-        .stat-box .label {{ color: var(--text-muted); font-size: 0.875rem; }}
-        table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; }}
-        th, td {{ padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }}
-        th {{ background: var(--bg); font-weight: 600; }}
-        .stats-table {{ width: auto; }}
-        .stats-table td:first-child {{ color: var(--text-muted); padding-right: 2rem; }}
-        .positive {{ color: var(--success); }}
-        .negative {{ color: var(--danger); }}
-        .figure {{
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }}
-        .figure img {{ width: 100%; height: auto; border-radius: 4px; }}
-        .figure-caption {{ color: var(--text-muted); font-size: 0.875rem; margin-top: 0.5rem; text-align: center; }}
-        .recommendations {{ background: #eff6ff; border-left: 4px solid var(--primary); padding: 1rem 1.5rem; }}
-        .recommendations ol {{ margin-left: 1.5rem; }}
-        .recommendations li {{ margin: 0.5rem 0; }}
-        .toc {{ background: var(--card-bg); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }}
-        .toc ul {{ list-style: none; }}
-        .toc li {{ margin: 0.5rem 0; }}
-        .toc a {{ color: var(--primary); text-decoration: none; }}
-        .toc a:hover {{ text-decoration: underline; }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>ESTAT Phase 2: Exploratory Data Analysis</h1>
-        <p class="meta">Generated: {stats['generated']}</p>
-
-        <div class="toc">
-            <strong>Contents</strong>
-            <ul>
-                <li><a href="#overview">1. Data Overview</a></li>
-                <li><a href="#energy">2. Energy Patterns</a></li>
-                <li><a href="#heating">3. Heating System Performance</a></li>
-                <li><a href="#solar-heating">4. Solar-Heating Correlation</a></li>
-                <li><a href="#summary">5. Summary Statistics</a></li>
-                <li><a href="#findings">6. Key Findings</a></li>
-                <li><a href="#recommendations">7. Recommendations</a></li>
-            </ul>
-        </div>
-
-        <h2 id="overview">1. Data Overview</h2>
-        <div class="grid">
-            <div class="stat-box">
-                <div class="value">{stats['total_days']}</div>
-                <div class="label">Days Analyzed</div>
-            </div>
-            <div class="stat-box">
-                <div class="value">{stats['self_sufficiency']:.0f}%</div>
-                <div class="label">Self-Sufficiency</div>
-            </div>
-            <div class="stat-box">
-                <div class="value">{stats['pv_daily']:.0f}</div>
-                <div class="label">kWh/day PV Generation</div>
-            </div>
-            <div class="stat-box">
-                <div class="value">{stats['consumption_daily']:.0f}</div>
-                <div class="label">kWh/day Consumption</div>
-            </div>
-        </div>
-        <div class="card">
-            <p><strong>Energy balance period:</strong> {stats['energy_start']} to {stats['energy_end']}</p>
-            <p><strong>Sensor overlap period:</strong> ~64 days (Oct-Dec 2025)</p>
-        </div>
-
-        <h2 id="energy">2. Energy Patterns</h2>
-
-        <h3>2.1 Daily Energy Time Series</h3>
-        <div class="figure">
-            <img src="fig01_daily_energy_timeseries.png" alt="Daily Energy Time Series">
-            <div class="figure-caption">Figure 1: Daily PV generation, consumption, grid interaction, and battery activity</div>
-        </div>
-
-        <h3>2.2 Monthly Patterns</h3>
-        <div class="figure">
-            <img src="fig02_monthly_energy_patterns.png" alt="Monthly Energy Patterns">
-            <div class="figure-caption">Figure 2: Monthly aggregated energy patterns and self-sufficiency</div>
-        </div>
-
-        <h3>2.3 Hourly Consumption Heatmaps</h3>
-        <div class="figure">
-            <img src="fig03_hourly_heatmaps.png" alt="Hourly Heatmaps">
-            <div class="figure-caption">Figure 3: Average consumption, PV generation, and grid import by hour and day of week</div>
-        </div>
-
-        <h3>2.4 Seasonal Patterns</h3>
-        <div class="figure">
-            <img src="fig04_seasonal_patterns.png" alt="Seasonal Patterns">
-            <div class="figure-caption">Figure 4: Seasonal comparison of PV generation, consumption, and self-sufficiency</div>
-        </div>
-
-        <h3>Yearly Totals</h3>
-        <div class="card">
-            <table>
-                <thead>
-                    <tr><th>Year</th><th>PV (kWh)</th><th>Consumption (kWh)</th><th>Net Grid (kWh)</th></tr>
-                </thead>
-                <tbody>{yearly_rows}</tbody>
-            </table>
-        </div>
-
-        <h2 id="heating">3. Heating System Performance</h2>
-
-        <h3>3.1 Heat Pump COP Analysis</h3>
-        <div class="figure">
-            <img src="fig05_heat_pump_cop.png" alt="Heat Pump COP">
-            <div class="figure-caption">Figure 5: Daily COP, COP vs outdoor temperature, and heating electricity consumption</div>
-        </div>
-        <div class="card">
-            <h4>COP Statistics</h4>
-            {cop_html}
-            {heating_html}
-        </div>
-
-        <h3>3.2 Temperature Differentials</h3>
-        <div class="figure">
-            <img src="fig06_temperature_differentials.png" alt="Temperature Differentials">
-            <div class="figure-caption">Figure 6: Flow/return temperatures, buffer tank, and heating circuits</div>
-        </div>
-
-        <h3>3.3 Indoor vs Outdoor Temperature</h3>
-        <div class="figure">
-            <img src="fig07_indoor_outdoor_temp.png" alt="Indoor Outdoor Temperature">
-            <div class="figure-caption">Figure 7: Outdoor temperature vs room temperatures with comfort bounds</div>
-        </div>
-
-        <h2 id="solar-heating">4. Solar-Heating Correlation</h2>
-
-        <h3>4.1 Hourly Solar vs Heating Patterns</h3>
-        <div class="figure">
-            <img src="fig08_solar_heating_hourly.png" alt="Solar Heating Hourly">
-            <div class="figure-caption">Figure 8: Hourly PV generation, heating activity, and grid import profiles</div>
-        </div>
-
-        <h3>4.2 Battery Utilization for Evening Heating</h3>
-        <div class="figure">
-            <img src="fig09_battery_evening_heating.png" alt="Battery Evening Heating">
-            <div class="figure-caption">Figure 9: Battery charging/discharging patterns and evening energy sources</div>
-        </div>
-
-        <h3>4.3 Forced Grid Consumption</h3>
-        <div class="figure">
-            <img src="fig10_forced_grid_heating.png" alt="Forced Grid Heating">
-            <div class="figure-caption">Figure 10: Periods of grid-dependent heating when no PV is available</div>
-        </div>
-
-        <h2 id="summary">5. Summary Statistics</h2>
-
-        <div class="figure">
-            <img src="fig11_summary_statistics.png" alt="Summary Statistics">
-            <div class="figure-caption">Figure 11: Monthly breakdown, HDD analysis, consumption distribution, yearly totals</div>
-        </div>
-
-        <h3>Heating Degree Days</h3>
-        <div class="card">
-            {hdd_html}
-        </div>
-
-        <h2 id="findings">6. Key Findings</h2>
-        <div class="card">
-            <h4>Seasonal Self-Sufficiency</h4>
-            <table class="stats-table">
-                <tr><td>Best season</td><td><span class="positive">{best_season} ({seasonal.loc[best_season, 'self_sufficiency']*100:.0f}%)</span></td></tr>
-                <tr><td>Worst season</td><td><span class="negative">{worst_season} ({seasonal.loc[worst_season, 'self_sufficiency']*100:.0f}%)</span></td></tr>
-            </table>
-
-            <h4>Grid Dependency</h4>
-            <p>Days with &gt;50% grid supply: <strong>{grid_heavy_days}</strong> ({grid_heavy_days/len(energy)*100:.0f}% of all days)</p>
-        </div>
-
-        <h2 id="recommendations">7. Recommendations for Phase 3</h2>
-        <div class="recommendations">
-            <ol>
-                <li>Model heating demand as function of outdoor temperature and HDD</li>
-                <li>Analyze COP variation with outdoor temp for heat pump modeling</li>
-                <li>Study pre-heating potential during solar hours</li>
-                <li>Investigate buffer tank thermal dynamics for storage optimization</li>
-                <li>Consider night-time heating with battery to reduce morning grid peaks</li>
-            </ol>
-        </div>
-    </div>
-</body>
-</html>"""
-
-    # Save HTML report
-    with open(OUTPUT_DIR / 'eda_summary_report.html', 'w') as f:
-        f.write(html)
-    print("  Saved: eda_summary_report.html")
-
-    # Print summary to console
+    # Print summary to console (used by wrapper for stats extraction)
     print(f"""
   Summary:
-    Energy period: {stats['energy_start']} to {stats['energy_end']} ({stats['total_days']} days)
-    Self-sufficiency: {stats['self_sufficiency']:.0f}%
+    Energy period: {energy.index.min().date()} to {energy.index.max().date()} ({len(energy)} days)
+    Self-sufficiency: {energy['self_sufficiency'].mean() * 100:.0f}%
     Best season: {best_season} ({seasonal.loc[best_season, 'self_sufficiency']*100:.0f}%)
     Worst season: {worst_season} ({seasonal.loc[worst_season, 'self_sufficiency']*100:.0f}%)""")
 

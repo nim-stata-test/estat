@@ -47,6 +47,12 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
+# Run preprocessing with HTML report (~12 min)
+python src/phase1/run_preprocessing.py
+
+# Run EDA with HTML report
+python src/phase2/run_eda.py
+
 # Run all phases
 python src/run_all.py              # Run complete pipeline
 python src/run_all.py --phase 1    # Run Phase 1 only
@@ -67,17 +73,23 @@ python src/phase2/01_eda.py                        # Phase 2, Step 1
 src/
 ├── run_all.py           # Master script for running all phases
 ├── phase1/              # Data Preprocessing
+│   ├── run_preprocessing.py          # Wrapper: runs all steps + HTML report
 │   ├── 01_preprocess_energy_balance.py
 │   ├── 02_preprocess_sensors.py
 │   └── 03_integrate_data.py
 └── phase2/              # Exploratory Data Analysis
+    ├── run_eda.py                    # Wrapper: filters sensors + HTML report
     └── 01_eda.py
 ```
 
 ## Processed Data
 
 After preprocessing, data is saved to `processed/`:
+
+**Parquet datasets:**
 - `energy_balance_15min.parquet` - 15-min interval energy data (kWh)
+- `energy_balance_daily.parquet` - Daily totals from monthly files
+- `energy_balance_monthly.parquet` - Monthly totals from yearly files
 - `sensors_heating.parquet` - Heat pump sensors (96 sensors)
 - `sensors_weather.parquet` - Davis weather station (27 sensors)
 - `sensors_rooms.parquet` - Room temperature sensors (3 sensors)
@@ -85,6 +97,13 @@ After preprocessing, data is saved to `processed/`:
 - `integrated_dataset.parquet` - All data merged (185 columns)
 - `integrated_overlap_only.parquet` - Overlap period only (64 days)
 
+**Reports and logs:**
+- `preprocessing_report.html` - Comprehensive preprocessing documentation
+- `corrections_log.csv` - Data cleaning corrections applied
+- `validation_results.csv` - Daily vs monthly validation results
+- `sensor_summary.csv` - Per-sensor statistics
+- `data_overlap_summary.csv` - Data source overlap info
+
 ## Research Design
 
-See `RDP.md` for the heating strategy optimization research plan.
+See `PRD.md` for the heating strategy optimization research plan.

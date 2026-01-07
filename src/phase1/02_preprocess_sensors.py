@@ -35,9 +35,36 @@ WEATHER_SENSORS = [
 ]
 
 ROOM_SENSORS = [
+    # Primary room sensors (temperature + humidity pairs)
     "atelier_temperature",
     "atelier_humidity",
     "bric_temperature",
+    "bric_humidity",
+    "dorme_temperature",
+    "dorme_humidity",
+    "halle_temperature",
+    "halle_humidity",
+    "office1_temperature",
+    "office1_humidity",
+    "office2_temperature",
+    "office2_humidity",
+    "simlab_temperature",
+    "simlab_humidity",
+    "studio_temperature",
+    "studio_humidity",
+    "guest_temperature",
+    "guest_humidity",
+    # Additional room/area sensors
+    "temp_cave",
+    "temphum_plant_temperature",
+    "temphum_woz_temperature",
+    "temphum_bano_temperature",
+    "motion_gang_2_temperature",
+    "motion_halle_n_temperature",
+    "outfeeler_temperature",
+    # Davis inside (indoor reference)
+    "davis_inside_temperature",
+    "davis_inside_humidity",
 ]
 
 ENERGY_SENSORS = [
@@ -52,6 +79,22 @@ FAHRENHEIT_SENSORS = [
     "davis_dew_point",
 ]
 
+# Cumulative counter sensors that may have spurious spikes
+CUMULATIVE_COUNTER_SENSORS = [
+    "stiebel_eltron_isg_consumed_heating",
+    "stiebel_eltron_isg_produced_heating",
+    "stiebel_eltron_isg_consumed_water_heating",
+    "stiebel_eltron_isg_produced_water_heating",
+    "stiebel_eltron_isg_consumed_heating_total",
+    "stiebel_eltron_isg_produced_heating_total",
+    "stiebel_eltron_isg_consumed_water_heating_total",
+    "stiebel_eltron_isg_produced_water_heating_total",
+]
+
+# Maximum plausible increment per reading for cumulative counters (kWh)
+# Heat pump max ~15kW, readings every ~1h, so 15 kWh is generous upper bound
+MAX_COUNTER_INCREMENT = 50.0
+
 
 def fahrenheit_to_celsius(f: float) -> float:
     """Convert Fahrenheit to Celsius."""
@@ -59,16 +102,22 @@ def fahrenheit_to_celsius(f: float) -> float:
 
 
 def categorize_sensor(entity_id: str) -> str:
-    """Categorize a sensor into heating, weather, rooms, energy, or other."""
+    """Categorize a sensor into heating, weather, rooms, energy, or other.
+
+    Order matters: more specific matches (exact names) are checked before
+    prefix matches to ensure correct categorization.
+    """
+    # Check rooms first (exact matches take precedence)
+    for name in ROOM_SENSORS:
+        if entity_id == name or entity_id.startswith(name):
+            return "rooms"
+    # Then check prefix-based categories
     for prefix in HEATING_SENSORS:
         if entity_id.startswith(prefix):
             return "heating"
     for prefix in WEATHER_SENSORS:
         if entity_id.startswith(prefix):
             return "weather"
-    for name in ROOM_SENSORS:
-        if entity_id == name or entity_id.startswith(name):
-            return "rooms"
     for prefix in ENERGY_SENSORS:
         if entity_id.startswith(prefix):
             return "energy"
@@ -148,6 +197,64 @@ def convert_units(df: pd.DataFrame) -> pd.DataFrame:
         mask = df["entity_id"] == sensor
         if mask.any():
             df.loc[mask, "value"] = df.loc[mask, "value"].apply(fahrenheit_to_celsius)
+
+    return df
+
+
+def clean_cumulative_counter_spikes(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove spurious spikes from cumulative counter sensors.
+
+    Some sensors (e.g., heat pump energy counters) occasionally report
+    spurious values that spike up and then correct back down. This function
+    detects and removes these spikes by:
+    1. Computing increments between consecutive readings
+    2. Identifying readings where the increment exceeds MAX_COUNTER_INCREMENT
+    3. Removing those spurious readings
+
+    This preserves the cumulative nature of the counter while removing glitches.
+    """
+    df = df.copy()
+    rows_removed = 0
+
+    for sensor in CUMULATIVE_COUNTER_SENSORS:
+        mask = df["entity_id"] == sensor
+        if not mask.any():
+            continue
+
+        sensor_df = df.loc[mask].sort_values("datetime")
+        if len(sensor_df) < 2:
+            continue
+
+        # Calculate increments
+        values = sensor_df["value"].values
+        increments = np.diff(values)
+
+        # Find spurious readings: large positive jumps or negative corrections
+        # A spike pattern is: normal -> spike (large +) -> correction (large -)
+        spurious_mask = np.zeros(len(sensor_df), dtype=bool)
+
+        for i in range(len(increments)):
+            inc = increments[i]
+            # Large positive jump (spike up)
+            if inc > MAX_COUNTER_INCREMENT:
+                spurious_mask[i + 1] = True  # Mark the spike value
+            # Large negative jump (correction back down)
+            elif inc < -MAX_COUNTER_INCREMENT:
+                # The value before this correction was the spike
+                if i > 0 and not spurious_mask[i]:
+                    spurious_mask[i] = True
+
+        # Remove spurious rows
+        if spurious_mask.any():
+            indices_to_remove = sensor_df.index[spurious_mask]
+            n_removed = len(indices_to_remove)
+            df = df.drop(indices_to_remove)
+            rows_removed += n_removed
+            print(f"    Removed {n_removed} spurious readings from {sensor}")
+
+    if rows_removed > 0:
+        print(f"  Total spurious readings removed: {rows_removed}")
 
     return df
 
@@ -242,6 +349,10 @@ def process_mainic_file(filepath: Path, output_dir: Path,
         combined = convert_units(combined)
         combined = combined.drop_duplicates(subset=["datetime", "entity_id"])
         combined = combined.sort_values(["entity_id", "datetime"])
+
+        # Clean spurious spikes from cumulative counters (heating category only)
+        if cat == "heating":
+            combined = clean_cumulative_counter_spikes(combined)
 
         print(f"  {cat}: {len(combined):,} records, {combined['entity_id'].nunique()} sensors")
 
