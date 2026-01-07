@@ -1,5 +1,5 @@
 """
-Preprocess mainic sensor data (InfluxDB export from Home Assistant).
+Phase 1, Step 2: Preprocess mainic sensor data (InfluxDB export from Home Assistant).
 
 This script:
 1. Parses the InfluxDB annotated CSV format
@@ -18,8 +18,10 @@ import warnings
 from typing import Optional, Generator
 import sys
 
-DATA_DIR = Path(__file__).parent.parent
-OUTPUT_DIR = Path(__file__).parent.parent / "processed"
+# Project root directory
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+DATA_DIR = PROJECT_ROOT
+OUTPUT_DIR = PROJECT_ROOT / "processed"
 
 # Sensor categorization
 HEATING_SENSORS = [
@@ -36,7 +38,6 @@ ROOM_SENSORS = [
     "atelier_temperature",
     "atelier_humidity",
     "bric_temperature",
-    # Add more room sensors as discovered
 ]
 
 ENERGY_SENSORS = [
@@ -75,12 +76,7 @@ def categorize_sensor(entity_id: str) -> str:
 
 
 def parse_influxdb_csv_chunked(filepath: Path, chunksize: int = 100000) -> Generator[pd.DataFrame, None, None]:
-    """
-    Parse InfluxDB annotated CSV in chunks.
-
-    The format has repeating header blocks (#datatype, #group, #default, column headers)
-    interspersed with data rows.
-    """
+    """Parse InfluxDB annotated CSV in chunks."""
     print(f"Parsing {filepath.name} in chunks of {chunksize} lines...")
 
     current_chunk = []
@@ -90,11 +86,9 @@ def parse_influxdb_csv_chunked(filepath: Path, chunksize: int = 100000) -> Gener
         for line in f:
             line_count += 1
 
-            # Skip header/metadata lines
             if line.startswith("#") or line.startswith(";result"):
                 continue
 
-            # Parse data line
             if line.startswith(";;"):
                 parts = line.strip().split(";")
                 if len(parts) >= 10:
@@ -114,7 +108,6 @@ def parse_influxdb_csv_chunked(filepath: Path, chunksize: int = 100000) -> Gener
                     except Exception:
                         pass
 
-            # Yield chunk when full
             if len(current_chunk) >= chunksize:
                 df = pd.DataFrame(current_chunk)
                 current_chunk = []
@@ -123,7 +116,6 @@ def parse_influxdb_csv_chunked(filepath: Path, chunksize: int = 100000) -> Gener
             if line_count % 1000000 == 0:
                 print(f"  Processed {line_count:,} lines...")
 
-    # Yield remaining records
     if current_chunk:
         yield pd.DataFrame(current_chunk)
 
@@ -135,22 +127,14 @@ def process_chunk(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
 
-    # Filter to only "value" field (actual measurements)
     df = df[df["_field"] == "value"].copy()
 
     if df.empty:
         return df
 
-    # Parse timestamp
     df["datetime"] = pd.to_datetime(df["_time"], format="ISO8601", utc=True)
-
-    # Parse numeric values
     df["value"] = pd.to_numeric(df["_value"], errors="coerce")
-
-    # Add category
     df["category"] = df["entity_id"].apply(categorize_sensor)
-
-    # Keep only needed columns
     df = df[["datetime", "entity_id", "value", "category", "domain"]].copy()
 
     return df
@@ -178,10 +162,7 @@ def resample_to_15min(df: pd.DataFrame, entity_id: str) -> pd.DataFrame:
     sensor_df = sensor_df.set_index("datetime")
     sensor_df = sensor_df.sort_index()
 
-    # Resample to 15 minutes, taking mean of values
     resampled = sensor_df["value"].resample("15min").mean()
-
-    # Forward fill small gaps (up to 1 hour)
     resampled = resampled.ffill(limit=4)
 
     result = pd.DataFrame({
@@ -220,17 +201,12 @@ def extract_sensor_list(filepath: Path, sample_size: int = 1000000) -> set:
 
 def process_mainic_file(filepath: Path, output_dir: Path,
                         categories: Optional[list] = None) -> dict:
-    """
-    Process the mainic file and save by category.
-
-    Returns dict of DataFrames by category.
-    """
+    """Process the mainic file and save by category."""
     if categories is None:
         categories = ["heating", "weather", "rooms", "energy"]
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Collect data by category
     category_data = {cat: [] for cat in categories}
 
     chunk_num = 0
@@ -245,7 +221,6 @@ def process_mainic_file(filepath: Path, output_dir: Path,
 
         total_records += len(processed)
 
-        # Distribute to categories
         for cat in categories:
             cat_df = processed[processed["category"] == cat]
             if not cat_df.empty:
@@ -256,7 +231,6 @@ def process_mainic_file(filepath: Path, output_dir: Path,
 
     print(f"\nTotal records processed: {total_records:,}")
 
-    # Combine and save each category
     results = {}
 
     for cat, dfs in category_data.items():
@@ -265,19 +239,12 @@ def process_mainic_file(filepath: Path, output_dir: Path,
             continue
 
         combined = pd.concat(dfs, ignore_index=True)
-
-        # Convert units
         combined = convert_units(combined)
-
-        # Remove duplicates
         combined = combined.drop_duplicates(subset=["datetime", "entity_id"])
-
-        # Sort
         combined = combined.sort_values(["entity_id", "datetime"])
 
         print(f"  {cat}: {len(combined):,} records, {combined['entity_id'].nunique()} sensors")
 
-        # Save raw data
         output_path = output_dir / f"sensors_{cat}.parquet"
         combined.to_parquet(output_path, index=False)
 
@@ -317,7 +284,6 @@ def create_sensor_summary(output_dir: Path):
 
 def main():
     """Main preprocessing pipeline for sensor data."""
-    # Find mainic file
     mainic_files = list(DATA_DIR.glob("mainic*.csv"))
 
     if not mainic_files:
@@ -329,10 +295,9 @@ def main():
     print(f"File size: {mainic_file.stat().st_size / 1e9:.2f} GB")
 
     print("\n" + "=" * 60)
-    print("SENSOR DATA PREPROCESSING")
+    print("PHASE 1, STEP 2: SENSOR DATA PREPROCESSING")
     print("=" * 60)
 
-    # Process the file
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     results = process_mainic_file(
@@ -341,7 +306,6 @@ def main():
         categories=["heating", "weather", "rooms", "energy"]
     )
 
-    # Create summary
     create_sensor_summary(OUTPUT_DIR)
 
     print("\n" + "=" * 60)

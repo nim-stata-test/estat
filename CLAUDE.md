@@ -47,10 +47,31 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Preprocessing (Phase 1)
-python src/preprocess_energy_balance.py  # Process energy balance CSVs
-python src/preprocess_sensors.py         # Process mainic sensor data (~10 min)
-python src/integrate_data.py             # Merge datasets
+# Run all phases
+python src/run_all.py              # Run complete pipeline
+python src/run_all.py --phase 1    # Run Phase 1 only
+python src/run_all.py --phase 2    # Run Phase 2 only
+python src/run_all.py --step 1.2   # Run specific step
+python src/run_all.py --list       # List all steps
+
+# Run individual scripts
+python src/phase1/01_preprocess_energy_balance.py  # Phase 1, Step 1
+python src/phase1/02_preprocess_sensors.py         # Phase 1, Step 2 (~10 min)
+python src/phase1/03_integrate_data.py             # Phase 1, Step 3
+python src/phase2/01_eda.py                        # Phase 2, Step 1
+```
+
+## Source Code Structure
+
+```
+src/
+├── run_all.py           # Master script for running all phases
+├── phase1/              # Data Preprocessing
+│   ├── 01_preprocess_energy_balance.py
+│   ├── 02_preprocess_sensors.py
+│   └── 03_integrate_data.py
+└── phase2/              # Exploratory Data Analysis
+    └── 01_eda.py
 ```
 
 ## Processed Data

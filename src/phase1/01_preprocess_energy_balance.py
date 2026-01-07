@@ -1,5 +1,5 @@
 """
-Preprocess energy balance data files (daily, monthly, yearly).
+Phase 1, Step 1: Preprocess energy balance data files (daily, monthly, yearly).
 
 This script:
 1. Parses all CSV files handling European number format
@@ -16,10 +16,12 @@ from pathlib import Path
 from datetime import datetime
 import re
 import warnings
-import json
+import sys
 
-DATA_DIR = Path(__file__).parent.parent / "data"
-OUTPUT_DIR = Path(__file__).parent.parent / "processed"
+# Project root directory
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+DATA_DIR = PROJECT_ROOT / "data"
+OUTPUT_DIR = PROJECT_ROOT / "processed"
 
 # Data quality log
 corrections_log = []
@@ -119,8 +121,6 @@ def load_daily_file(filepath: Path) -> pd.DataFrame:
             df[col] = df[col].apply(parse_european_number)
 
     # Rename columns to clean names - handle both W and kW units
-    # Map patterns to (new_name, unit_multiplier)
-    # W columns: multiplier = 1, kW columns: multiplier = 1000
     column_patterns = {
         "Direct consumption / Mean values": "direct_consumption",
         "Battery discharging / Mean values": "battery_discharging",
@@ -140,23 +140,20 @@ def load_daily_file(filepath: Path) -> pd.DataFrame:
             continue
         for pattern, new_name in column_patterns.items():
             if pattern in col:
-                # Determine unit multiplier
                 if "[kW]" in col:
-                    unit_multipliers[col] = 1000  # Convert kW to W
+                    unit_multipliers[col] = 1000
                     new_cols[col] = f"{new_name}_w"
                 elif "[W]" in col:
                     unit_multipliers[col] = 1
                     new_cols[col] = f"{new_name}_w"
                 break
 
-    # Apply unit conversion before renaming (no logging for unit conversions)
     for col, multiplier in unit_multipliers.items():
         if multiplier != 1:
             df[col] = df[col] * multiplier
 
     df = df.rename(columns=new_cols)
 
-    # Keep only renamed columns + datetime
     valid_cols = ["datetime"] + [f"{p}_w" for p in column_patterns.values()]
     df = df[[c for c in df.columns if c in valid_cols]]
 
@@ -179,9 +176,6 @@ def load_monthly_file(filepath: Path) -> pd.DataFrame:
     date_col = df.columns[0]
     date_vals = df[date_col].apply(parse_excel_string)
 
-    # Detect date format from first data row
-    # If first number matches file month → US format (M/D/Y)
-    # If second number matches file month → European format (D/M/Y)
     first_date = str(date_vals.iloc[0]).strip()
     first_parts = first_date.split("/")
     use_us_format = False
@@ -197,10 +191,8 @@ def load_monthly_file(filepath: Path) -> pd.DataFrame:
             parts = d_str.split("/")
             if len(parts) == 3:
                 if use_us_format:
-                    # US format: M/D/YYYY
                     m, day, y = int(parts[0]), int(parts[1]), int(parts[2])
                 else:
-                    # European format: D/M/YYYY
                     day, m, y = int(parts[0]), int(parts[1]), int(parts[2])
                 dates.append(pd.Timestamp(year=y, month=m, day=day))
             else:
@@ -212,16 +204,13 @@ def load_monthly_file(filepath: Path) -> pd.DataFrame:
     df = df.drop(columns=[date_col])
     df = df.dropna(subset=["date"])
 
-    # Remove duplicate columns
     cols_to_drop = [c for c in df.columns if "__dup" in c]
     df = df.drop(columns=cols_to_drop)
 
-    # Parse numeric columns
     for col in df.columns:
         if col != "date":
             df[col] = df[col].apply(parse_european_number)
 
-    # Rename columns
     column_mapping = {
         "Total consumption / Meter change [kWh]": "total_consumption_kwh",
         "Direct consumption / Meter change [kWh]": "direct_consumption_kwh",
@@ -281,16 +270,13 @@ def load_yearly_file(filepath: Path) -> pd.DataFrame:
     df = df.drop(columns=[month_col])
     df = df.dropna(subset=["month"])
 
-    # Remove duplicate columns
     cols_to_drop = [c for c in df.columns if "__dup" in c]
     df = df.drop(columns=cols_to_drop)
 
-    # Parse numeric columns
     for col in df.columns:
         if col != "month":
             df[col] = df[col].apply(parse_european_number)
 
-    # Rename columns
     column_mapping = {
         "Total consumption / Meter change [kWh]": "total_consumption_kwh",
         "Direct consumption / Meter change [kWh]": "direct_consumption_kwh",
@@ -328,7 +314,6 @@ def watts_to_kwh(df: pd.DataFrame, interval_minutes: int = 15) -> pd.DataFrame:
         new_col = col.replace("_w", "_kwh")
         df_kwh[new_col] = df_kwh[col] * hours / 1000
 
-    # Drop the W columns, keep only kWh
     df_kwh = df_kwh.drop(columns=w_cols)
     return df_kwh
 
@@ -343,10 +328,7 @@ def interpolate_missing(df: pd.DataFrame) -> pd.DataFrame:
         missing_count = missing_mask.sum()
 
         if missing_count > 0:
-            # Interpolate
-            df_corrected[col] = df_corrected[col].interpolate(method='time', limit=8)  # max 2 hours gap
-
-            # Log interpolations (summarize, don't log each one)
+            df_corrected[col] = df_corrected[col].interpolate(method='time', limit=8)
             log_correction("SUMMARY", col, f"{missing_count} missing values", "interpolated",
                           f"Linear time interpolation for {missing_count} missing values")
 
@@ -354,18 +336,13 @@ def interpolate_missing(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def correct_threshold_violations(df: pd.DataFrame, max_kw: float = 20.0) -> pd.DataFrame:
-    """
-    Correct values exceeding physical thresholds.
-    - max_kw: Maximum instantaneous power in kW (default 20 kW)
-    - For 15-min intervals, max energy = max_kw * 0.25 kWh = 5 kWh per interval
-    """
+    """Correct values exceeding physical thresholds."""
     df_corrected = df.copy()
-    max_kwh_per_interval = max_kw * 0.25  # 15-min interval
+    max_kwh_per_interval = max_kw * 0.25
 
     numeric_cols = [c for c in df.columns if c.endswith('_kwh')]
 
     for col in numeric_cols:
-        # Find values exceeding threshold
         excessive_mask = df_corrected[col] > max_kwh_per_interval
 
         if excessive_mask.sum() == 0:
@@ -375,14 +352,10 @@ def correct_threshold_violations(df: pd.DataFrame, max_kw: float = 20.0) -> pd.D
 
         for idx in excessive_indices:
             original_val = df_corrected.loc[idx, col]
-
-            # Mark as NaN for interpolation
             df_corrected.loc[idx, col] = np.nan
-
             log_correction(idx, col, float(original_val), "interpolated",
                           f"Value {original_val:.2f} kWh exceeds {max_kwh_per_interval:.2f} kWh threshold ({max_kw} kW)")
 
-        # Interpolate the marked values
         df_corrected[col] = df_corrected[col].interpolate(method='time', limit=8)
 
     return df_corrected
@@ -462,18 +435,14 @@ def load_all_yearly(data_dir: Path = DATA_DIR) -> pd.DataFrame:
 
 
 def correct_monthly_from_daily(daily_df: pd.DataFrame, monthly_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Apply hardcoded corrections to monthly data where values are clearly corrupted.
-    Replace corrupted monthly values with sums from daily data.
-    """
-    # Dates with corrupted monthly data (monthly >> daily or clearly wrong)
+    """Apply hardcoded corrections to monthly data where values are clearly corrupted."""
     corrupted_dates = [
-        "2025-02-21",  # Monthly shows 3559 kWh vs daily ~10 kWh
-        "2025-07-02",  # Monthly inflated by ~150 kWh
-        "2025-07-08",  # Monthly inflated
-        "2025-07-09",  # Monthly inflated
-        "2025-07-16",  # Monthly inflated
-        "2025-07-30",  # Monthly inflated
+        "2025-02-21",
+        "2025-07-02",
+        "2025-07-08",
+        "2025-07-09",
+        "2025-07-16",
+        "2025-07-30",
     ]
 
     monthly_corrected = monthly_df.copy()
@@ -491,7 +460,6 @@ def correct_monthly_from_daily(daily_df: pd.DataFrame, monthly_df: pd.DataFrame)
             old_val = monthly_corrected.loc[date, col]
             new_val = daily_agg.loc[date, col]
 
-            # Only correct if there's a significant difference
             if abs(old_val - new_val) > 1:
                 monthly_corrected.loc[date, col] = new_val
                 corrections_applied.append({
@@ -503,8 +471,8 @@ def correct_monthly_from_daily(daily_df: pd.DataFrame, monthly_df: pd.DataFrame)
 
     if corrections_applied:
         print(f"\nApplied {len(corrections_applied)} monthly corrections from daily sums:")
-        for c in corrections_applied[:10]:  # Show first 10
-            print(f"  {c['date']} {c['column']}: {c['old_monthly']:.2f} → {c['new_from_daily']:.2f}")
+        for c in corrections_applied[:10]:
+            print(f"  {c['date']} {c['column']}: {c['old_monthly']:.2f} -> {c['new_from_daily']:.2f}")
         if len(corrections_applied) > 10:
             print(f"  ... and {len(corrections_applied) - 10} more")
 
@@ -517,20 +485,14 @@ def validate_aggregations(daily_df: pd.DataFrame, monthly_df: pd.DataFrame,
     if daily_df.empty or monthly_df.empty:
         return pd.DataFrame()
 
-    # Aggregate daily to daily totals
     daily_agg = daily_df.resample("D").sum()
-
-    # Remove duplicate indices from monthly_df (keep first)
     monthly_unique = monthly_df[~monthly_df.index.duplicated(keep="first")]
-
-    # Find common columns
     common_cols = [c for c in daily_agg.columns if c in monthly_unique.columns]
 
     if not common_cols:
         print("  No common columns found for validation")
         return pd.DataFrame()
 
-    # Compare values for each date
     validation_results = []
 
     for date in monthly_unique.index:
@@ -566,10 +528,9 @@ def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     print("=" * 60)
-    print("ENERGY BALANCE DATA PREPROCESSING")
+    print("PHASE 1, STEP 1: ENERGY BALANCE DATA PREPROCESSING")
     print("=" * 60)
 
-    # Load all data
     daily_df = load_all_daily()
     print(f"Daily data: {len(daily_df)} records, {daily_df.index.min()} to {daily_df.index.max()}")
     print(f"  Columns: {daily_df.columns.tolist()}")
@@ -580,7 +541,6 @@ def main():
     yearly_df = load_all_yearly()
     print(f"Yearly data: {len(yearly_df)} records, {yearly_df.index.min()} to {yearly_df.index.max()}")
 
-    # Data quality corrections
     print("\n" + "=" * 60)
     print("DATA QUALITY CORRECTIONS")
     print("=" * 60)
@@ -598,11 +558,9 @@ def main():
 
     print(f"\nTotal correction entries: {len(corrections_log)}")
 
-    # Correct corrupted monthly data
     print("\n3. Correcting corrupted monthly records...")
     monthly_df = correct_monthly_from_daily(daily_df, monthly_df)
 
-    # Validate aggregations
     print("\n" + "=" * 60)
     print("AGGREGATION VALIDATION")
     print("=" * 60)
@@ -612,7 +570,6 @@ def main():
         match_rate = validation["match"].mean() * 100
         print(f"Overall match rate (within 5%): {match_rate:.1f}%")
 
-        # Show worst mismatches
         worst = validation.nlargest(10, "pct_diff")
         print("\nWorst mismatches:")
         for _, row in worst.iterrows():
@@ -622,13 +579,11 @@ def main():
 
         validation.to_csv(OUTPUT_DIR / "validation_results.csv", index=False)
 
-        # Save fuzzy validation (only differences >= 10% AND absolute diff >= 1 kWh)
         validation["abs_diff"] = abs(validation["daily_sum"] - validation["monthly_value"])
         validation_fuzzy = validation[(validation["pct_diff"] >= 10) & (validation["abs_diff"] >= 1)].copy()
         validation_fuzzy.to_csv(OUTPUT_DIR / "validation_results_fuzzy.csv", index=False)
         print(f"\nFuzzy validation: {len(validation_fuzzy)} mismatches (>=10% and >=1 kWh)")
 
-    # Save processed data
     print("\n" + "=" * 60)
     print("SAVING PROCESSED DATA")
     print("=" * 60)
@@ -637,28 +592,11 @@ def main():
     monthly_df.to_parquet(OUTPUT_DIR / "energy_balance_daily.parquet")
     yearly_df.to_parquet(OUTPUT_DIR / "energy_balance_monthly.parquet")
 
-    # Save corrections log
     corrections_df = pd.DataFrame(corrections_log)
     if not corrections_df.empty:
         corrections_df.to_csv(OUTPUT_DIR / "corrections_log.csv", index=False)
         print(f"\nCorrections log saved: {len(corrections_df)} corrections")
 
-        # Summary by column
-        print("\nCorrections by column:")
-        for col in corrections_df["column"].unique():
-            count = len(corrections_df[corrections_df["column"] == col])
-            print(f"  {col}: {count}")
-
-        # Summary by reason
-        print("\nCorrections by reason type:")
-        corrections_df["reason_type"] = corrections_df["reason"].apply(
-            lambda x: x.split(",")[0] if "," in x else x.split(" ")[0]
-        )
-        for reason in corrections_df["reason_type"].unique():
-            count = len(corrections_df[corrections_df["reason_type"] == reason])
-            print(f"  {reason}: {count}")
-
-    # Save summary statistics
     with open(OUTPUT_DIR / "energy_balance_summary.txt", "w") as f:
         f.write("ENERGY BALANCE DATA SUMMARY\n")
         f.write("=" * 60 + "\n\n")
@@ -695,7 +633,6 @@ def main():
     print("  - energy_balance_monthly.parquet")
     print("  - corrections_log.csv")
     print("  - validation_results.csv")
-    print("  - validation_results_fuzzy.csv")
     print("  - energy_balance_summary.txt")
 
     return daily_df, monthly_df, yearly_df
