@@ -41,3 +41,7 @@ mainic*.csv     # InfluxDB export from Home Assistant (annotated CSV format)
 ## Current State
 
 This is a data repository without source code yet. No build system, tests, or dependencies are configured.
+
+## Research Design
+
+See `RDP.md` for the heating strategy optimization research plan.
