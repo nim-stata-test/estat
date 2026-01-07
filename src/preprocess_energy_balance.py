@@ -149,12 +149,10 @@ def load_daily_file(filepath: Path) -> pd.DataFrame:
                     new_cols[col] = f"{new_name}_w"
                 break
 
-    # Apply unit conversion before renaming
+    # Apply unit conversion before renaming (no logging for unit conversions)
     for col, multiplier in unit_multipliers.items():
         if multiplier != 1:
             df[col] = df[col] * multiplier
-            log_correction("UNIT_CONVERSION", col, f"kW values", f"W values (x1000)",
-                          f"Converted {col} from kW to W")
 
     df = df.rename(columns=new_cols)
 
@@ -318,113 +316,57 @@ def watts_to_kwh(df: pd.DataFrame, interval_minutes: int = 15) -> pd.DataFrame:
     return df_kwh
 
 
-def detect_and_correct_outliers(df: pd.DataFrame, n_std: float = 4) -> pd.DataFrame:
-    """
-    Detect and correct outliers using z-score method.
-    Returns corrected dataframe and logs all corrections.
-    """
+def interpolate_missing(df: pd.DataFrame) -> pd.DataFrame:
+    """Interpolate missing values using linear interpolation."""
     df_corrected = df.copy()
     numeric_cols = df.select_dtypes(include=[np.number]).columns
 
     for col in numeric_cols:
-        series = df_corrected[col].dropna()
-        if len(series) < 10:
-            continue
+        missing_mask = df_corrected[col].isna()
+        missing_count = missing_mask.sum()
 
-        mean = series.mean()
-        std = series.std()
+        if missing_count > 0:
+            # Interpolate
+            df_corrected[col] = df_corrected[col].interpolate(method='time', limit=8)  # max 2 hours gap
 
-        if std == 0:
-            continue
-
-        z_scores = np.abs((df_corrected[col] - mean) / std)
-        outlier_mask = z_scores > n_std
-
-        outlier_indices = df_corrected[outlier_mask].index
-
-        for idx in outlier_indices:
-            original_val = df_corrected.loc[idx, col]
-
-            # Correction strategy: use local median (within 2 hours window)
-            window_start = idx - pd.Timedelta(hours=1)
-            window_end = idx + pd.Timedelta(hours=1)
-            window_data = df_corrected.loc[window_start:window_end, col]
-            window_data = window_data[~outlier_mask.loc[window_start:window_end]]
-
-            if len(window_data) > 0:
-                corrected_val = window_data.median()
-                reason = f"Z-score={z_scores.loc[idx]:.1f} > {n_std}, replaced with local median"
-            else:
-                corrected_val = mean
-                reason = f"Z-score={z_scores.loc[idx]:.1f} > {n_std}, replaced with global mean (no local data)"
-
-            log_correction(idx, col, float(original_val), float(corrected_val), reason)
-            df_corrected.loc[idx, col] = corrected_val
+            # Log interpolations (summarize, don't log each one)
+            log_correction("SUMMARY", col, f"{missing_count} missing values", "interpolated",
+                          f"Linear time interpolation for {missing_count} missing values")
 
     return df_corrected
 
 
-def detect_negative_values(df: pd.DataFrame) -> pd.DataFrame:
-    """Detect and correct negative values (should not exist in energy data)."""
+def correct_threshold_violations(df: pd.DataFrame, max_kw: float = 20.0) -> pd.DataFrame:
+    """
+    Correct values exceeding physical thresholds.
+    - max_kw: Maximum instantaneous power in kW (default 20 kW)
+    - For 15-min intervals, max energy = max_kw * 0.25 kWh = 5 kWh per interval
+    """
     df_corrected = df.copy()
-    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    max_kwh_per_interval = max_kw * 0.25  # 15-min interval
+
+    numeric_cols = [c for c in df.columns if c.endswith('_kwh')]
 
     for col in numeric_cols:
-        negative_mask = df_corrected[col] < 0
-        negative_indices = df_corrected[negative_mask].index
+        # Find values exceeding threshold
+        excessive_mask = df_corrected[col] > max_kwh_per_interval
 
-        for idx in negative_indices:
-            original_val = df_corrected.loc[idx, col]
-            corrected_val = 0.0
-            reason = f"Negative value not allowed for energy measurements"
-            log_correction(idx, col, float(original_val), float(corrected_val), reason)
-            df_corrected.loc[idx, col] = corrected_val
-
-    return df_corrected
-
-
-def detect_impossible_values(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Detect and correct physically impossible values.
-    - PV generation at night should be 0
-    - Values exceeding system capacity
-    """
-    df_corrected = df.copy()
-
-    # Define maximum plausible values (W) for a residential system
-    max_values = {
-        "pv_generation_kwh": 30 * 0.25,  # 30 kW max for 15-min interval
-        "total_consumption_kwh": 50 * 0.25,  # 50 kW max for 15-min interval
-        "battery_charging_kwh": 15 * 0.25,  # 15 kW max battery
-        "battery_discharging_kwh": 15 * 0.25,
-        "external_supply_kwh": 50 * 0.25,
-        "grid_feedin_kwh": 30 * 0.25,
-    }
-
-    for col, max_val in max_values.items():
-        if col not in df_corrected.columns:
+        if excessive_mask.sum() == 0:
             continue
 
-        excessive_mask = df_corrected[col] > max_val
         excessive_indices = df_corrected[excessive_mask].index
 
         for idx in excessive_indices:
             original_val = df_corrected.loc[idx, col]
 
-            # Use local median as replacement
-            window_start = idx - pd.Timedelta(hours=1)
-            window_end = idx + pd.Timedelta(hours=1)
-            window_data = df_corrected.loc[window_start:window_end, col]
-            window_data = window_data[window_data <= max_val]
+            # Mark as NaN for interpolation
+            df_corrected.loc[idx, col] = np.nan
 
-            if len(window_data) > 0:
-                corrected_val = window_data.median()
-            else:
-                corrected_val = max_val
+            log_correction(idx, col, float(original_val), "interpolated",
+                          f"Value {original_val:.2f} kWh exceeds {max_kwh_per_interval:.2f} kWh threshold ({max_kw} kW)")
 
-            reason = f"Value {original_val:.2f} exceeds max plausible {max_val:.2f} kWh"
-            log_correction(idx, col, float(original_val), float(corrected_val), reason)
-            df_corrected.loc[idx, col] = corrected_val
+        # Interpolate the marked values
+        df_corrected[col] = df_corrected[col].interpolate(method='time', limit=8)
 
     return df_corrected
 
@@ -575,23 +517,19 @@ def main():
     print("\n" + "=" * 60)
     print("DATA QUALITY CORRECTIONS")
     print("=" * 60)
+    print("Rules: interpolate missing values, cap at 20 kW (5 kWh per 15-min interval)")
 
-    print("\n1. Detecting negative values...")
+    print("\n1. Correcting threshold violations (>20 kW)...")
     initial_corrections = len(corrections_log)
-    daily_df = detect_negative_values(daily_df)
-    print(f"   Corrected {len(corrections_log) - initial_corrections} negative values")
+    daily_df = correct_threshold_violations(daily_df, max_kw=20.0)
+    print(f"   Corrected {len(corrections_log) - initial_corrections} threshold violations")
 
-    print("\n2. Detecting impossible values...")
+    print("\n2. Interpolating missing values...")
     initial_corrections = len(corrections_log)
-    daily_df = detect_impossible_values(daily_df)
-    print(f"   Corrected {len(corrections_log) - initial_corrections} impossible values")
+    daily_df = interpolate_missing(daily_df)
+    print(f"   Interpolated missing values in {len(corrections_log) - initial_corrections} columns")
 
-    print("\n3. Detecting statistical outliers (z-score > 4)...")
-    initial_corrections = len(corrections_log)
-    daily_df = detect_and_correct_outliers(daily_df, n_std=4)
-    print(f"   Corrected {len(corrections_log) - initial_corrections} outliers")
-
-    print(f"\nTotal corrections: {len(corrections_log)}")
+    print(f"\nTotal correction entries: {len(corrections_log)}")
 
     # Validate aggregations
     print("\n" + "=" * 60)
