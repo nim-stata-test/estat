@@ -37,10 +37,32 @@ mainic*.csv     # InfluxDB export from Home Assistant (annotated CSV format)
 
 - **Language**: Python 3.14
 - **IDE**: PyCharm configured
+- **Virtual env**: `.venv/`
 
-## Current State
+## Commands
 
-This is a data repository without source code yet. No build system, tests, or dependencies are configured.
+```bash
+# Setup
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# Preprocessing (Phase 1)
+python src/preprocess_energy_balance.py  # Process energy balance CSVs
+python src/preprocess_sensors.py         # Process mainic sensor data (~10 min)
+python src/integrate_data.py             # Merge datasets
+```
+
+## Processed Data
+
+After preprocessing, data is saved to `processed/`:
+- `energy_balance_15min.parquet` - 15-min interval energy data (kWh)
+- `sensors_heating.parquet` - Heat pump sensors (96 sensors)
+- `sensors_weather.parquet` - Davis weather station (27 sensors)
+- `sensors_rooms.parquet` - Room temperature sensors (3 sensors)
+- `sensors_energy.parquet` - Smart plug consumption (43 sensors)
+- `integrated_dataset.parquet` - All data merged (185 columns)
+- `integrated_overlap_only.parquet` - Overlap period only (64 days)
 
 ## Research Design
 
