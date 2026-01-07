@@ -1,0 +1,9 @@
+# Data files
+data/
+*.csv
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
