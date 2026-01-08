@@ -7,6 +7,8 @@ Sections:
 2.2 Heating System Analysis - COP, temperature differentials, buffer tank
 2.3 Solar-Heating Correlation - overlap analysis, battery utilization
 2.4 Summary Statistics - monthly breakdown, heating degree days, peaks
+
+Note: Battery degradation analysis is in separate script 02_battery_degradation.py
 """
 
 import pandas as pd

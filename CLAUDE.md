@@ -79,7 +79,8 @@ src/
 │   └── 03_integrate_data.py
 └── phase2/              # Exploratory Data Analysis
     ├── run_eda.py                    # Wrapper: filters sensors + HTML report
-    └── 01_eda.py
+    ├── 01_eda.py                     # Main EDA (energy, heating, solar)
+    └── 02_battery_degradation.py     # Standalone battery analysis + RTF report
 ```
 
 ## Processed Data
@@ -103,6 +104,37 @@ After preprocessing, data is saved to `processed/`:
 - `validation_results.csv` - Daily vs monthly validation results
 - `sensor_summary.csv` - Per-sensor statistics
 - `data_overlap_summary.csv` - Data source overlap info
+
+## EDA Outputs
+
+After running `python src/phase2/run_eda.py`, outputs are saved to `eda_output/`:
+
+**Figures (fig01-fig11):**
+- Energy patterns (time series, monthly, hourly heatmaps, seasonal)
+- Heating system (COP analysis, temperature differentials, indoor/outdoor)
+- Solar-heating correlation (hourly patterns, battery usage, forced grid)
+- Summary statistics (monthly breakdown, HDD analysis, yearly totals)
+
+**HTML Report:**
+- `eda_report.html` - Comprehensive EDA documentation with all figures
+
+## Battery Degradation Analysis
+
+Standalone analysis investigating whether the Feb-Mar 2025 deep-discharge event
+affected battery efficiency. Run separately from main EDA:
+
+```bash
+python src/phase2/02_battery_degradation.py
+```
+
+**Outputs:**
+- `eda_output/battery_degradation_analysis.png` - 4-panel visualization
+- `eda_output/battery_degradation_report.rtf` - Detailed report with methods & results
+
+**Analysis includes:**
+- OLS regression with time trend and post-event indicator
+- Welch's t-test as robustness check
+- Key finding: Statistically significant efficiency drop of ~10.8 percentage points (p<0.001)
 
 ## Research Design
 

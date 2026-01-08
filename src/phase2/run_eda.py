@@ -10,6 +10,8 @@ Steps:
 2. Run EDA analysis (energy patterns, heating system, solar-heating correlation)
 3. Generate HTML report
 
+Note: Battery degradation analysis is in separate script 02_battery_degradation.py
+
 Configuration:
 - EXCLUDED_ROOM_SENSORS: Sensors to exclude from room analysis
 - SENSOR_MAPPINGS: Rename sensors (e.g., office2 → atelier)
