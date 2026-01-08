@@ -80,7 +80,8 @@ src/
 └── phase2/              # Exploratory Data Analysis
     ├── run_eda.py                    # Wrapper: filters sensors + HTML report
     ├── 01_eda.py                     # Main EDA (energy, heating, solar)
-    └── 02_battery_degradation.py     # Standalone battery analysis + RTF report
+    ├── 02_battery_degradation.py     # Standalone battery analysis + RTF report
+    └── 03_heating_curve_analysis.py  # Heating curve model + schedule detection
 ```
 
 ## Processed Data
@@ -109,11 +110,12 @@ After preprocessing, data is saved to `processed/`:
 
 After running `python src/phase2/run_eda.py`, outputs are saved to `eda_output/`:
 
-**Figures (fig01-fig11):**
+**Figures (fig01-fig12):**
 - Energy patterns (time series, monthly, hourly heatmaps, seasonal)
 - Heating system (COP analysis, temperature differentials, indoor/outdoor)
 - Solar-heating correlation (hourly patterns, battery usage, forced grid)
 - Summary statistics (monthly breakdown, HDD analysis, yearly totals)
+- Heating curve analysis (schedule detection, model fit, residuals)
 
 **HTML Report:**
 - `eda_report.html` - Comprehensive EDA documentation with all figures
@@ -135,6 +137,35 @@ python src/phase2/02_battery_degradation.py
 - OLS regression with time trend and post-event indicator
 - Welch's t-test as robustness check
 - Key finding: Statistically significant efficiency drop of ~10.8 percentage points (p<0.001)
+
+## Heating Curve Analysis
+
+Analysis of how target flow temperature depends on controllable parameters.
+Run separately from main EDA:
+
+```bash
+python src/phase2/03_heating_curve_analysis.py
+```
+
+**Outputs:**
+- `eda_output/fig12_heating_curve_schedule.png` - 4-panel visualization
+- `eda_output/heating_curve_schedules.csv` - Detected schedule regimes
+- `eda_output/heating_curve_report_section.html` - HTML section for report
+
+**Model:**
+```
+T_target = T_setpoint + curve_rise × (T_ref - T_outdoor)
+```
+
+**Key features:**
+- Detects comfort/eco schedule from step changes in target temperature
+- Estimates time-varying schedule regimes (comfort start/end times)
+- Models relationship between setpoint, curve rise, and outdoor temperature
+- R² = 0.94, RMSE = 1.03°C overall (0.35°C comfort, 1.54°C eco)
+
+**Detected schedule regimes:**
+- 2025-10-30 to 2025-12-26: Comfort 06:30 - 20:00
+- 2025-12-27 to 2026-01-03: Comfort 06:30 - 21:30
 
 ## Research Design
 
