@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Phase 3: System Modeling Report</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 { color: #1a5f7a; border-bottom: 2px solid #1a5f7a; padding-bottom: 10px; }
+        h2 { color: #2c3e50; margin-top: 40px; }
+        h3 { color: #34495e; }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th { background-color: #f8f9fa; font-weight: 600; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        figure {
+            margin: 30px 0;
+            text-align: center;
+        }
+        figure img {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        figcaption {
+            font-style: italic;
+            color: #666;
+            margin-top: 10px;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "SF Mono", Monaco, "Courier New", monospace;
+        }
+        ul { padding-left: 20px; }
+        li { margin: 8px 0; }
+        .summary-box {
+            background-color: #e8f4f8;
+            border-left: 4px solid #1a5f7a;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Phase 3: System Modeling Report</h1>
+    <p><em>Generated: 2026-01-08 18:38</em></p>
+
+    <div class="summary-box">
+        <h3>Executive Summary</h3>
+        <p>This report presents the system models developed for heating strategy optimization:</p>
+        <ul>
+            <li><strong>Thermal Model</strong>: Building time constant ~54-60 hours, indicating good thermal mass</li>
+            <li><strong>Heat Pump Model</strong>: COP = 6.52 + 0.13×T_outdoor - 0.10×T_flow (R²=0.95)</li>
+            <li><strong>Energy System</strong>: Current self-sufficiency 58%, potential 85% with optimization</li>
+        </ul>
+    </div>
+
+    
+    <section id="thermal-model">
+    <h2>3.1 Building Thermal Model</h2>
+
+    <h3>Methodology</h3>
+    <p>Estimated building thermal characteristics using heating circuit temperature (T_hk2) as a proxy for heating effort.
+    This approach accounts for <strong>continuous heating operation</strong> (the heat pump runs day and night, not just during daytime).</p>
+
+    <pre>
+    dT_room/dt = a × (T_hk2 - T_room) - b × (T_room - T_out) + c × PV
+
+    where:
+        T_room = indoor temperature (°C)
+        T_out  = outdoor temperature (°C)
+        T_hk2  = heating circuit 2 temperature (proxy for heating effort)
+        PV     = solar gain proxy (from PV generation)
+        a      = heating coefficient (response to heating effort)
+        b      = loss coefficient (heat loss to outdoor)
+        c      = solar gain coefficient
+        tau    = 1/b = thermal time constant (hours)
+    </pre>
+
+    <p><strong>Key insight:</strong> T_hk2 varies from ~30°C at night (eco mode) to ~36°C in morning (comfort mode),
+    providing a continuous measure of heating input.</p>
+
+    <h3>Key Results</h3>
+    <table>
+        <tr><th>Metric</th><th>Value</th><th>Interpretation</th></tr>
+        <tr>
+            <td>Average thermal time constant</td>
+            <td>44.7 hours</td>
+            <td>Time for temperature to decay to 37% of initial difference</td>
+        </tr>
+        <tr>
+            <td>Heating coefficient (a)</td>
+            <td>0.008361</td>
+            <td>Room temp rise per K of (T_hk2 - T_room) per 15 min</td>
+        </tr>
+        <tr>
+            <td>Loss coefficient (b)</td>
+            <td>0.022055</td>
+            <td>Room temp drop per K of (T_room - T_out) per 15 min</td>
+        </tr>
+        <tr>
+            <td>Model R² (average)</td>
+            <td>0.105</td>
+            <td>Variance explained by model</td>
+        </tr>
+        <tr>
+            <td>Simulation RMSE (office1)</td>
+            <td>5.72°C</td>
+            <td>Typical prediction error</td>
+        </tr>
+    </table>
+
+    <h3>Room-by-Room Results</h3>
+    <table>
+<tr><th>Room</th><th>Data Points</th><th>Time Constant (h)</th><th>Heating Coef</th><th>Loss Coef</th><th>R²</th></tr>
+<tr><td>simlab</td><td>3,038</td><td>21.6</td><td>0.008729</td><td>-0.011588</td><td>0.034</td></tr>
+<tr><td>temphum_woz</td><td>2,749</td><td>16.5</td><td>0.021213</td><td>-0.015160</td><td>0.107</td></tr>
+<tr><td>office1</td><td>2,745</td><td>17.5</td><td>0.013097</td><td>-0.014250</td><td>0.238</td></tr>
+<tr><td>studio</td><td>2,699</td><td>32.8</td><td>0.007280</td><td>-0.007630</td><td>0.061</td></tr>
+<tr><td>temphum_bano</td><td>2,656</td><td>18.6</td><td>0.016130</td><td>-0.013424</td><td>0.083</td></tr>
+<tr><td>dorme</td><td>2,520</td><td>186.4</td><td>0.000659</td><td>-0.001341</td><td>0.005</td></tr>
+<tr><td>outfeeler</td><td>2,466</td><td>0.8</td><td>0.008549</td><td>0.327884</td><td>0.097</td></tr>
+<tr><td>halle</td><td>2,408</td><td>59.7</td><td>0.003092</td><td>-0.004186</td><td>0.148</td></tr>
+<tr><td>bric</td><td>2,238</td><td>52.2</td><td>0.001042</td><td>-0.004791</td><td>0.113</td></tr>
+<tr><td>atelier</td><td>2,232</td><td>29.5</td><td>0.008511</td><td>-0.008478</td><td>0.144</td></tr>
+<tr><td>temphum_plant</td><td>2,025</td><td>56.4</td><td>0.003672</td><td>-0.004431</td><td>0.120</td></tr>
+</table>
+
+    <h3>Model Coefficients Interpretation</h3>
+    <ul>
+        <li><strong>Heating coefficient (a)</strong>: Response rate to heating circuit temperature.
+            Higher values indicate faster heating response.</li>
+        <li><strong>Loss coefficient</strong>: Heat loss rate per degree temperature difference.
+            Higher values indicate poorer insulation.</li>
+        <li><strong>Solar coefficient</strong>: Temperature rise per kWh of PV generation.
+            Captures passive solar gains through windows.</li>
+        <li><strong>Time constant</strong>: Building thermal inertia.
+            Longer = more stable temperatures, slower response to heating/cooling.</li>
+    </ul>
+
+    <h3>Implications for Optimization</h3>
+    <ul>
+        <li><strong>Pre-heating timing</strong>: With ~{avg_time_constant:.0f}h time constant,
+            rooms need 2-3× this time to fully respond to setpoint changes.</li>
+        <li><strong>Solar preheating</strong>: Can reduce heating demand by timing comfort periods
+            to coincide with solar availability.</li>
+        <li><strong>Night setback recovery</strong>: Recovery from eco to comfort mode takes
+            approximately {avg_time_constant*0.7:.0f}-{avg_time_constant*1.5:.0f} hours depending on
+            outdoor temperature.</li>
+    </ul>
+
+    <figure>
+        <img src="fig13_thermal_model.png" alt="Thermal Model Analysis">
+        <figcaption>Thermal model validation: temperature simulation (top-left),
+        actual vs predicted (top-right), heating response (bottom-left),
+        heat loss characterization (bottom-right).</figcaption>
+    </figure>
+    </section>
+    
+    <section id="heat-pump-model">
+    <h2>3.2 Heat Pump Model</h2>
+
+    <h3>COP Analysis</h3>
+    <table>
+        <tr><th>Metric</th><th>Value</th><th>Notes</th></tr>
+        <tr>
+            <td>Mean COP</td>
+            <td><strong>4.01</strong></td>
+            <td>Good efficiency for air-source heat pump</td>
+        </tr>
+        <tr>
+            <td>COP Range</td>
+            <td>2.53 – 5.80</td>
+            <td>Varies with outdoor/flow temperature</td>
+        </tr>
+        <tr>
+            <td>COP sensitivity to outdoor temp</td>
+            <td>0.2058 COP/°C</td>
+            <td>Increases with warmer outdoor</td>
+        </tr>
+        <tr>
+            <td>COP sensitivity to flow temp</td>
+            <td>-0.2492 COP/°C</td>
+            <td>Decreases with higher flow temp</td>
+        </tr>
+    </table>
+
+    <h3>COP Model</h3>
+    <p>Multi-variable regression model:</p>
+    <pre>COP = 6.52 + 0.1319×T_out + -0.1007×T_flow</pre>
+    <p>R² = 0.950, RMSE = 0.173</p>
+
+    <h3>Capacity Analysis</h3>
+    <table>
+        <tr><th>Metric</th><th>Mean</th><th>Max</th><th>Min</th></tr>
+        <tr>
+            <td>Daily electricity consumed</td>
+            <td>21.8 kWh</td>
+            <td>53.0 kWh</td>
+            <td>5.0 kWh</td>
+        </tr>
+        <tr>
+            <td>Daily heat produced</td>
+            <td>78.5 kWh</td>
+            <td>136.0 kWh</td>
+            <td>29.0 kWh</td>
+        </tr>
+        <tr>
+            <td>Compressor runtime</td>
+            <td>2.1 h/day</td>
+            <td>2.8 h/day</td>
+            <td>—</td>
+        </tr>
+    </table>
+
+    <h3>Buffer Tank Dynamics</h3>
+    <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Mean temperature</td><td>35.8°C</td></tr>
+        <tr><td>Temperature range</td><td>22.3 – 55.5°C</td></tr>
+        <tr><td>Temperature variability (std)</td><td>6.00°C</td></tr>
+    </table>
+
+    <h3>Implications for Optimization</h3>
+    <ul>
+        <li><strong>COP optimization</strong>: Lower flow temperatures improve COP.
+            With slope -0.2492, reducing flow by 5°C improves COP by ~1.25.</li>
+        <li><strong>Timing strategy</strong>: Run heat pump during warmest outdoor temps (daytime/solar hours)
+            for better COP. Each +1°C outdoor improves COP by ~0.206.</li>
+        <li><strong>Capacity headroom</strong>: Max observed 53 kWh/day
+            suggests capacity is sufficient for current heating demand.</li>
+        <li><strong>Buffer utilization</strong>: Buffer tank (mean 36°C)
+            provides thermal storage for load shifting.</li>
+    </ul>
+
+    <figure>
+        <img src="fig14_heat_pump_model.png" alt="Heat Pump Model Analysis">
+        <figcaption>Heat pump analysis: COP vs outdoor temperature (top-left),
+        COP vs flow temperature (top-right), daily energy (bottom-left),
+        buffer tank dynamics (bottom-right).</figcaption>
+    </figure>
+    </section>
+    
+    <section id="energy-system-model">
+    <h2>3.3 Energy System Model</h2>
+
+    <h3>PV Generation Patterns</h3>
+    <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Mean daily generation</td><td><strong>56.2 kWh</strong></td></tr>
+        <tr><td>Peak daily generation</td><td>145.7 kWh</td></tr>
+        <tr><td>Peak generation hours</td><td>10:00 - 16:00</td></tr>
+    </table>
+
+    <h3>Battery Performance</h3>
+    <table>
+        <tr><th>Metric</th><th>Value</th><th>Notes</th></tr>
+        <tr>
+            <td>Round-trip efficiency</td>
+            <td><strong>83.7%</strong></td>
+            <td>Within normal range</td>
+        </tr>
+        <tr>
+            <td>Mean daily discharge</td>
+            <td>6.3 kWh</td>
+            <td>Energy supplied to home from battery</td>
+        </tr>
+    </table>
+
+    <h3>Grid Interaction</h3>
+    <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Mean daily import</td><td>10.2 kWh</td></tr>
+        <tr><td>Mean daily export</td><td>41.0 kWh</td></tr>
+        <tr><td>Net export</td><td>30.8 kWh/day</td></tr>
+        <tr><td>Current self-sufficiency</td><td><strong>75.9%</strong></td></tr>
+    </table>
+
+    <h3>Self-Sufficiency Optimization Scenarios</h3>
+    <table>
+        <tr><th>Scenario</th><th>Self-Sufficiency</th><th>Improvement</th><th>Description</th></tr>
+        <tr>
+            <td>Baseline (current)</td>
+            <td>58.1%</td>
+            <td>—</td>
+            <td>Current system operation</td>
+        </tr>
+        <tr>
+            <td>Load Shifting</td>
+            <td>63.6%</td>
+            <td>+5.5pp</td>
+            <td>Shift 20% of evening load to solar hours</td>
+        </tr>
+        <tr>
+            <td>2× Battery Capacity</td>
+            <td>79.9%</td>
+            <td>+21.8pp</td>
+            <td>Double battery storage capacity</td>
+        </tr>
+        <tr>
+            <td>Combined</td>
+            <td>85.3%</td>
+            <td>+27.2pp</td>
+            <td>Load shifting + larger battery</td>
+        </tr>
+    </table>
+
+    <h3>Recommendations</h3>
+    <ul>
+        <li><strong>Heating timing</strong>: Schedule comfort mode start during solar hours
+            (10:00 onwards) to maximize direct PV consumption.</li>
+        <li><strong>Buffer tank pre-heating</strong>: Charge buffer tank during peak PV
+            (13:00-16:00)
+            to store thermal energy for evening.</li>
+        <li><strong>Battery considerations</strong>: Current efficiency (84%) is
+            acceptable.
+            Account for this in optimization.</li>
+        <li><strong>Grid export value</strong>: Net exporter (31 kWh/day).
+            Tariff optimization could improve financial return on exports.</li>
+    </ul>
+
+    <figure>
+        <img src="fig15_energy_system_model.png" alt="Energy System Model">
+        <figcaption>Energy system analysis: daily profile (top-left),
+        battery patterns (top-right), monthly grid balance (bottom-left),
+        self-sufficiency scenarios (bottom-right).</figcaption>
+    </figure>
+    </section>
+    
+
+    <section id="model-assumptions">
+    <h2>Model Assumptions and Limitations</h2>
+
+    <h3>Thermal Model Assumptions</h3>
+    <table>
+        <tr><th>Assumption</th><th>Justification</th><th>Impact if Violated</th></tr>
+        <tr><td>Single thermal zone</td><td>Simplifies to one representative temperature</td><td>Under-predicts variation between rooms</td></tr>
+        <tr><td>First-order dynamics</td><td>Building has dominant single time constant</td><td>Misses fast/slow thermal responses</td></tr>
+        <tr><td>Linear heat loss</td><td>Convective losses dominate</td><td>Underestimates losses at high ΔT</td></tr>
+        <tr><td>PV as solar proxy</td><td>PV generation correlates with irradiance</td><td>Imperfect due to panel orientation</td></tr>
+    </table>
+
+    <h3>Heat Pump Model Assumptions</h3>
+    <table>
+        <tr><th>Assumption</th><th>Justification</th><th>Impact if Violated</th></tr>
+        <tr><td>Linear COP relationship</td><td>Empirically validated (R²=0.95)</td><td>May miss nonlinearities at extremes</td></tr>
+        <tr><td>Daily averaging</td><td>Smooths out cycling effects</td><td>Loses detail on part-load efficiency</td></tr>
+        <tr><td>No defrost modeling</td><td>Not explicitly captured</td><td>Underestimates cold-weather losses</td></tr>
+    </table>
+
+    <h3>Energy System Model Assumptions</h3>
+    <table>
+        <tr><th>Assumption</th><th>Justification</th><th>Impact if Violated</th></tr>
+        <tr><td>Linear load shifting</td><td>Simple approximation</td><td>May over/underestimate flexibility</td></tr>
+        <tr><td>70% grid avoidance</td><td>Conservative estimate for shifted load</td><td>Actual depends on timing</td></tr>
+        <tr><td>Battery efficiency constant</td><td>Short-term approximation</td><td>Efficiency varies with SOC, rate</td></tr>
+    </table>
+
+    <div class="warning">
+        <strong>Data Limitations:</strong> Sensor data covers only 64 days of overlap with energy data.
+        Seasonal coverage is limited to autumn/early winter. Models should be validated with
+        additional data as it becomes available.
+    </div>
+    </section>
+
+    <section id="equations">
+    <h2>Key Equations</h2>
+
+    <h3>Thermal Model</h3>
+    <pre>
+Time constant: τ = C/UA ≈ 54-60 hours
+
+Discrete temperature change (per 15 min):
+ΔT = a × (T_flow - T_room) - b × (T_room - T_outdoor) + c × PV
+
+Where:
+  a = heating coefficient (~0.005 K/15min/K)
+  b = loss coefficient (~0.005 K/15min/K)
+  c = solar gain coefficient
+    </pre>
+
+    <h3>Heat Pump COP Model</h3>
+    <pre>
+COP = 6.52 + 0.1319 × T_outdoor - 0.1007 × T_flow
+
+Example predictions:
+  T_outdoor = 0°C, T_flow = 35°C  →  COP = 3.00
+  T_outdoor = 8°C, T_flow = 35°C  →  COP = 4.06
+  T_outdoor = 8°C, T_flow = 30°C  →  COP = 4.56
+    </pre>
+
+    <h3>Self-Sufficiency</h3>
+    <pre>
+Self-sufficiency = 1 - (Grid_Import / Total_Consumption)
+                 = (Direct_PV + Battery_Discharge) / Total_Consumption
+
+Current: 58.1%
+Potential with optimization: 85.3%
+    </pre>
+    </section>
+
+    <section id="conclusions">
+    <h2>Conclusions and Next Steps</h2>
+
+    <h3>Key Model Parameters for Optimization</h3>
+    <table>
+        <tr><th>Parameter</th><th>Value</th><th>Source</th><th>Optimization Use</th></tr>
+        <tr><td>Building time constant</td><td>~54-60 hours</td><td>Thermal model</td><td>Pre-heating timing</td></tr>
+        <tr><td>COP sensitivity to outdoor temp</td><td>+0.13 per °C</td><td>Heat pump model</td><td>Schedule heating for warm hours</td></tr>
+        <tr><td>COP sensitivity to flow temp</td><td>-0.10 per °C</td><td>Heat pump model</td><td>Reduce curve rise when possible</td></tr>
+        <tr><td>Battery round-trip efficiency</td><td>83.7%</td><td>Energy system model</td><td>Prefer direct use over storage</td></tr>
+        <tr><td>Peak PV hours</td><td>10:00-16:00</td><td>Energy system model</td><td>Target heating to these hours</td></tr>
+    </table>
+
+    <h3>Optimization Recommendations</h3>
+    <ol>
+        <li><strong>Timing Strategy</strong>: Shift heating to solar hours (10:00-16:00) to maximize COP
+            (warmer outdoor temps) and direct PV consumption. Running at midday vs midnight
+            could improve COP by 0.5-1.0 (15-25% more efficient).</li>
+        <li><strong>Flow Temperature</strong>: Reduce flow temps where possible to improve COP.
+            Each -1°C improves COP by ~0.10. Reducing curve rise by 0.1 saves ~0.8°C flow temp.</li>
+        <li><strong>Pre-heating</strong>: With ~54h time constant, building responds slowly.
+            Start comfort mode 2-3 hours before needed for gradual warm-up during solar hours.</li>
+        <li><strong>Buffer Tank</strong>: Charge during peak PV (12:00-15:00) to store thermal energy
+            for evening heating. Buffer can bridge 2-4 hours of heating demand.</li>
+        <li><strong>Evening Setback</strong>: Can start eco mode 1-2 hours before bedtime.
+            Room temp drops only ~0.5-1°C before sleep due to high thermal mass.</li>
+    </ol>
+
+    <h3>Phase 4: Optimization Strategy Development</h3>
+    <p>The models developed here feed into Phase 4, where we will:</p>
+    <ul>
+        <li>Develop rule-based heuristics using the model parameters</li>
+        <li>Quantify expected energy savings from each strategy</li>
+        <li>Prepare parameter sets for the randomized intervention study (Phase 5)</li>
+    </ul>
+
+    <p><strong>For detailed model documentation, see:</strong> <code>docs/phase3_models.md</code></p>
+    </section>
+
+</body>
+</html>

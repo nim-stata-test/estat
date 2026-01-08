@@ -1,0 +1,102 @@
+
+    <section id="thermal-model">
+    <h2>3.1 Building Thermal Model</h2>
+
+    <h3>Methodology</h3>
+    <p>Estimated building thermal characteristics using heating circuit temperature (T_hk2) as a proxy for heating effort.
+    This approach accounts for <strong>continuous heating operation</strong> (the heat pump runs day and night, not just during daytime).</p>
+
+    <pre>
+    dT_room/dt = a × (T_hk2 - T_room) - b × (T_room - T_out) + c × PV
+
+    where:
+        T_room = indoor temperature (°C)
+        T_out  = outdoor temperature (°C)
+        T_hk2  = heating circuit 2 temperature (proxy for heating effort)
+        PV     = solar gain proxy (from PV generation)
+        a      = heating coefficient (response to heating effort)
+        b      = loss coefficient (heat loss to outdoor)
+        c      = solar gain coefficient
+        tau    = 1/b = thermal time constant (hours)
+    </pre>
+
+    <p><strong>Key insight:</strong> T_hk2 varies from ~30°C at night (eco mode) to ~36°C in morning (comfort mode),
+    providing a continuous measure of heating input.</p>
+
+    <h3>Key Results</h3>
+    <table>
+        <tr><th>Metric</th><th>Value</th><th>Interpretation</th></tr>
+        <tr>
+            <td>Average thermal time constant</td>
+            <td>44.7 hours</td>
+            <td>Time for temperature to decay to 37% of initial difference</td>
+        </tr>
+        <tr>
+            <td>Heating coefficient (a)</td>
+            <td>0.008361</td>
+            <td>Room temp rise per K of (T_hk2 - T_room) per 15 min</td>
+        </tr>
+        <tr>
+            <td>Loss coefficient (b)</td>
+            <td>0.022055</td>
+            <td>Room temp drop per K of (T_room - T_out) per 15 min</td>
+        </tr>
+        <tr>
+            <td>Model R² (average)</td>
+            <td>0.105</td>
+            <td>Variance explained by model</td>
+        </tr>
+        <tr>
+            <td>Simulation RMSE (office1)</td>
+            <td>5.72°C</td>
+            <td>Typical prediction error</td>
+        </tr>
+    </table>
+
+    <h3>Room-by-Room Results</h3>
+    <table>
+<tr><th>Room</th><th>Data Points</th><th>Time Constant (h)</th><th>Heating Coef</th><th>Loss Coef</th><th>R²</th></tr>
+<tr><td>simlab</td><td>3,038</td><td>21.6</td><td>0.008729</td><td>-0.011588</td><td>0.034</td></tr>
+<tr><td>temphum_woz</td><td>2,749</td><td>16.5</td><td>0.021213</td><td>-0.015160</td><td>0.107</td></tr>
+<tr><td>office1</td><td>2,745</td><td>17.5</td><td>0.013097</td><td>-0.014250</td><td>0.238</td></tr>
+<tr><td>studio</td><td>2,699</td><td>32.8</td><td>0.007280</td><td>-0.007630</td><td>0.061</td></tr>
+<tr><td>temphum_bano</td><td>2,656</td><td>18.6</td><td>0.016130</td><td>-0.013424</td><td>0.083</td></tr>
+<tr><td>dorme</td><td>2,520</td><td>186.4</td><td>0.000659</td><td>-0.001341</td><td>0.005</td></tr>
+<tr><td>outfeeler</td><td>2,466</td><td>0.8</td><td>0.008549</td><td>0.327884</td><td>0.097</td></tr>
+<tr><td>halle</td><td>2,408</td><td>59.7</td><td>0.003092</td><td>-0.004186</td><td>0.148</td></tr>
+<tr><td>bric</td><td>2,238</td><td>52.2</td><td>0.001042</td><td>-0.004791</td><td>0.113</td></tr>
+<tr><td>atelier</td><td>2,232</td><td>29.5</td><td>0.008511</td><td>-0.008478</td><td>0.144</td></tr>
+<tr><td>temphum_plant</td><td>2,025</td><td>56.4</td><td>0.003672</td><td>-0.004431</td><td>0.120</td></tr>
+</table>
+
+    <h3>Model Coefficients Interpretation</h3>
+    <ul>
+        <li><strong>Heating coefficient (a)</strong>: Response rate to heating circuit temperature.
+            Higher values indicate faster heating response.</li>
+        <li><strong>Loss coefficient</strong>: Heat loss rate per degree temperature difference.
+            Higher values indicate poorer insulation.</li>
+        <li><strong>Solar coefficient</strong>: Temperature rise per kWh of PV generation.
+            Captures passive solar gains through windows.</li>
+        <li><strong>Time constant</strong>: Building thermal inertia.
+            Longer = more stable temperatures, slower response to heating/cooling.</li>
+    </ul>
+
+    <h3>Implications for Optimization</h3>
+    <ul>
+        <li><strong>Pre-heating timing</strong>: With ~{avg_time_constant:.0f}h time constant,
+            rooms need 2-3× this time to fully respond to setpoint changes.</li>
+        <li><strong>Solar preheating</strong>: Can reduce heating demand by timing comfort periods
+            to coincide with solar availability.</li>
+        <li><strong>Night setback recovery</strong>: Recovery from eco to comfort mode takes
+            approximately {avg_time_constant*0.7:.0f}-{avg_time_constant*1.5:.0f} hours depending on
+            outdoor temperature.</li>
+    </ul>
+
+    <figure>
+        <img src="fig13_thermal_model.png" alt="Thermal Model Analysis">
+        <figcaption>Thermal model validation: temperature simulation (top-left),
+        actual vs predicted (top-right), heating response (bottom-left),
+        heat loss characterization (bottom-right).</figcaption>
+    </figure>
+    </section>
+    

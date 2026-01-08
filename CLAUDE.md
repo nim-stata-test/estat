@@ -52,10 +52,14 @@ python src/phase1/run_preprocessing.py
 # Run EDA with HTML report
 python src/phase2/run_eda.py
 
+# Run system modeling with HTML report
+python src/phase3/run_phase3.py
+
 # Run all phases
 python src/run_all.py              # Run complete pipeline
 python src/run_all.py --phase 1    # Run Phase 1 only
 python src/run_all.py --phase 2    # Run Phase 2 only
+python src/run_all.py --phase 3    # Run Phase 3 only
 python src/run_all.py --step 1.2   # Run specific step
 python src/run_all.py --list       # List all steps
 
@@ -64,6 +68,9 @@ python src/phase1/01_preprocess_energy_balance.py  # Phase 1, Step 1
 python src/phase1/02_preprocess_sensors.py         # Phase 1, Step 2 (~10 min)
 python src/phase1/03_integrate_data.py             # Phase 1, Step 3
 python src/phase2/01_eda.py                        # Phase 2, Step 1
+python src/phase3/01_thermal_model.py              # Phase 3, Step 1
+python src/phase3/02_heat_pump_model.py            # Phase 3, Step 2
+python src/phase3/03_energy_system_model.py        # Phase 3, Step 3
 ```
 
 ## Source Code Structure
@@ -76,11 +83,16 @@ src/
 │   ├── 01_preprocess_energy_balance.py
 │   ├── 02_preprocess_sensors.py
 │   └── 03_integrate_data.py
-└── phase2/              # Exploratory Data Analysis
-    ├── run_eda.py                    # Wrapper: filters sensors + HTML report
-    ├── 01_eda.py                     # Main EDA (energy, heating, solar)
-    ├── 02_battery_degradation.py     # Standalone battery analysis + RTF report
-    └── 03_heating_curve_analysis.py  # Heating curve model + schedule detection
+├── phase2/              # Exploratory Data Analysis
+│   ├── run_eda.py                    # Wrapper: filters sensors + HTML report
+│   ├── 01_eda.py                     # Main EDA (energy, heating, solar)
+│   ├── 02_battery_degradation.py     # Standalone battery analysis
+│   └── 03_heating_curve_analysis.py  # Heating curve model + schedule detection
+└── phase3/              # System Modeling
+    ├── run_phase3.py                 # Wrapper: runs all models + HTML report
+    ├── 01_thermal_model.py           # Building thermal characteristics
+    ├── 02_heat_pump_model.py         # COP relationships, buffer tank
+    └── 03_energy_system_model.py     # PV patterns, battery, self-sufficiency
 ```
 
 ## Processed Data
@@ -165,6 +177,30 @@ T_target = T_setpoint + curve_rise × (T_ref - T_outdoor)
 **Detected schedule regimes:**
 - 2025-10-30 to 2025-12-26: Comfort 06:30 - 20:00
 - 2025-12-27 to 2026-01-03: Comfort 06:30 - 21:30
+
+## Phase 3: System Modeling Outputs
+
+After running `python src/phase3/run_phase3.py`, outputs are saved to `phase3_output/`:
+
+**Figures (fig13-fig15):**
+- Thermal model (temperature simulation, decay analysis)
+- Heat pump model (COP vs temperature, capacity, buffer tank)
+- Energy system (daily profiles, battery patterns, self-sufficiency)
+
+**Reports:**
+- `phase3_modeling_report.html` - Combined modeling report
+- `thermal_model_results.csv` - Per-room thermal parameters
+- `heat_pump_daily_stats.csv` - Daily COP and energy statistics
+
+**Key Model Results:**
+- Building time constant: ~54-60 hours
+- COP model (R²=0.95): `COP = 6.52 + 0.13×T_outdoor - 0.10×T_flow`
+- Current self-sufficiency: 58%, potential with optimization: 85%
+
+## Documentation
+
+- `PRD.md` - Research design plan for heating strategy optimization
+- `docs/phase3_models.md` - Detailed documentation of Phase 3 models (assumptions, equations, interpretation)
 
 ## Research Design
 

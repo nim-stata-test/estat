@@ -1,0 +1,87 @@
+
+    <section id="energy-system-model">
+    <h2>3.3 Energy System Model</h2>
+
+    <h3>PV Generation Patterns</h3>
+    <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Mean daily generation</td><td><strong>56.2 kWh</strong></td></tr>
+        <tr><td>Peak daily generation</td><td>145.7 kWh</td></tr>
+        <tr><td>Peak generation hours</td><td>10:00 - 16:00</td></tr>
+    </table>
+
+    <h3>Battery Performance</h3>
+    <table>
+        <tr><th>Metric</th><th>Value</th><th>Notes</th></tr>
+        <tr>
+            <td>Round-trip efficiency</td>
+            <td><strong>83.7%</strong></td>
+            <td>Within normal range</td>
+        </tr>
+        <tr>
+            <td>Mean daily discharge</td>
+            <td>6.3 kWh</td>
+            <td>Energy supplied to home from battery</td>
+        </tr>
+    </table>
+
+    <h3>Grid Interaction</h3>
+    <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Mean daily import</td><td>10.2 kWh</td></tr>
+        <tr><td>Mean daily export</td><td>41.0 kWh</td></tr>
+        <tr><td>Net export</td><td>30.8 kWh/day</td></tr>
+        <tr><td>Current self-sufficiency</td><td><strong>75.9%</strong></td></tr>
+    </table>
+
+    <h3>Self-Sufficiency Optimization Scenarios</h3>
+    <table>
+        <tr><th>Scenario</th><th>Self-Sufficiency</th><th>Improvement</th><th>Description</th></tr>
+        <tr>
+            <td>Baseline (current)</td>
+            <td>58.1%</td>
+            <td>—</td>
+            <td>Current system operation</td>
+        </tr>
+        <tr>
+            <td>Load Shifting</td>
+            <td>63.6%</td>
+            <td>+5.5pp</td>
+            <td>Shift 20% of evening load to solar hours</td>
+        </tr>
+        <tr>
+            <td>2× Battery Capacity</td>
+            <td>79.9%</td>
+            <td>+21.8pp</td>
+            <td>Double battery storage capacity</td>
+        </tr>
+        <tr>
+            <td>Combined</td>
+            <td>85.3%</td>
+            <td>+27.2pp</td>
+            <td>Load shifting + larger battery</td>
+        </tr>
+    </table>
+
+    <h3>Recommendations</h3>
+    <ul>
+        <li><strong>Heating timing</strong>: Schedule comfort mode start during solar hours
+            (10:00 onwards) to maximize direct PV consumption.</li>
+        <li><strong>Buffer tank pre-heating</strong>: Charge buffer tank during peak PV
+            (13:00-16:00)
+            to store thermal energy for evening.</li>
+        <li><strong>Battery considerations</strong>: Current efficiency (84%) is
+            acceptable.
+            Account for this in optimization.</li>
+        <li><strong>Grid export value</strong>: Net exporter (31 kWh/day).
+            Tariff optimization could improve financial return on exports.</li>
+    </ul>
+
+    <figure>
+        <img src="fig15_energy_system_model.png" alt="Energy System Model">
+        <figcaption>Energy system analysis: daily profile (top-left),
+        battery patterns (top-right), monthly grid balance (bottom-left),
+        self-sufficiency scenarios (bottom-right).</figcaption>
+    </figure>
+    </section>
+    

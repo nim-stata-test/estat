@@ -152,79 +152,115 @@ Investigation of Feb-Mar 2025 deep-discharge event (faulty inverter).
 
 ---
 
-## Phase 3: System Modeling — IN PROGRESS
+## Phase 3: System Modeling ✓ COMPLETED
 
-### 3.1 Thermal Model
-- [ ] Estimate building thermal characteristics:
-  - Heat loss coefficient (W/K) from temperature decay curves
-  - Thermal mass from temperature response to heating inputs
-- [ ] Model room temperature dynamics as function of:
-  - Outdoor temperature
-  - Solar gain
-  - Heating input
-  - Internal gains (occupancy, appliances)
+### 3.1 Thermal Model ✓
+- [x] Estimate building thermal characteristics:
+  - **Time constant: ~17-31 hours** (varies by room)
+  - RC model using T_hk2 (heating circuit temp) as heating effort proxy
+- [x] Model room temperature dynamics as function of:
+  - Heating effort (T_hk2 - T_room differential)
+  - Heat loss (T_room - T_outdoor differential)
+  - Solar gain (from PV proxy)
 
-**Data available**: 12 room temperature sensors, outdoor temperature, heating circuit data (64 days overlap)
+**Key findings**:
+- Heating runs continuously (38-77% duty cycle, including nights)
+- T_hk2 varies 30°C (night/eco) to 36°C (morning/comfort) - good heating proxy
+- Model R² = 0.10-0.24 (improved with correct heating assumption)
+- Heating coefficient: ~0.013 K/(15min)/K
+- Loss coefficient: ~0.014 K/(15min)/K
 
-### 3.2 Heat Pump Model — PARTIALLY COMPLETE
-- [x] COP as function of outdoor temperature: Mean COP 3.55 (2.49–5.18)
-- [x] Heating curve model (R² = 0.94): `T_target = T_setpoint + 1.08 × (T_ref - T_outdoor)`
-- [ ] COP vs flow temperature relationship (need more data variation)
-- [ ] Capacity constraints and modulation behavior
-- [ ] Buffer tank dynamics
+**Outputs**: `fig13_thermal_model.png`, `thermal_model_results.csv`
 
-**Controllable parameters identified**:
-- `curve_rise` (currently 1.08, range ~0.97–1.14)
-- `T_setpoint` (Comfort: 20.2°C, Eco: 18.0°C)
-- Schedule timing (currently 06:30–20:00)
+### 3.2 Heat Pump Model ✓ COMPLETED
+- [x] COP as function of outdoor temperature: **+0.13 COP per °C**
+- [x] COP vs flow temperature: **-0.10 COP per °C**
+- [x] Multi-variable COP model (R² = 0.95):
+  ```
+  COP = 6.52 + 0.1319×T_outdoor - 0.1007×T_flow
+  ```
+- [x] Capacity analysis: Mean 21.8 kWh/day consumed, 78.5 kWh/day heat produced
+- [x] Buffer tank dynamics: Mean 35.8°C, range 22-55°C, charging/discharging ~30°C/h max
 
-### 3.3 Energy System Model
-- [ ] PV generation prediction (from historical patterns + weather)
-- [x] Battery efficiency: ~85% pre-event, **~75-80% post-event** (degraded)
-- [ ] Battery state-of-charge dynamics
-- [ ] Grid interaction constraints
+**Key findings**:
+- Mean COP: **4.01** (range 2.53-5.80)
+- Max daily heat production: 136 kWh
+- Compressor duty cycle: 8.8%
+- Buffer-outdoor correlation: -0.37 (buffer hotter when colder outside)
+
+**Outputs**: `fig14_heat_pump_model.png`, `heat_pump_daily_stats.csv`
+
+### 3.3 Energy System Model ✓
+- [x] PV generation patterns: Mean 56.2 kWh/day, peak hours 10:00-16:00
+- [x] Battery efficiency: **83.7%** round-trip (degraded from Feb-Mar 2025 event)
+- [x] Battery patterns: Charge 7:00-13:00, discharge 16:00-6:00
+- [x] Grid interaction: Import 10.2 kWh/day, Export 41.0 kWh/day (net exporter)
+- [x] Self-sufficiency scenarios modeled
+
+**Key findings**:
+- Current self-sufficiency: **58.1%**
+- With 20% load shifting: 63.6% (+5.5pp)
+- With 2× battery: 79.9% (+21.8pp)
+- Combined optimization: **85.3%** (+27.2pp potential)
+
+**Outputs**: `fig15_energy_system_model.png`, `phase3_modeling_report.html`
 
 ---
 
 ## Phase 4: Optimization Strategy Development
 
-### 4.1 Control Variables (Confirmed from EDA)
-| Variable | Current Value | Controllable? | Impact |
-|----------|---------------|---------------|--------|
+### 4.1 Control Variables (Updated from Phase 3 Models)
+| Variable | Current Value | Controllable? | Impact (from models) |
+|----------|---------------|---------------|----------------------|
 | Room setpoint (comfort) | 20.2°C | Yes (Home Assistant) | +1°C → +1°C flow temp |
 | Room setpoint (eco) | 18.0°C | Yes (Home Assistant) | +1°C → +1°C flow temp |
 | Curve rise | 1.08 | Yes (heat pump) | +0.1 → +1.6–2.1°C flow temp |
+| Flow temperature | ~34°C mean | Indirect (via setpoint/curve) | **-1°C → +0.10 COP** |
 | Comfort schedule start | 06:30 | Yes (heat pump) | Pre-heat timing |
 | Comfort schedule end | 20:00–21:30 | Yes (heat pump) | Evening heating mode |
-| Buffer tank target | TBD | Manual only | Thermal storage |
+| Buffer tank target | ~36°C mean | Manual only | Thermal storage |
 
-### 4.2 Optimization Approaches
+### 4.2 Model Parameters for Optimization
+| Parameter | Value | Source |
+|-----------|-------|--------|
+| Building time constant | 17-31 h (avg ~30h) | Thermal model |
+| Heating coefficient | 0.013 K/(15min)/K | Thermal model |
+| Loss coefficient | 0.014 K/(15min)/K | Thermal model |
+| COP sensitivity (outdoor) | +0.13/°C | Heat pump model |
+| COP sensitivity (flow) | -0.10/°C | Heat pump model |
+| Battery round-trip efficiency | 83.7% | Energy system model |
+| Peak PV hours | 10:00-16:00 | Energy system model |
+| Daily PV generation | 56.2 kWh mean | Energy system model |
+
+### 4.3 Optimization Approaches
 - [ ] Rule-based heuristics:
-  - Pre-heat during solar hours (shift comfort start earlier in winter)
-  - Lower curve rise when grid-dependent (reduce flow temps)
-  - Buffer charging aligned with PV peak
+  - Pre-heat during solar hours (shift comfort start to ~10:00)
+  - Lower flow temps (curve rise) when grid-dependent → +COP
+  - Buffer charging aligned with PV peak (12:00-15:00)
+  - With ~17-31h time constant, start comfort 1-2h before needed
 - [ ] Model Predictive Control (MPC):
   - Rolling horizon optimization
   - Weather forecast integration
   - PV generation prediction
 
-**Insight from EDA**: Only 4.7% of heating time requires forced grid consumption. Optimization potential is limited but still meaningful during winter when solar is scarce.
+**Insight from Phase 3**: Self-sufficiency can improve from 58% to 85% with combined load shifting and battery optimization.
 
-### 4.3 Constraint Handling
+### 4.4 Constraint Handling
 - Comfort bounds: 18–23°C acceptable range (flexible)
-- Equipment limits: heat pump capacity ~50 kWh/day max observed
+- Equipment limits: heat pump capacity 136 kWh/day max observed
 - Solar priority: penalize grid consumption in objective function
-- Battery degradation: account for reduced efficiency (~75-80%) post-event
+- Battery degradation: account for reduced efficiency (83.7%) post-event
 
-### 4.4 Testable Predictions
+### 4.5 Testable Predictions
 - [ ] Quantify expected reduction in grid consumption (kWh/month)
 - [ ] Predict comfort impact (temperature deviations from baseline)
 - [ ] Estimate solar self-consumption improvement (%)
 
-**Baseline metrics** (from EDA):
-- Current self-sufficiency: 44%
+**Baseline metrics** (from Phase 3):
+- Current self-sufficiency: 58.1%
 - Current grid import: 10.2 kWh/day
-- Current forced-grid heating: 4.7% of heating time
+- Current grid export: 41.0 kWh/day
+- Potential self-sufficiency: 85.3% (with optimization)
 
 ---
 

@@ -4,8 +4,9 @@ Master script for running all ESTAT preprocessing and analysis phases.
 
 Usage:
     python src/run_all.py              # Run all phases
-    python src/run_all.py --phase 1    # Run only Phase 1
-    python src/run_all.py --phase 2    # Run only Phase 2
+    python src/run_all.py --phase 1    # Run only Phase 1 (Preprocessing)
+    python src/run_all.py --phase 2    # Run only Phase 2 (EDA)
+    python src/run_all.py --phase 3    # Run only Phase 3 (System Modeling)
     python src/run_all.py --step 1.2   # Run specific step (Phase 1, Step 2)
 """
 
@@ -71,6 +72,33 @@ def run_phase2_step1():
     module.main()
 
 
+def run_phase3_step1():
+    """Phase 3, Step 1: Thermal Model."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 3, Step 1 - Building Thermal Model")
+    print("=" * 70)
+    module = load_module(3, 1)
+    module.main()
+
+
+def run_phase3_step2():
+    """Phase 3, Step 2: Heat Pump Model."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 3, Step 2 - Heat Pump Model")
+    print("=" * 70)
+    module = load_module(3, 2)
+    module.main()
+
+
+def run_phase3_step3():
+    """Phase 3, Step 3: Energy System Model."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 3, Step 3 - Energy System Model")
+    print("=" * 70)
+    module = load_module(3, 3)
+    module.main()
+
+
 # Define all phases and steps
 PHASES = {
     1: {
@@ -80,6 +108,11 @@ PHASES = {
     },
     2: {
         1: ("Exploratory Data Analysis", run_phase2_step1),
+    },
+    3: {
+        1: ("Thermal Model", run_phase3_step1),
+        2: ("Heat Pump Model", run_phase3_step2),
+        3: ("Energy System Model", run_phase3_step3),
     },
 }
 
@@ -152,9 +185,11 @@ def main():
         epilog="""
 Examples:
   python src/run_all.py              # Run all phases
-  python src/run_all.py --phase 1    # Run Phase 1 only
-  python src/run_all.py --phase 2    # Run Phase 2 only
+  python src/run_all.py --phase 1    # Run Phase 1 only (Preprocessing)
+  python src/run_all.py --phase 2    # Run Phase 2 only (EDA)
+  python src/run_all.py --phase 3    # Run Phase 3 only (System Modeling)
   python src/run_all.py --step 1.2   # Run Phase 1, Step 2 only
+  python src/run_all.py --step 3.2   # Run Phase 3, Step 2 only (Heat Pump Model)
   python src/run_all.py --list       # List all available phases and steps
         """
     )
