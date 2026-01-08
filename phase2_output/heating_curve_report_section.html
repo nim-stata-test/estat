@@ -1,0 +1,95 @@
+
+        <h2 id="heating-curve">8. Heating Curve Analysis</h2>
+
+        <div class="card">
+            <h4>Model Overview</h4>
+            <p>The target flow temperature for heating circuit 1 (HK1) follows a linear heating curve formula:</p>
+            <pre style="background: var(--card-bg); color: var(--text); padding: 0.5rem;">T_target = T_setpoint + curve_rise × (T_ref - T_outdoor)</pre>
+
+            <h4>Parameters</h4>
+            <table>
+                <tr><th>Parameter</th><th>Description</th><th>Value</th></tr>
+                <tr>
+                    <td><strong>T_setpoint</strong></td>
+                    <td>Room temperature setpoint (comfort or eco depending on schedule)</td>
+                    <td>Comfort: 20.2°C, Eco: 18.0°C</td>
+                </tr>
+                <tr>
+                    <td><strong>curve_rise</strong></td>
+                    <td>Heating curve slope (controllable parameter)</td>
+                    <td>1.08 (range: 0.97 - 1.14)</td>
+                </tr>
+                <tr>
+                    <td><strong>T_ref</strong></td>
+                    <td>Internal reference temperature (derived from data)</td>
+                    <td>Comfort: 21.32°C, Eco: 19.18°C</td>
+                </tr>
+                <tr>
+                    <td><strong>T_outdoor</strong></td>
+                    <td>Outdoor temperature sensor</td>
+                    <td>Range: -3.2°C to 15.1°C</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h4>Schedule Regimes (Detected from Data)</h4>
+            <p>The comfort/eco schedule was detected by analyzing step changes (>3°C) in the target temperature.
+            The system automatically switches between comfort (higher setpoint) during the day and eco (lower setpoint) at night.</p>
+            <table>
+                <tr><th>Period</th><th>Comfort Start</th><th>Comfort End</th><th>Duration</th><th>Days</th></tr>
+                <tr>
+                    <td>2025-10-30 to 2025-12-26</td>
+                    <td>06:30</td>
+                    <td>20:00</td>
+                    <td>13.5 hours</td>
+                    <td>46</td>
+                </tr>
+                <tr>
+                    <td>2025-12-27 to 2026-01-03</td>
+                    <td>06:30</td>
+                    <td>21:30</td>
+                    <td>15.0 hours</td>
+                    <td>7</td>
+                </tr>
+
+            </table>
+            <p><em>Note: Times are in local timezone (Europe/Zurich). Comfort mode uses the higher setpoint;
+            eco mode (outside comfort hours) uses the lower setpoint.</em></p>
+        </div>
+
+        <div class="card">
+            <h4>Model Performance</h4>
+            <table>
+                <tr><td>R-squared</td><td><strong>0.9434</strong> (explains 94.3% of variance)</td></tr>
+                <tr><td>RMSE (overall)</td><td>1.03°C</td></tr>
+                <tr><td>RMSE (comfort mode)</td><td>0.35°C</td></tr>
+                <tr><td>RMSE (eco mode)</td><td>1.54°C</td></tr>
+            </table>
+
+            <h4>Parameter Effects</h4>
+            <ul>
+                <li><strong>Setpoint</strong>: +1°C setpoint → +1°C target flow temperature (direct relationship)</li>
+                <li><strong>Curve rise</strong>: +0.1 rise → +1.6°C target at 5°C outdoor, +2.1°C at 0°C outdoor</li>
+                <li><strong>Outdoor temperature</strong>: +1°C outdoor → -1.08°C target (inverse relationship via curve)</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h4>Example Calculations</h4>
+            <p>For outdoor temperature = 5°C, comfort_temp = 20.2°C, eco_temp = 18.0°C, curve_rise = 1.08:</p>
+            <table>
+                <tr><th>Outdoor</th><th>Comfort Target</th><th>Eco Target</th></tr>
+                <tr><td>-3°C</td><td>46.5°C</td><td>42.0°C</td></tr>
+                <tr><td>0°C</td><td>43.2°C</td><td>38.7°C</td></tr>
+                <tr><td>5°C</td><td>37.8°C</td><td>33.3°C</td></tr>
+                <tr><td>10°C</td><td>32.4°C</td><td>27.9°C</td></tr>
+                <tr><td>15°C</td><td>27.0°C</td><td>22.5°C</td></tr>
+            </table>
+        </div>
+
+        <div class="figure">
+            <img src="fig12_heating_curve_schedule.png" alt="Heating curve analysis with schedule detection">
+            <div class="figure-caption">Heating curve analysis: schedule transitions (top-left), target vs outdoor temperature by mode (top-right),
+            model residuals by hour (bottom-left), and model summary (bottom-right)</div>
+        </div>

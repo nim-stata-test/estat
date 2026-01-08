@@ -11,8 +11,8 @@ Steps:
 3. Data integration (merge energy and sensor data)
 
 Output:
-- Processed parquet files in processed/
-- HTML report: processed/preprocessing_report.html
+- Processed parquet files in phase1_output/
+- HTML report: phase1_output/preprocessing_report.html
 """
 
 import subprocess
@@ -26,7 +26,7 @@ import pandas as pd
 
 # Project root directory
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-PROCESSED_DIR = PROJECT_ROOT / "processed"
+PROCESSED_DIR = PROJECT_ROOT / "phase1_output"
 SRC_DIR = PROJECT_ROOT / "src" / "phase1"
 
 # Store logs from each step

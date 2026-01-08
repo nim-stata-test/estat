@@ -15,7 +15,7 @@ from datetime import datetime
 
 # Project root directory
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-PROCESSED_DIR = PROJECT_ROOT / "processed"
+PROCESSED_DIR = PROJECT_ROOT / "phase1_output"
 
 
 def load_energy_balance() -> pd.DataFrame:

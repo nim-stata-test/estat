@@ -133,7 +133,7 @@ Optimize heating strategy for a residential building with solar/battery system t
 - [x] Heating degree days analysis
 - [x] Peak demand identification
 
-**Outputs**: `eda_output/fig01-fig12`, `eda_report.html`
+**Outputs**: `phase2_output/fig01-fig12`, `eda_report.html`
 
 ### 2.5 Battery Degradation Analysis ✓
 Investigation of Feb-Mar 2025 deep-discharge event (faulty inverter).

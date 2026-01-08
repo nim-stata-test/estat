@@ -1,7 +1,7 @@
 # Data files
 data/
 *.csv
-processed/
+phase1_output/
 
 # Python
 .venv/

@@ -86,7 +86,7 @@ src/
 
 ## Processed Data
 
-After preprocessing, data is saved to `processed/`:
+After preprocessing, data is saved to `phase1_output/`:
 
 **Parquet datasets:**
 - `energy_balance_15min.parquet` - 15-min interval energy data (kWh)
@@ -108,7 +108,7 @@ After preprocessing, data is saved to `processed/`:
 
 ## EDA Outputs
 
-After running `python src/phase2/run_eda.py`, outputs are saved to `eda_output/`:
+After running `python src/phase2/run_eda.py`, outputs are saved to `phase2_output/`:
 
 **Figures (fig01-fig12):**
 - Energy patterns (time series, monthly, hourly heatmaps, seasonal)
@@ -130,8 +130,8 @@ python src/phase2/02_battery_degradation.py
 ```
 
 **Outputs:**
-- `eda_output/battery_degradation_analysis.png` - 4-panel visualization
-- `eda_output/battery_degradation_report.rtf` - Detailed report with methods & results
+- `phase2_output/battery_degradation_analysis.png` - 4-panel visualization
+- `phase2_output/battery_degradation_report.rtf` - Detailed report with methods & results
 
 **Analysis includes:**
 - OLS regression with time trend and post-event indicator
@@ -148,9 +148,9 @@ python src/phase2/03_heating_curve_analysis.py
 ```
 
 **Outputs:**
-- `eda_output/fig12_heating_curve_schedule.png` - 4-panel visualization
-- `eda_output/heating_curve_schedules.csv` - Detected schedule regimes
-- `eda_output/heating_curve_report_section.html` - HTML section for report
+- `phase2_output/fig12_heating_curve_schedule.png` - 4-panel visualization
+- `phase2_output/heating_curve_schedules.csv` - Detected schedule regimes
+- `phase2_output/heating_curve_report_section.html` - HTML section for report
 
 **Model:**
 ```

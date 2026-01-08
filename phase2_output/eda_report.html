@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESTAT Phase 2: EDA Report</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --code-bg: #1e293b;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { color: var(--primary); margin-bottom: 0.5rem; }
+        h2 { color: var(--text); margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); }
+        h3 { color: var(--text-muted); margin: 1.5rem 0 0.75rem; }
+        h4 { margin: 1rem 0 0.5rem; }
+        .meta { color: var(--text-muted); margin-bottom: 2rem; }
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .stat-box {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-box .value { font-size: 1.75rem; font-weight: bold; color: var(--primary); }
+        .stat-box .label { color: var(--text-muted); font-size: 0.875rem; }
+        .success { color: var(--success); }
+        .warning { color: var(--warning); }
+        .error { color: var(--danger); }
+        ul { margin-left: 1.5rem; }
+        li { margin: 0.25rem 0; }
+        pre {
+            background: var(--code-bg);
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .toc { background: var(--card-bg); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
+        .toc ul { list-style: none; margin: 0; }
+        .toc li { margin: 0.5rem 0; }
+        .toc a { color: var(--primary); text-decoration: none; }
+        .toc a:hover { text-decoration: underline; }
+        .figure {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .figure img { width: 100%; height: auto; border-radius: 4px; }
+        .figure-caption { color: var(--text-muted); font-size: 0.875rem; margin-top: 0.5rem; text-align: center; }
+        .figure.missing { border: 2px dashed var(--danger); }
+        details { margin: 1rem 0; }
+        summary {
+            cursor: pointer;
+            padding: 0.5rem;
+            background: var(--bg);
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        summary:hover { background: var(--border); }
+        .config-section {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+        }
+        table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+        th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: var(--bg); font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ESTAT Phase 2: Exploratory Data Analysis Report</h1>
+        <p class="meta">Generated: 2026-01-08 12:32:02</p>
+
+        <div class="toc">
+            <strong>Contents</strong>
+            <ul>
+                <li><a href="#overview">1. Overview</a></li>
+                <li><a href="#config">2. Configuration</a></li>
+                <li><a href="#quality">3. Data Quality Notes</a></li>
+                <li><a href="#energy">4. Energy Patterns</a></li>
+                <li><a href="#heating">5. Heating System</a></li>
+                <li><a href="#solar">6. Solar-Heating Correlation</a></li>
+                <li><a href="#summary">7. Summary Statistics</a></li>
+                <li><a href="#heating-curve">8. Heating Curve Analysis</a></li>
+                <li><a href="#log">9. Detailed Log</a></li>
+            </ul>
+        </div>
+
+        <h2 id="overview">1. Overview</h2>
+
+        <div class="grid">
+            <div class="stat-box">
+                <div class="value">55.9</div>
+                <div class="label">kWh/day PV Generation</div>
+            </div>
+            <div class="stat-box">
+                <div class="value">24.6</div>
+                <div class="label">kWh/day Consumption</div>
+            </div>
+            <div class="stat-box">
+                <div class="value">44%</div>
+                <div class="label">Self-Sufficiency</div>
+            </div>
+            <div class="stat-box">
+                <div class="value">3.55</div>
+                <div class="label">Mean Heat Pump COP</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h4>Heat Pump Performance</h4>
+            <table>
+                <tr><td>Mean COP</td><td><strong>3.55</strong></td></tr>
+                <tr><td>COP Range</td><td>2.49 - 5.18</td></tr>
+                <tr><td>Mean Heating Electricity</td><td>23.7 kWh/day</td></tr>
+                <tr><td>Max Heating Electricity</td><td>50.0 kWh/day</td></tr>
+            </table>
+        </div>
+
+        <h2 id="config">2. Configuration</h2>
+
+        <div class="config-section">
+            <h4>Room Sensor Configuration</h4>
+            <p>The following configuration was applied to room sensors for this analysis:</p>
+
+            <h4>Excluded Sensors</h4>
+            <p>These sensors were excluded (not actual room temperatures):</p>
+            <ul><li>temphum_woz_temperature</li><li>motion_gang_2_temperature</li><li>motion_halle_n_temperature</li><li>outfeeler_temperature</li></ul>
+
+            <h4>Sensor Mappings</h4>
+            <p>These sensors were renamed (same physical sensor, renamed over time):</p>
+            <ul><li>office2_temperature → atelier_temperature</li><li>office2_humidity → atelier_humidity</li></ul>
+
+            <details>
+                <summary>Primary Room Sensors Used</summary>
+                <ul><li>atelier_temperature</li><li>bric_temperature</li><li>dorme_temperature</li><li>halle_temperature</li><li>office1_temperature</li><li>simlab_temperature</li><li>studio_temperature</li><li>guest_temperature</li><li>temp_cave</li><li>temphum_plant_temperature</li><li>temphum_bano_temperature</li><li>davis_inside_temperature</li></ul>
+            </details>
+        </div>
+
+        <h2 id="quality">3. Data Quality Notes</h2>
+
+        <div class="card">
+            <h4>COP Calculation Methodology</h4>
+            <p>Daily Coefficient of Performance (COP) is calculated as:</p>
+            <pre style="background: var(--card-bg); color: var(--text); padding: 0.5rem;">COP = produced_heating / consumed_heating</pre>
+            <p>Where both values are daily deltas from cumulative counter sensors.</p>
+
+            <h4>Overlapping Time Window Filter</h4>
+            <p>To ensure accurate COP calculations, daily values are computed only from <strong>overlapping time periods</strong>
+            where both <code>consumed_heating</code> and <code>produced_heating</code> sensors have data.</p>
+            <ul>
+                <li>Days with less than 20 hours of sensor overlap are excluded</li>
+                <li>This prevents artificially low COP values when one sensor has data gaps (e.g., after spike removal in preprocessing)</li>
+                <li>Example: If spike removal creates a gap in <code>produced_heating</code> until noon, but <code>consumed_heating</code>
+                has data from midnight, only the noon-to-midnight overlap is used for that day's calculation</li>
+            </ul>
+
+            <h4>Additional Filters</h4>
+            <ul>
+                <li>Negative delta values are excluded (sensor reset/error)</li>
+                <li>Daily consumed &gt; 100 kWh excluded (unrealistic)</li>
+                <li>Daily produced &gt; 500 kWh excluded (unrealistic)</li>
+                <li>COP &lt; 1 or &gt; 10 excluded (physically impossible for heat pump)</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h4>Glossary of Terms</h4>
+            <table>
+                <tr>
+                    <td><strong>COP (Coefficient of Performance)</strong></td>
+                    <td>
+                        <p>The efficiency metric for heat pumps, defined as the ratio of useful heat energy delivered to electrical energy consumed:</p>
+                        <pre style="background: var(--card-bg); color: var(--text); padding: 0.5rem; margin: 0.5rem 0;">COP = Heat Output (kWh) / Electrical Input (kWh)</pre>
+                        <p>A COP of 3.5 means for every 1 kWh of electricity consumed, 3.5 kWh of heat is delivered to the building.
+                        The "extra" energy comes from the outdoor air (or ground), which the heat pump extracts and concentrates.</p>
+                        <p><strong>Factors affecting COP:</strong></p>
+                        <ul>
+                            <li><em>Outdoor temperature:</em> COP decreases as outdoor temp drops (less heat available to extract).
+                            At 10°C outdoor, COP might be 4.5; at -5°C, it might drop to 2.5.</li>
+                            <li><em>Flow temperature:</em> Higher heating circuit temperatures (e.g., for radiators vs underfloor) reduce COP.</li>
+                            <li><em>Defrost cycles:</em> In cold/humid conditions, the outdoor unit frosts up and needs periodic defrosting, reducing effective COP.</li>
+                        </ul>
+                        <p><strong>Interpretation:</strong> COP &lt; 1 is impossible (would violate thermodynamics). COP of 1 equals resistive heating.
+                        Modern air-source heat pumps typically achieve seasonal average COP of 2.5–4.0. Values above 5 are excellent but rare.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Heating Degree Days (HDD)</strong></td>
+                    <td>
+                        <p>A weather-based metric that quantifies heating demand. For each day, HDD is calculated as:</p>
+                        <pre style="background: var(--card-bg); color: var(--text); padding: 0.5rem; margin: 0.5rem 0;">HDD = max(0, T_base - T_outdoor_avg)</pre>
+                        <p>Where <code>T_base</code> is the balance point temperature (15°C in this analysis) below which heating is typically needed,
+                        and <code>T_outdoor_avg</code> is the average outdoor temperature for that day.</p>
+                        <p><strong>Examples:</strong></p>
+                        <ul>
+                            <li>Outdoor avg = 5°C → HDD = 15 - 5 = <strong>10</strong> (cold day, significant heating needed)</li>
+                            <li>Outdoor avg = 12°C → HDD = 15 - 12 = <strong>3</strong> (mild day, some heating needed)</li>
+                            <li>Outdoor avg = 18°C → HDD = max(0, 15 - 18) = <strong>0</strong> (warm day, no heating needed)</li>
+                        </ul>
+                        <p><strong>Usage:</strong> HDD allows comparison of heating consumption across different weather conditions.
+                        A well-insulated building uses fewer kWh per HDD. The slope of the "Heating vs HDD" plot indicates building thermal performance:
+                        steeper slope = more energy needed per degree of temperature difference = poorer insulation or higher heat loss.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>Forced Grid Consumption</strong></td>
+                    <td>Periods when the heat pump is running but must draw electricity from the grid because:
+                    (1) no solar PV is available (night/cloudy), and (2) battery is empty or insufficient.
+                    This represents unavoidable grid dependency. Minimizing forced grid consumption is a key optimization goal.</td>
+                </tr>
+                <tr>
+                    <td><strong>Self-Sufficiency</strong></td>
+                    <td>The percentage of total consumption that comes directly from solar PV (not from grid or battery).
+                    Calculated as: <code>direct_consumption / total_consumption</code>.
+                    Higher is better. 100% means all energy used came directly from PV at time of generation.</td>
+                </tr>
+                <tr>
+                    <td><strong>Solar Hours</strong></td>
+                    <td>Defined as 8:00–17:00 (8 AM to 5 PM) when meaningful solar generation is typically available.
+                    Used to analyze heating patterns relative to PV availability.</td>
+                </tr>
+            </table>
+        </div>
+
+        <h2 id="energy">4. Energy Patterns</h2>
+
+        
+            <div class="figure">
+                <img src="fig01_daily_energy_timeseries.png" alt="Daily PV generation, consumption, grid interaction, and battery activity over time">
+                <div class="figure-caption">Daily PV generation, consumption, grid interaction, and battery activity over time</div>
+            </div>
+            
+            <div class="figure">
+                <img src="fig02_monthly_energy_patterns.png" alt="Monthly aggregated energy patterns, grid balance, and self-sufficiency">
+                <div class="figure-caption">Monthly aggregated energy patterns, grid balance, and self-sufficiency</div>
+            </div>
+            
+            <div class="figure">
+                <img src="fig03_hourly_heatmaps.png" alt="Average consumption, PV generation, and grid import by hour and day of week">
+                <div class="figure-caption">Average consumption, PV generation, and grid import by hour and day of week</div>
+            </div>
+            
+            <div class="figure">
+                <img src="fig04_seasonal_patterns.png" alt="Seasonal comparison of PV generation, consumption, and self-sufficiency">
+                <div class="figure-caption">Seasonal comparison of PV generation, consumption, and self-sufficiency</div>
+            </div>
+            
+            <div class="figure">
+                <img src="
+
+        <h2 id="heating">5. Heating System</h2>
+
+        
+            
+            <div class="figure">
+                <img src="fig05_heat_pump_cop.png" alt="Heat pump COP analysis: time series, vs outdoor temperature, consumption patterns">
+                <div class="figure-caption">Heat pump COP analysis: time series, vs outdoor temperature, consumption patterns
+            
+            <div class="figure">
+                <img src="fig06_temperature_differentials.png" alt="Flow/return temperatures, buffer tank, and heating circuits">
+                <div class="figure-caption">Flow/return temperatures, buffer tank, and heating circuits
+            
+            <div class="figure">
+                <img src="fig07_indoor_outdoor_temp.png" alt="Outdoor vs indoor room temperatures with comfort bounds">
+                <div class="figure-caption">Outdoor vs indoor room temperatures with comfort bounds
+
+        <h2 id="solar">6. Solar-Heating Correlation</h2>
+
+        <div class="card">
+            <h4>Heating Activity by Time of Day</h4>
+            <table>
+                <tr><td>Solar hours (8AM-5PM)</td><td>51.4% heating active</td></tr>
+                <tr><td>Non-solar hours (5PM-8AM)</td><td>48.6% heating active</td></tr>
+            </table>
+        </div>
+
+        
+            
+            <div class="figure">
+                <img src="fig08_solar_heating_hourly.png" alt="Hourly PV generation, heating activity, and grid import profiles">
+                <div class="figure-caption">Hourly PV generation, heating activity, and grid import profiles
+            
+            <div class="figure">
+                <img src="fig09_battery_evening_heating.png" alt="Battery charging/discharging patterns and evening energy sources">
+                <div class="figure-caption">Battery charging/discharging patterns and evening energy sources
+            
+            <div class="figure">
+                <img src="fig10_forced_grid_heating.png" alt="Periods of grid-dependent heating when no PV is available">
+                <div class="figure-caption">Periods of grid-dependent heating when no PV is available
+
+        <h2 id="summary">7. Summary Statistics</h2>
+
+        
+            
+            <div class="figure">
+                <img src="fig11_summary_statistics.png" alt="Monthly breakdown, HDD analysis, consumption distribution, yearly totals">
+                <div class="figure-caption">Monthly breakdown, HDD analysis, consumption distribution, yearly totals
+
+        <h2 id="heating-curve">8. Heating Curve Analysis</h2>
+
+        <div class="card">
+            <h4>Model Overview</h4>
+            <p>The target flow temperature for heating circuit 1 (HK1) follows a linear heating curve formula:</p>
+            <pre style="background: var(--card-bg); color: var(--text); padding: 0.5rem;">T_target = T_setpoint + curve_rise × (T_ref - T_outdoor)</pre>
+
+            <h4>Parameters</h4>
+            <table>
+                <tr><th>Parameter</th><th>Description</th><th>Value</th></tr>
+                <tr>
+                    <td><strong>T_setpoint</strong></td>
+                    <td>Room temperature setpoint (comfort or eco depending on schedule)</td>
+                    <td>Comfort: 20.2°C, Eco: 18.0°C</td>
+                </tr>
+                <tr>
+                    <td><strong>curve_rise</strong></td>
+                    <td>Heating curve slope (controllable parameter)</td>
+                    <td>1.08 (range: 0.97 - 1.14)</td>
+                </tr>
+                <tr>
+                    <td><strong>T_ref</strong></td>
+                    <td>Internal reference temperature (derived from data)</td>
+                    <td>Comfort: 21.32°C, Eco: 19.18°C</td>
+                </tr>
+                <tr>
+                    <td><strong>T_outdoor</strong></td>
+                    <td>Outdoor temperature sensor</td>
+                    <td>Range: -3.2°C to 15.1°C</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h4>Schedule Regimes (Detected from Data)</h4>
+            <p>The comfort/eco schedule was detected by analyzing step changes (>3°C) in the target temperature.
+            The system automatically switches between comfort (higher setpoint) during the day and eco (lower setpoint) at night.</p>
+            <table>
+                <tr><th>Period</th><th>Comfort Start</th><th>Comfort End</th><th>Duration</th><th>Days</th></tr>
+                <tr>
+                    <td>2025-10-30 to 2025-12-26</td>
+                    <td>06:30</td>
+                    <td>20:00</td>
+                    <td>13.5 hours</td>
+                    <td>46</td>
+                </tr>
+                <tr>
+                    <td>2025-12-27 to 2026-01-03</td>
+                    <td>06:30</td>
+                    <td>21:30</td>
+                    <td>15.0 hours</td>
+                    <td>7</td>
+                </tr>
+            </table>
+            <p><em>Note: Times are in local timezone (Europe/Zurich). Comfort mode uses the higher setpoint;
+            eco mode (outside comfort hours) uses the lower setpoint.</em></p>
+        </div>
+
+        <div class="card">
+            <h4>Model Performance</h4>
+            <table>
+                <tr><td>R-squared</td><td><strong>0.9434</strong> (explains 94.3% of variance)</td></tr>
+                <tr><td>RMSE (overall)</td><td>1.03°C</td></tr>
+                <tr><td>RMSE (comfort mode)</td><td>0.35°C</td></tr>
+                <tr><td>RMSE (eco mode)</td><td>1.54°C</td></tr>
+            </table>
+
+            <h4>Parameter Effects</h4>
+            <ul>
+                <li><strong>Setpoint</strong>: +1°C setpoint → +1°C target flow temperature (direct relationship)</li>
+                <li><strong>Curve rise</strong>: +0.1 rise → +1.6°C target at 5°C outdoor, +2.1°C at 0°C outdoor</li>
+                <li><strong>Outdoor temperature</strong>: +1°C outdoor → -1.08°C target (inverse relationship via curve)</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h4>Example Calculations</h4>
+            <p>For outdoor temperature = 5°C, comfort_temp = 20.2°C, eco_temp = 18.0°C, curve_rise = 1.08:</p>
+            <table>
+                <tr><th>Outdoor</th><th>Comfort Target</th><th>Eco Target</th></tr>
+                <tr><td>-3°C</td><td>46.5°C</td><td>42.0°C</td></tr>
+                <tr><td>0°C</td><td>43.2°C</td><td>38.7°C</td></tr>
+                <tr><td>5°C</td><td>37.8°C</td><td>33.3°C</td></tr>
+                <tr><td>10°C</td><td>32.4°C</td><td>27.9°C</td></tr>
+                <tr><td>15°C</td><td>27.0°C</td><td>22.5°C</td></tr>
+            </table>
+        </div>
+
+        <div class="figure">
+            <img src="fig12_heating_curve_schedule.png" alt="Heating curve analysis with schedule detection">
+            <div class="figure-caption">Heating curve analysis: schedule transitions (top-left), target vs outdoor temperature by mode (top-right),
+            model residuals by hour (bottom-left), and model summary (bottom-right)</div>
+        </div>
+
+        <h2 id="log">9. Detailed Log</h2>
+
+        <details>
+            <summary>Full EDA Output Log</summary>
+            <pre>============================================================
+PHASE 2: EXPLORATORY DATA ANALYSIS
+============================================================
+Loading processed data...
+  Using prepared room data (filtered/mapped by wrapper)
+  energy_15min: 99,552 rows, 2023-03-01 00:15:00 to 2026-01-01 00:00:00
+  energy_daily: 1,037 rows, 2023-03-01 00:00:00 to 2025-12-31 00:00:00
+  energy_monthly: 36 rows, 2023-01-01 00:00:00 to 2025-12-01 00:00:00
+  heating: 1,787,396 rows, 2025-10-28 16:25:39.040786+00:00 to 2026-01-04 14:29:11.603468+00:00
+  weather: 1,053,783 rows, 2025-10-28 16:25:41.367035+00:00 to 2026-01-04 14:29:17.399922+00:00
+  rooms: 62,970 rows, 2025-10-28 16:25:41.367413+00:00 to 2026-01-04 14:27:47.617439+00:00
+  integrated: 6,175 rows, 2025-10-28 16:30:00+00:00 to 2026-01-01 00:00:00+00:00
+
+============================================================
+2.1 ENERGY PATTERNS ANALYSIS
+============================================================
+  Saved: fig01_daily_energy_timeseries.png
+  Saved: fig02_monthly_energy_patterns.png
+  Saved: fig03_hourly_heatmaps.png
+  Saved: fig04_seasonal_patterns.png
+
+  Summary Statistics:
+    Data period: 2023-03-01 to 2025-12-31
+    Total days: 1037
+
+    Daily averages:
+      PV Generation:     55.9 kWh/day
+      Total Consumption: 24.6 kWh/day
+      Grid Import:       10.2 kWh/day
+      Grid Export:       41.0 kWh/day
+      Self-Sufficiency:  43.8%
+
+============================================================
+2.2 HEATING SYSTEM ANALYSIS
+============================================================
+  Saved: fig05_heat_pump_cop.png
+  Saved: fig06_temperature_differentials.png
+  Saved: fig07_indoor_outdoor_temp.png
+
+  Heat Pump COP Statistics:
+    Mean COP:   3.55
+    Median COP: 3.56
+    Min COP:    2.49
+    Max COP:    5.18
+
+  Daily Heating Electricity:
+    Mean:   23.7 kWh/day
+    Median: 22.0 kWh/day
+    Max:    50.0 kWh/day
+
+============================================================
+2.3 SOLAR-HEATING CORRELATION
+============================================================
+  Saved: fig08_solar_heating_hourly.png
+  Saved: fig09_battery_evening_heating.png
+  Saved: fig10_forced_grid_heating.png
+
+  Solar-Heating Overlap Analysis:
+    Solar hours (8AM-5PM):
+      Heating active: 51.4% of time
+      Avg grid import: 0.69 kWh/h
+    Non-solar hours (5PM-8AM):
+      Heating active: 48.6% of time
+      Avg grid import: 1.32 kWh/h
+
+  Forced Grid Consumption:
+    % of heating time with forced grid: 4.7%
+
+============================================================
+2.4 SUMMARY STATISTICS
+============================================================
+  Saved: fig11_summary_statistics.png
+
+  Summary:
+    Energy period: 2023-03-01 to 2025-12-31 (1037 days)
+    Self-sufficiency: 44%
+    Best season: Summer (63%)
+    Worst season: Winter (19%)
+
+============================================================
+Phase 2 EDA complete. Output saved to: /Users/stata/workspace/estat/eda_output/
+============================================================
+</pre>
+        </details>
+
+    </div>
+</body>
+</html>

@@ -26,8 +26,8 @@ import numpy as np
 
 # Project root directory
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-PROCESSED_DIR = PROJECT_ROOT / "processed"
-OUTPUT_DIR = PROJECT_ROOT / "eda_output"
+PROCESSED_DIR = PROJECT_ROOT / "phase1_output"
+OUTPUT_DIR = PROJECT_ROOT / "phase2_output"
 SRC_DIR = PROJECT_ROOT / "src" / "phase2"
 
 # =============================================================================
