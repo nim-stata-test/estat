@@ -10,11 +10,10 @@ ESTAT is an energy balance data repository for solar/battery system monitoring. 
 
 ```
 data/
-├── daily/      # 15-minute interval readings: Energy_Balance_YYYY_MM_DD.csv
-├── monthly/    # Aggregated daily data: Energy_Balance_YYYY_MM.csv
-└── yearly/     # Aggregated monthly data: Energy_Balance_YYYY.csv
-
-mainic*.csv     # InfluxDB export from Home Assistant (annotated CSV format)
+├── daily/       # 15-minute interval readings: Energy_Balance_YYYY_MM_DD.csv
+├── monthly/     # Aggregated daily data: Energy_Balance_YYYY_MM.csv
+├── yearly/      # Aggregated monthly data: Energy_Balance_YYYY.csv
+└── mainic*.csv  # InfluxDB export from Home Assistant (annotated CSV format)
 ```
 
 ## Data Format

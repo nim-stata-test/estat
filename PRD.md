@@ -40,7 +40,7 @@ Optimize heating strategy for a residential building with solar/battery system t
 - **Granularities**: Daily (15-min intervals, Watts), Monthly/Yearly (kWh)
 - **Metrics**: PV generation, battery charging/discharging, direct consumption, external supply, grid feed-in
 
-### Sensor Data (`mainic*.csv`)
+### Sensor Data (`data/mainic*.csv`)
 - **Coverage**: October 2025 – January 2026 (~3.5 months)
 - **Size**: ~50 million records, 2,726 sensors
 - **Key heating sensors**:
