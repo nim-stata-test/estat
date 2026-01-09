@@ -9,6 +9,7 @@ Steps:
 1. Energy balance preprocessing (daily, monthly, yearly CSV files)
 2. Sensor data preprocessing (InfluxDB export from Home Assistant)
 3. Data integration (merge energy and sensor data)
+4. Tariff preprocessing (electricity purchase and feed-in rates)
 
 Output:
 - Processed parquet files in output/phase1/
@@ -143,6 +144,18 @@ def extract_stats_from_log(log: str) -> dict:
     if match := re.search(r'Duration: (\d+) days', log):
         stats['overlap_days'] = int(match.group(1))
 
+    # Tariff stats
+    if match := re.search(r'Created (\d+) tariff entries', log):
+        stats['tariff_entries'] = int(match.group(1))
+    if match := re.search(r'High tariff hours: ([\d,]+)', log):
+        stats['high_tariff_hours'] = int(match.group(1).replace(',', ''))
+    if match := re.search(r'Low tariff hours: ([\d,]+)', log):
+        stats['low_tariff_hours'] = int(match.group(1).replace(',', ''))
+    if match := re.search(r'Purchase tariffs: (\d+) entries', log):
+        stats['purchase_tariff_entries'] = int(match.group(1))
+    if match := re.search(r'Feed-in tariffs: (\d+) entries', log):
+        stats['feedin_tariff_entries'] = int(match.group(1))
+
     return stats
 
 
@@ -155,6 +168,8 @@ def generate_html_report(step_logs: dict, stats: dict) -> str:
     sensor_summary_html = load_csv_as_html_table(PROCESSED_DIR / "sensor_summary.csv", max_rows=None)
     overlap_html = load_csv_as_html_table(PROCESSED_DIR / "data_overlap_summary.csv")
     energy_summary = load_text_file(PROCESSED_DIR / "energy_balance_summary.txt")
+    tariff_schedule_html = load_csv_as_html_table(PROCESSED_DIR / "tariff_schedule.csv", max_rows=None)
+    tariff_report_section = load_text_file(PROCESSED_DIR / "tariff_report_section.html")
 
     # Format logs for HTML
     def format_log(log: str) -> str:
@@ -280,8 +295,9 @@ def generate_html_report(step_logs: dict, stats: dict) -> str:
                 <li><a href="#energy-balance">2. Energy Balance Preprocessing</a></li>
                 <li><a href="#sensors">3. Sensor Data Preprocessing</a></li>
                 <li><a href="#integration">4. Data Integration</a></li>
-                <li><a href="#outputs">5. Output Files</a></li>
-                <li><a href="#logs">6. Detailed Logs</a></li>
+                <li><a href="#tariffs">5. Electricity Tariffs</a></li>
+                <li><a href="#outputs">6. Output Files</a></li>
+                <li><a href="#logs">7. Detailed Logs</a></li>
             </ul>
         </div>
 
@@ -328,6 +344,11 @@ def generate_html_report(step_logs: dict, stats: dict) -> str:
                         <td>Merge energy and sensor data, identify overlap period</td>
                         <td><span class="step-status {'success' if step_logs.get('integration', (False,))[0] else 'failed'}">{'Success' if step_logs.get('integration', (False,))[0] else 'Failed'}</span></td>
                     </tr>
+                    <tr>
+                        <td>4. Tariffs</td>
+                        <td>Preprocess electricity purchase and feed-in tariff rates</td>
+                        <td><span class="step-status {'success' if step_logs.get('tariffs', (False,))[0] else 'failed'}">{'Success' if step_logs.get('tariffs', (False,))[0] else 'Failed'}</span></td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -353,7 +374,7 @@ def generate_html_report(step_logs: dict, stats: dict) -> str:
                 <div class="label">Threshold Corrections</div>
             </div>
             <div class="stat-box">
-                <div class="value">{stats.get('validation_match_rate', 'N/A'):.1f}%</div>
+                <div class="value">{f"{stats['validation_match_rate']:.1f}" if 'validation_match_rate' in stats else 'N/A'}%</div>
                 <div class="label">Validation Match Rate</div>
             </div>
         </div>
@@ -428,7 +449,65 @@ def generate_html_report(step_logs: dict, stats: dict) -> str:
             {overlap_html}
         </div>
 
-        <h2 id="outputs">5. Output Files</h2>
+        <h2 id="tariffs">5. Electricity Tariffs</h2>
+
+        <div class="methodology">
+            <h4>Tariff Data Sources</h4>
+            <ul>
+                <li><strong>Provider:</strong> Primeo Energie (Münchenstein, Switzerland)</li>
+                <li><strong>Purchase rates:</strong> Official Primeo announcements and ElCom data</li>
+                <li><strong>Feed-in rates:</strong> Rückliefervergütung including HKN bonus</li>
+                <li><strong>Coverage:</strong> 2023-01-01 to 2026-01-31</li>
+            </ul>
+        </div>
+
+        <div class="grid">
+            <div class="stat-box">
+                <div class="value">{stats.get('tariff_entries', 'N/A')}</div>
+                <div class="label">Tariff Entries</div>
+            </div>
+            <div class="stat-box">
+                <div class="value">{f"{stats['high_tariff_hours']:,}" if 'high_tariff_hours' in stats else 'N/A'}</div>
+                <div class="label">High Tariff Hours</div>
+            </div>
+            <div class="stat-box">
+                <div class="value">{f"{stats['low_tariff_hours']:,}" if 'low_tariff_hours' in stats else 'N/A'}</div>
+                <div class="label">Low Tariff Hours</div>
+            </div>
+        </div>
+
+        <h3>Tariff Time Windows</h3>
+        <div class="card">
+            <table>
+                <thead>
+                    <tr><th>Tariff</th><th>Time Windows</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>High Tariff (Hochtarif)</td>
+                        <td>Mon-Fri 06:00-21:00, Sat 06:00-12:00</td>
+                    </tr>
+                    <tr>
+                        <td>Low Tariff (Niedertarif)</td>
+                        <td>Mon-Fri 21:00-06:00, Sat 12:00 - Mon 06:00, Federal holidays</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Tariff Schedule</h3>
+        <div class="card">
+            {tariff_schedule_html}
+        </div>
+
+        <details>
+            <summary>Tariff Details and Data Sources</summary>
+            <div class="card">
+                {tariff_report_section}
+            </div>
+        </details>
+
+        <h2 id="outputs">6. Output Files</h2>
 
         <div class="card">
             <table>
@@ -449,11 +528,14 @@ def generate_html_report(step_logs: dict, stats: dict) -> str:
                     <tr><td>validation_results.csv</td><td>Daily vs monthly validation</td><td>CSV</td></tr>
                     <tr><td>sensor_summary.csv</td><td>Per-sensor statistics</td><td>CSV</td></tr>
                     <tr><td>data_overlap_summary.csv</td><td>Data source overlap info</td><td>CSV</td></tr>
+                    <tr><td>tariff_schedule.csv</td><td>Electricity tariff rates by period</td><td>CSV</td></tr>
+                    <tr><td>tariff_flags_hourly.parquet</td><td>Hourly high/low tariff flags</td><td>Parquet</td></tr>
+                    <tr><td>tariff_series_hourly.parquet</td><td>Time-indexed tariff rates</td><td>Parquet</td></tr>
                 </tbody>
             </table>
         </div>
 
-        <h2 id="logs">6. Detailed Logs</h2>
+        <h2 id="logs">7. Detailed Logs</h2>
 
         <details>
             <summary>Step 1: Energy Balance Preprocessing Log</summary>
@@ -470,6 +552,11 @@ def generate_html_report(step_logs: dict, stats: dict) -> str:
             <pre>{format_log(step_logs.get('integration', (False, 'Not executed'))[1])}</pre>
         </details>
 
+        <details>
+            <summary>Step 4: Tariff Preprocessing Log</summary>
+            <pre>{format_log(step_logs.get('tariffs', (False, 'Not executed'))[1])}</pre>
+        </details>
+
     </div>
 </body>
 </html>"""
@@ -477,8 +564,80 @@ def generate_html_report(step_logs: dict, stats: dict) -> str:
     return html
 
 
+def regenerate_report_only():
+    """Regenerate HTML report from existing data without re-running preprocessing."""
+    print("="*60)
+    print("REGENERATING HTML REPORT (using existing data)")
+    print("="*60)
+
+    # Create mock step logs (mark all as success since data exists)
+    step_logs['energy_balance'] = (True, "Using existing preprocessed data")
+    step_logs['sensors'] = (True, "Using existing preprocessed data")
+    step_logs['integration'] = (True, "Using existing preprocessed data")
+    step_logs['tariffs'] = (True, "Using existing preprocessed data")
+
+    # Extract stats from existing files
+    all_stats = {}
+
+    # Try to read some basic stats from parquet files
+    try:
+        import pyarrow.parquet as pq
+        energy_15min = PROCESSED_DIR / "energy_balance_15min.parquet"
+        if energy_15min.exists():
+            table = pq.read_table(energy_15min)
+            all_stats['daily_records'] = table.num_rows
+
+        integrated = PROCESSED_DIR / "integrated_dataset.parquet"
+        if integrated.exists():
+            table = pq.read_table(integrated)
+            all_stats['merged_records'] = table.num_rows
+            all_stats['merged_columns'] = len(table.column_names)
+
+        overlap = PROCESSED_DIR / "integrated_overlap_only.parquet"
+        if overlap.exists():
+            table = pq.read_table(overlap)
+            # Estimate days from 15-min records
+            all_stats['overlap_days'] = table.num_rows // 96
+
+        # Sensor stats from summary
+        sensor_summary = PROCESSED_DIR / "sensor_summary.csv"
+        if sensor_summary.exists():
+            df = pd.read_csv(sensor_summary)
+            for cat in ['heating', 'weather', 'rooms', 'energy']:
+                count = len(df[df['category'] == cat]) if 'category' in df.columns else 0
+                all_stats[f'{cat}_sensors'] = count
+
+        # Tariff stats
+        tariff_flags = PROCESSED_DIR / "tariff_flags_hourly.parquet"
+        if tariff_flags.exists():
+            table = pq.read_table(tariff_flags)
+            df = table.to_pandas()
+            all_stats['high_tariff_hours'] = df['is_high_tariff'].sum()
+            all_stats['low_tariff_hours'] = df['is_low_tariff'].sum()
+
+        tariff_schedule = PROCESSED_DIR / "tariff_schedule.csv"
+        if tariff_schedule.exists():
+            df = pd.read_csv(tariff_schedule)
+            all_stats['tariff_entries'] = len(df)
+
+    except Exception as e:
+        print(f"Warning: Could not extract all stats: {e}")
+
+    # Generate HTML report
+    html_report = generate_html_report(step_logs, all_stats)
+    report_path = PROCESSED_DIR / "preprocessing_report.html"
+    report_path.write_text(html_report)
+    print(f"Report saved to: {report_path}")
+
+    return 0
+
+
 def main():
     """Run complete preprocessing pipeline and generate report."""
+    # Check for --report-only flag
+    if len(sys.argv) > 1 and sys.argv[1] == "--report-only":
+        return regenerate_report_only()
+
     print("="*60)
     print("ESTAT PHASE 1: DATA PREPROCESSING PIPELINE")
     print("="*60)
@@ -516,6 +675,14 @@ def main():
         SRC_DIR / "03_integrate_data.py"
     )
     step_logs['integration'] = (success, log)
+    all_stats.update(extract_stats_from_log(log))
+
+    # Step 4: Tariffs
+    success, log = run_step(
+        "Step 4: Tariff Preprocessing",
+        SRC_DIR / "04_preprocess_tariffs.py"
+    )
+    step_logs['tariffs'] = (success, log)
     all_stats.update(extract_stats_from_log(log))
 
     # Generate HTML report

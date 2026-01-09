@@ -1,5 +1,8 @@
-# Data files
-data/
+# Data files (except tariffs which is tracked)
+data/*
+!data/tariffs
+data/tariffs/*
+!data/tariffs/*.json
 *.csv
 
 # Phase 1 output (large parquet files)

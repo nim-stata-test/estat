@@ -13,7 +13,9 @@ data/
 ├── daily/       # 15-minute interval readings: Energy_Balance_YYYY_MM_DD.csv
 ├── monthly/     # Aggregated daily data: Energy_Balance_YYYY_MM.csv
 ├── yearly/      # Aggregated monthly data: Energy_Balance_YYYY.csv
-└── mainic*.csv  # InfluxDB export from Home Assistant (annotated CSV format)
+├── mainic*.csv  # InfluxDB export from Home Assistant (annotated CSV format)
+└── tariffs/     # Electricity tariff data (Primeo Energie)
+    └── primeo_tariffs_source.json  # Manually collected tariff rates
 ```
 
 ## Data Format
@@ -71,6 +73,7 @@ python src/run_all.py --list       # List all steps
 python src/phase1/01_preprocess_energy_balance.py  # Phase 1, Step 1
 python src/phase1/02_preprocess_sensors.py         # Phase 1, Step 2 (~10 min)
 python src/phase1/03_integrate_data.py             # Phase 1, Step 3
+python src/phase1/04_preprocess_tariffs.py         # Phase 1, Step 4 (tariffs)
 python src/phase2/01_eda.py                        # Phase 2, Step 1
 python src/phase3/01_thermal_model.py              # Phase 3, Step 1
 python src/phase3/02_heat_pump_model.py            # Phase 3, Step 2
@@ -89,7 +92,8 @@ src/
 │   ├── run_preprocessing.py          # Wrapper: runs all steps + HTML report
 │   ├── 01_preprocess_energy_balance.py
 │   ├── 02_preprocess_sensors.py
-│   └── 03_integrate_data.py
+│   ├── 03_integrate_data.py
+│   └── 04_preprocess_tariffs.py      # Electricity tariff preprocessing
 ├── phase2/              # Exploratory Data Analysis
 │   ├── run_eda.py                    # Wrapper: filters sensors + HTML report
 │   ├── 01_eda.py                     # Main EDA (energy, heating, solar)
@@ -138,6 +142,51 @@ After preprocessing, data is saved to `output/phase1/`:
 - `validation_results.csv` - Daily vs monthly validation results
 - `sensor_summary.csv` - Per-sensor statistics
 - `data_overlap_summary.csv` - Data source overlap info
+
+## Electricity Tariffs
+
+Tariff data from Primeo Energie (provider) for cost modeling. Run:
+
+```bash
+python src/phase1/04_preprocess_tariffs.py
+```
+
+**Data sources:**
+- Primeo Energie official announcements and price sheets
+- ElCom LINDAS SPARQL endpoint (official Swiss tariff database)
+
+**Tariff time windows:**
+| Tariff | Time Windows |
+|--------|--------------|
+| High (Hochtarif) | Mon-Fri 06:00-21:00, Sat 06:00-12:00 |
+| Low (Niedertarif) | Mon-Fri 21:00-06:00, Sat 12:00 - Mon 06:00, Federal holidays |
+
+**Swiss holidays (low tariff all day):**
+- January 1, Good Friday, Easter Saturday/Monday, Ascension, Whit Monday, August 1, December 25
+
+**Purchase tariffs (Rp/kWh):**
+| Period | Single Rate | Average Estimate | Notes |
+|--------|-------------|------------------|-------|
+| 2023 | — | 31.3 | Peak energy crisis year |
+| 2024 | 16.50 | 32.8 | +4.8% vs 2023 |
+| 2025 | — | 32.6 | -1% vs 2024 |
+
+**Feed-in tariffs (Rückliefervergütung, Rp/kWh):**
+| Period | Base Rate | With HKN | Notes |
+|--------|-----------|----------|-------|
+| Jan-Jun 2023 | 20.0 | 21.5 | Peak rate after energy crisis |
+| Jul-Dec 2023 | 16.0 | 17.5 | Market price reduction |
+| Jan-Jun 2024 | 16.0 | 17.5 | Stable |
+| Jul-Dec 2024 | 13.0 | 14.5 | -20% announced cut |
+| Jan-Mar 2025 | 13.0 | 15.5 | HKN increased to 2.5 Rp |
+| Apr 2025+ | 10.5 | 13.0 | Further reduction |
+| Minimum guarantee | 9.0 | — | Guaranteed through 2028 |
+
+**Outputs saved to `output/phase1/`:**
+- `tariff_schedule.csv` - All tariff rates with validity periods
+- `tariff_flags_hourly.parquet` - Hourly high/low tariff flags
+- `tariff_series_hourly.parquet` - Time-indexed tariff rates
+- `tariff_report_section.html` - HTML report section
 
 ## EDA Outputs
 

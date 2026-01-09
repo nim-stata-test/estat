@@ -1,0 +1,196 @@
+{
+  "metadata": {
+    "provider": "Primeo Energie",
+    "provider_id": "2765",
+    "address": "Weidenstrasse 27, CH-4142 Münchenstein",
+    "data_sources": [
+      "https://www.primeo-energie.ch/en/ueber-uns/news/strompreise2023.html",
+      "https://www.primeo-energie.ch/en/ueber-uns/news/strompreise2024.html",
+      "https://www.primeo-energie.ch/ueber-uns/news/Stromtarife_2025.html",
+      "https://www.primeo-energie.ch/en/ueber-uns/news/Ruecklieferverguetung.html",
+      "https://www.bazonline.ch/baselbiet-primeo-energie-senkt-strompreise-um-1-prozent-994147809998",
+      "https://www.oltnertagblatt.ch/solothurn/niederamt/photovoltaikanlagen-primeo-energie-kuerzt-einspeiseverguetung-um-20-prozent-rueckgang-der-marktpreise-als-ursache-ld.2731815"
+    ],
+    "last_updated": "2025-01-09",
+    "notes": "Tariffs compiled from official Primeo Energie announcements and news sources"
+  },
+  "tariff_times": {
+    "high_tariff": {
+      "description": "Hochtarif (HT)",
+      "weekdays": "Monday-Friday 06:00-21:00",
+      "saturday": "06:00-12:00"
+    },
+    "low_tariff": {
+      "description": "Niedertarif (NT)",
+      "weekdays": "21:00-06:00",
+      "weekend": "Saturday 12:00 - Monday 06:00",
+      "holidays": [
+        "January 1 (New Year)",
+        "Good Friday (Karfreitag)",
+        "Easter Saturday (Ostersamstag)",
+        "Easter Monday (Ostermontag)",
+        "Ascension Day (Auffahrt)",
+        "Whit Monday (Pfingstmontag)",
+        "August 1 (Swiss National Day)",
+        "December 25 (Christmas)"
+      ]
+    }
+  },
+  "purchase_tariffs": {
+    "2023": {
+      "valid_from": "2023-01-01",
+      "valid_to": "2023-12-31",
+      "single_tariff_rp_kwh": null,
+      "high_tariff_rp_kwh": null,
+      "low_tariff_rp_kwh": null,
+      "notes": "Average increase of 10 Rp/kWh vs 2022. 4500kWh household: CHF 1410/year (was CHF 965)",
+      "avg_price_rp_kwh_estimate": 31.3,
+      "source": "Calculated from CHF 1410 / 4500 kWh = 31.3 Rp/kWh"
+    },
+    "2024": {
+      "valid_from": "2024-01-01",
+      "valid_to": "2024-12-31",
+      "single_tariff_rp_kwh": 16.50,
+      "high_tariff_rp_kwh": null,
+      "low_tariff_rp_kwh": null,
+      "notes": "Primeo Standard single tariff confirmed at 16.50 Rp/kWh. 4500kWh household: CHF 1475/year (+4.8%)",
+      "avg_price_rp_kwh_estimate": 32.8,
+      "source": "Calculated from CHF 1475 / 4500 kWh = 32.8 Rp/kWh",
+      "winter_reserve_levy_rp_kwh": 1.2
+    },
+    "2025": {
+      "valid_from": "2025-01-01",
+      "valid_to": "2025-12-31",
+      "single_tariff_rp_kwh": null,
+      "high_tariff_rp_kwh": null,
+      "low_tariff_rp_kwh": null,
+      "notes": "1% decrease vs 2024. 4500kWh household: ~CHF 1465/year (-CHF 10)",
+      "avg_price_rp_kwh_estimate": 32.6,
+      "source": "Calculated from CHF 1465 / 4500 kWh = 32.6 Rp/kWh",
+      "winter_reserve_levy_rp_kwh": 0.23
+    }
+  },
+  "feedin_tariffs": {
+    "2023_h1": {
+      "valid_from": "2023-01-01",
+      "valid_to": "2023-06-30",
+      "base_rate_rp_kwh": 20.0,
+      "hkn_standard_rp_kwh": 1.5,
+      "hkn_primeo_gruen_rp_kwh": 4.5,
+      "total_standard_rp_kwh": 21.5,
+      "total_primeo_gruen_rp_kwh": 24.5,
+      "notes": "Peak rate after 2022 energy crisis"
+    },
+    "2023_h2": {
+      "valid_from": "2023-07-01",
+      "valid_to": "2023-12-31",
+      "base_rate_rp_kwh": 16.0,
+      "hkn_standard_rp_kwh": 1.5,
+      "hkn_primeo_gruen_rp_kwh": 4.5,
+      "total_standard_rp_kwh": 17.5,
+      "total_primeo_gruen_rp_kwh": 20.5,
+      "minimum_guarantee_rp_kwh": 9.0,
+      "minimum_guarantee_until": "2028-12-31",
+      "notes": "Reduced from 20 Rp/kWh due to lower market prices"
+    },
+    "2024_h1": {
+      "valid_from": "2024-01-01",
+      "valid_to": "2024-06-30",
+      "base_rate_rp_kwh": 16.0,
+      "hkn_standard_rp_kwh": 1.5,
+      "hkn_primeo_gruen_rp_kwh": 4.5,
+      "total_standard_rp_kwh": 17.5,
+      "total_primeo_gruen_rp_kwh": 20.5,
+      "minimum_guarantee_rp_kwh": 9.0,
+      "notes": "Unchanged from H2 2023"
+    },
+    "2024_h2": {
+      "valid_from": "2024-07-01",
+      "valid_to": "2024-12-31",
+      "base_rate_rp_kwh": 13.0,
+      "hkn_standard_rp_kwh": 1.5,
+      "hkn_primeo_gruen_rp_kwh": 4.5,
+      "total_standard_rp_kwh": 14.5,
+      "total_primeo_gruen_rp_kwh": 17.5,
+      "minimum_guarantee_rp_kwh": 9.0,
+      "notes": "Reduced from 16 Rp/kWh, -20% cut announced"
+    },
+    "2025": {
+      "valid_from": "2025-01-01",
+      "valid_to": "2025-03-31",
+      "base_rate_rp_kwh": 13.0,
+      "hkn_standard_rp_kwh": 2.5,
+      "total_standard_rp_kwh": 15.5,
+      "minimum_guarantee_rp_kwh": 9.0,
+      "notes": "HKN increased to 2.5 Rp/kWh"
+    },
+    "2025_april": {
+      "valid_from": "2025-04-01",
+      "valid_to": "2025-12-31",
+      "base_rate_rp_kwh": 10.5,
+      "hkn_standard_rp_kwh": 2.5,
+      "total_standard_rp_kwh": 13.0,
+      "minimum_guarantee_rp_kwh": 9.0,
+      "minimum_guarantee_until": "2028-12-31",
+      "notes": "Reduced from 13 Rp/kWh to 10.5 Rp/kWh as of April 2025"
+    }
+  },
+  "feedin_solar_aktiv": {
+    "description": "Wahltarif Primeo SolarAktiv - optional time-of-use feed-in tariff",
+    "2024": {
+      "summer": {
+        "period": "April 1 - September 30",
+        "high_tariff_rp_kwh": 15.0,
+        "low_tariff_rp_kwh": 5.0
+      },
+      "winter": {
+        "period": "October 1 - March 31",
+        "high_tariff_rp_kwh": 30.0,
+        "low_tariff_rp_kwh": 11.0
+      },
+      "low_tariff_hours": "12:00-15:00 daily",
+      "high_tariff_hours": "all other times"
+    },
+    "2025_april": {
+      "valid_from": "2025-04-01",
+      "summer": {
+        "period": "April 1 - September 30",
+        "high_tariff_rp_kwh": 12.0,
+        "low_tariff_rp_kwh": 4.0
+      },
+      "winter": {
+        "period": "October 1 - March 31",
+        "high_tariff_rp_kwh": 24.0,
+        "low_tariff_rp_kwh": 9.0
+      },
+      "low_tariff_hours": "12:00-15:00 daily",
+      "high_tariff_hours": "all other times",
+      "notes": "Reduced rates from April 2025"
+    }
+  },
+  "network_charges": {
+    "2025": {
+      "high_tariff_rp_kwh": 5.50,
+      "low_tariff_rp_kwh": 3.65,
+      "system_services_rp_kwh": 0.55,
+      "winter_reserve_rp_kwh": 0.23,
+      "federal_levy_rp_kwh": 2.30,
+      "notes": "Network charges from Elektra Gretzenbach example, may vary by location"
+    }
+  },
+  "elcom_sparql": {
+    "endpoint": "https://ld.admin.ch/query",
+    "graph": "https://lindas.admin.ch/elcom/electricityprice",
+    "consumer_categories": {
+      "H1": "1-room apartment, 1600 kWh/year",
+      "H2": "2-room apartment, 2500 kWh/year",
+      "H3": "4-room apartment, 4500 kWh/year",
+      "H4": "5-room house, 4500 kWh/year",
+      "H5": "5-room house with heat pump, 7500 kWh/year",
+      "H6": "5-room house with heat pump, 25000 kWh/year",
+      "H7": "5-room house with heat pump + EV, 13000 kWh/year",
+      "H8": "Large house, 7500 kWh/year"
+    },
+    "notes": "Use SPARQL to fetch official ElCom tariff data for detailed HT/NT breakdown"
+  }
+}

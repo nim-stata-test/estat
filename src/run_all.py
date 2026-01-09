@@ -64,6 +64,15 @@ def run_phase1_step3():
     module.main()
 
 
+def run_phase1_step4():
+    """Phase 1, Step 4: Preprocess tariff data."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 1, Step 4 - Preprocess Electricity Tariffs")
+    print("=" * 70)
+    module = load_module(1, 4)
+    module.main()
+
+
 def run_phase2_step1():
     """Phase 2, Step 1: Exploratory Data Analysis."""
     print("\n" + "=" * 70)
@@ -133,6 +142,7 @@ PHASES = {
         1: ("Preprocess Energy Balance", run_phase1_step1),
         2: ("Preprocess Sensors", run_phase1_step2),
         3: ("Integrate Data", run_phase1_step3),
+        4: ("Preprocess Tariffs", run_phase1_step4),
     },
     2: {
         1: ("Exploratory Data Analysis", run_phase2_step1),
