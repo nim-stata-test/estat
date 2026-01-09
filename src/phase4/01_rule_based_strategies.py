@@ -26,6 +26,13 @@ from pathlib import Path
 from datetime import datetime
 import json
 
+def _decimal_to_time(decimal_hour: float) -> str:
+    """Convert decimal hour (e.g., 6.5) to time string (e.g., '06:30')."""
+    hours = int(decimal_hour)
+    minutes = int((decimal_hour - hours) * 60)
+    return f"{hours:02d}:{minutes:02d}"
+
+
 # Project paths
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 PHASE1_DIR = PROJECT_ROOT / 'output' / 'phase1'
@@ -499,8 +506,8 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
 
         <table>
         <tr><th>Parameter</th><th>Value</th></tr>
-        <tr><td>Comfort Start</td><td>{params.get('comfort_start', 'N/A')}:00</td></tr>
-        <tr><td>Comfort End</td><td>{params.get('comfort_end', 'N/A')}:00</td></tr>
+        <tr><td>Comfort Start</td><td>{_decimal_to_time(params.get('comfort_start', 0))}</td></tr>
+        <tr><td>Comfort End</td><td>{_decimal_to_time(params.get('comfort_end', 0))}</td></tr>
         <tr><td>Setpoint (Comfort)</td><td>{params.get('setpoint_comfort', 'N/A')}°C</td></tr>
         <tr><td>Setpoint (Eco)</td><td>{params.get('setpoint_eco', 'N/A')}°C</td></tr>
         <tr><td>Curve Rise</td><td>{params.get('curve_rise', 'N/A')}</td></tr>

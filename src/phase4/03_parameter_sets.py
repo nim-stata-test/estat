@@ -206,11 +206,11 @@ def generate_testable_predictions(parameter_sets: dict, daily_metrics: pd.DataFr
                 'measurement': 'produced_heating / consumed_heating (daily)',
             },
 
-            # Comfort compliance
+            # Comfort compliance (evaluated during occupied hours 08:00-22:00 only)
             'comfort_compliance': {
                 'target_pct': round(outcomes['comfort_compliance'] * 100, 1),
                 'minimum_pct': 95.0,
-                'measurement': 'Percent of readings within comfort band',
+                'measurement': 'Percent of readings within comfort band during occupied hours (08:00-22:00)',
             },
 
             # Cost prediction (new)
@@ -473,7 +473,7 @@ Curve Rise (Grid): 0.85 (when grid-dependent)
 
 ## Daily Monitoring
 
-- [ ] Check comfort compliance (target: ≥95%)
+- [ ] Check comfort compliance during occupied hours 08:00-22:00 (target: ≥95%)
 - [ ] Log any manual overrides
 - [ ] Note occupancy deviations
 - [ ] Record weather conditions
@@ -546,7 +546,7 @@ def generate_report(parameter_sets: dict, predictions: dict) -> str:
             <tr><th colspan="2">Expected Outcomes</th></tr>
             <tr><td>COP</td><td>{outcomes['cop_mean']} ({outcomes['cop_vs_baseline']:+.2f} vs baseline)</td></tr>
             <tr><td>Self-Sufficiency</td><td>{outcomes['self_sufficiency']*100:.1f}% ({outcomes['self_sufficiency_vs_baseline_pp']:+.1f}pp)</td></tr>
-            <tr><td>Comfort Compliance</td><td>{outcomes['comfort_compliance']*100:.1f}%</td></tr>
+            <tr><td>Comfort Compliance (08:00-22:00)</td><td>{outcomes['comfort_compliance']*100:.1f}%</td></tr>
             <tr><td>Daily Net Cost</td><td>CHF {daily_cost:.2f} ({cost_reduction:+.1f}% vs baseline)</td></tr>
         </table>
         </div>
@@ -598,10 +598,11 @@ def generate_report(parameter_sets: dict, predictions: dict) -> str:
     <ol>
         <li>Self-sufficiency meets or exceeds prediction range</li>
         <li>COP meets or exceeds prediction range</li>
-        <li>Comfort compliance ≥95% (≥90% for Cost-Optimized)</li>
+        <li>Comfort compliance ≥95% during occupied hours (08:00-22:00) (≥90% for Cost-Optimized)</li>
         <li>Cost savings meet or exceed prediction (for Cost-Optimized: ≥10% reduction)</li>
         <li>No frequent manual overrides required</li>
     </ol>
+    <p><em>Note: Night temperatures (22:00-08:00) are excluded from comfort compliance. This allows aggressive energy-saving strategies during unoccupied hours.</em></p>
 
     <figure>
         <img src="fig18_parameter_space.png" alt="Parameter Space">

@@ -22,9 +22,9 @@
       "measurement": "produced_heating / consumed_heating (daily)"
     },
     "comfort_compliance": {
-      "target_pct": 76.7,
+      "target_pct": 84.9,
       "minimum_pct": 95.0,
-      "measurement": "Percent of readings within comfort band"
+      "measurement": "Percent of readings within comfort band during occupied hours (08:00-22:00)"
     },
     "cost": {
       "daily_net_chf": 5.39,
@@ -61,9 +61,9 @@
       "measurement": "produced_heating / consumed_heating (daily)"
     },
     "comfort_compliance": {
-      "target_pct": 76.7,
+      "target_pct": 84.9,
       "minimum_pct": 95.0,
-      "measurement": "Percent of readings within comfort band"
+      "measurement": "Percent of readings within comfort band during occupied hours (08:00-22:00)"
     },
     "cost": {
       "daily_net_chf": 5.39,
@@ -100,9 +100,9 @@
       "measurement": "produced_heating / consumed_heating (daily)"
     },
     "comfort_compliance": {
-      "target_pct": 76.7,
+      "target_pct": 84.9,
       "minimum_pct": 95.0,
-      "measurement": "Percent of readings within comfort band"
+      "measurement": "Percent of readings within comfort band during occupied hours (08:00-22:00)"
     },
     "cost": {
       "daily_net_chf": 5.39,
@@ -139,9 +139,9 @@
       "measurement": "produced_heating / consumed_heating (daily)"
     },
     "comfort_compliance": {
-      "target_pct": 76.7,
+      "target_pct": 84.9,
       "minimum_pct": 95.0,
-      "measurement": "Percent of readings within comfort band"
+      "measurement": "Percent of readings within comfort band during occupied hours (08:00-22:00)"
     },
     "cost": {
       "daily_net_chf": 5.39,

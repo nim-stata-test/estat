@@ -335,6 +335,11 @@ Where:
 
 *Cost-Optimized uses curve_rise 0.85 when grid-dependent
 
+**Comfort Evaluation:**
+- Comfort compliance evaluated **only during occupied hours (08:00-22:00)**
+- Night temperatures (22:00-08:00) are excluded from comfort objectives
+- This allows aggressive energy-saving at night without penalty
+
 **Key optimization levers:**
 - Shift comfort mode to PV peak hours (10:00-17:00)
 - Lower curve_rise for better COP (~0.1 COP improvement per 1°C flow temp reduction)

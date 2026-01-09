@@ -60,6 +60,10 @@ HEATING_CURVE_PARAMS = {
     't_ref_eco': 19.18,      # Reference temp for eco mode
 }
 
+# Occupied hours for comfort evaluation (night temps not considered)
+OCCUPIED_HOURS_START = 8   # 08:00
+OCCUPIED_HOURS_END = 22    # 22:00
+
 
 def load_data():
     """Load historical data for simulation."""
@@ -260,7 +264,10 @@ def simulate_strategy(sim_data: pd.DataFrame, strategy: dict,
         # If COP improves, less electricity needed for same heat
         cop_ratio = cop_strategy / max(cop_actual, 0.1)
 
-        # Comfort compliance
+        # Occupied hours flag (comfort only evaluated during 08:00-22:00)
+        is_occupied = OCCUPIED_HOURS_START <= hour < OCCUPIED_HOURS_END
+
+        # Comfort compliance (only relevant during occupied hours)
         in_comfort_band = comfort_min <= T_room_actual <= comfort_max
 
         # Solar utilization (heating during PV hours)
@@ -292,6 +299,7 @@ def simulate_strategy(sim_data: pd.DataFrame, strategy: dict,
             'is_comfort': is_comfort,
             'is_pv_available': is_pv_available,
             'is_grid_dependent': is_grid_dependent,
+            'is_occupied': is_occupied,  # For comfort evaluation (08:00-22:00)
             'cop_actual': cop_actual,
             'cop_strategy': cop_strategy,
             'cop_improvement': cop_strategy - cop_actual,
@@ -313,9 +321,14 @@ def simulate_strategy(sim_data: pd.DataFrame, strategy: dict,
 
 
 def aggregate_daily_metrics(simulation_results: pd.DataFrame) -> pd.DataFrame:
-    """Aggregate simulation results to daily metrics."""
+    """Aggregate simulation results to daily metrics.
+
+    Note: Comfort compliance is calculated ONLY for occupied hours (08:00-22:00).
+    Night temperatures are not considered in the comfort objective.
+    """
     simulation_results['date'] = pd.to_datetime(simulation_results['datetime']).dt.date
 
+    # Standard aggregations (all hours)
     daily = simulation_results.groupby(['strategy', 'date']).agg({
         'T_outdoor': 'mean',
         'T_room_actual': 'mean',
@@ -326,7 +339,6 @@ def aggregate_daily_metrics(simulation_results: pd.DataFrame) -> pd.DataFrame:
         'pv_generation': 'sum',
         'grid_import': 'sum',
         'total_consumption': 'sum',
-        'in_comfort_band': 'mean',  # % time in band
         'solar_heating': 'mean',  # % heating during solar
         'is_comfort': 'sum',  # Hours in comfort mode
         # Cost aggregations
@@ -339,8 +351,19 @@ def aggregate_daily_metrics(simulation_results: pd.DataFrame) -> pd.DataFrame:
     daily.columns = ['strategy', 'date', 'T_outdoor_mean', 'T_room_mean',
                     'cop_actual', 'cop_strategy', 'cop_improvement', 'energy_ratio',
                     'pv_total', 'grid_total', 'consumption_total',
-                    'comfort_compliance', 'solar_heating_pct', 'comfort_hours',
+                    'solar_heating_pct', 'comfort_hours',
                     'grid_cost_rp', 'feedin_revenue_rp', 'net_cost_rp', 'high_tariff_pct']
+
+    # Calculate comfort compliance ONLY for occupied hours (08:00-22:00)
+    # Filter to occupied hours and compute compliance
+    occupied_data = simulation_results[simulation_results['is_occupied'] == True]
+    comfort_by_day = occupied_data.groupby(['strategy', 'date']).agg({
+        'in_comfort_band': 'mean',  # % time in band during occupied hours
+    }).reset_index()
+    comfort_by_day.columns = ['strategy', 'date', 'comfort_compliance']
+
+    # Merge comfort compliance back
+    daily = daily.merge(comfort_by_day, on=['strategy', 'date'], how='left')
 
     # Calculate self-sufficiency
     daily['self_sufficiency'] = 1 - (daily['grid_total'] / daily['consumption_total'].clip(lower=0.1))
@@ -576,7 +599,7 @@ def generate_report(comparison: pd.DataFrame, daily_metrics: pd.DataFrame,
             {'<td>' + f"{cost_row['self_sufficiency']*100:.1f}% ({cost_row['ss_vs_baseline']*100:+.1f}pp)" + '</td>' if has_cost else ''}
         </tr>
         <tr>
-            <td>Comfort Compliance</td>
+            <td>Comfort Compliance (08:00-22:00)</td>
             <td>{baseline_row['comfort_compliance']*100:.1f}%</td>
             <td>{energy_row['comfort_compliance']*100:.1f}%</td>
             <td>{aggressive_row['comfort_compliance']*100:.1f}%</td>
@@ -668,7 +691,8 @@ def generate_report(comparison: pd.DataFrame, daily_metrics: pd.DataFrame,
 
     <p><em>Note: Simulation uses actual historical data, so results reflect real weather conditions
     during the 64-day overlap period. Cost calculations use actual high/low tariff rates (Primeo Energie).
-    Full-season validation in Phase 5 will provide more robust estimates.</em></p>
+    <strong>Comfort compliance is evaluated only during occupied hours (08:00-22:00)</strong>; night temperatures
+    are excluded from the comfort objective. Full-season validation in Phase 5 will provide more robust estimates.</em></p>
 
     <figure>
         <img src="fig17_simulation_results.png" alt="Simulation Results">

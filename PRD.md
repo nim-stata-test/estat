@@ -3,9 +3,11 @@
 ## Objective
 
 Optimize heating strategy for a residential building with solar/battery system to:
-1. **Primary**: Maintain comfortable temperature in key rooms
+1. **Primary**: Maintain comfortable temperature in key rooms during occupied hours (08:00-22:00)
 2. **Secondary**: Minimize energy expenditure
 3. **Tertiary**: Optimize costs using electricity tariffs (now modeled)
+
+**Note**: Indoor temperature outside occupied hours (22:00-08:00) is not considered in comfort objectives. Night temperatures may drop as the system prioritizes energy efficiency, as long as morning recovery is achieved by 08:00.
 
 **Constraint**: Prioritize solar power over grid electricity
 
@@ -298,6 +300,7 @@ Validated strategies on 64 days of historical data:
 
 ### 4.6 Constraint Handling
 - **Comfort compliance minimum: 95%** (90% for Cost-Optimized) — primary constraint
+- **Comfort evaluation period: 08:00-22:00 only** (night temperatures not considered)
 - Comfort bounds: 18–22°C standard, 17-23°C for Aggressive Solar
 - Solar priority: penalize grid consumption in objective function
 - Equipment limits: heat pump capacity 136 kWh/day max observed
@@ -348,12 +351,14 @@ See `phase5_parameter_sets.json` for exact parameter values.
 ### 5.5 Success Metrics
 | Metric | Definition | Target |
 |--------|------------|--------|
-| Comfort compliance | % time rooms within comfort bounds | ≥95% (≥90% for Cost-Optimized) |
+| Comfort compliance | % time rooms within comfort bounds **during 08:00-22:00** | ≥95% (≥90% for Cost-Optimized) |
 | Grid consumption | kWh from external supply per heating degree day | Identify best-performing strategy |
 | Electricity cost | Net cost (import - export revenue) per heating degree day | Minimize (esp. Cost-Optimized) |
 | Solar utilization | % of heating energy from solar/battery | Maximize |
 | COP achieved | Heat delivered / electricity consumed | Track by strategy |
 | Tariff alignment | % consumption during low-tariff periods | Track for Cost-Optimized |
+
+**Note**: Night temperatures (22:00-08:00) are excluded from comfort compliance calculation. This allows aggressive energy-saving strategies during unoccupied hours without penalty.
 
 ### 5.6 Statistical Analysis
 - Mixed-effects regression: energy ~ strategy + outdoor_temp + solar_availability + (1|block)
@@ -407,7 +412,7 @@ See `phase5_parameter_sets.json` for exact parameter values.
   - Manual only: buffer tank target temperatures
 - **Room sensors**: 12 temperature sensors confirmed:
   - atelier, bric, dorme, halle, office1, simlab, studio, guest, cave, plant, bano, davis_inside
-- **Comfort bounds**: Flexible range 18–23°C acceptable (17-23°C for Aggressive Solar)
+- **Comfort bounds**: Flexible range 18–23°C acceptable (17-23°C for Aggressive Solar), **evaluated during 08:00-22:00 only**
 - **Tariff optimization**: ✓ Implemented - Cost-Optimized strategy uses Primeo Energie high/low tariffs
 - **Current baseline performance**:
   - Heat pump COP: 4.01 mean (good efficiency)

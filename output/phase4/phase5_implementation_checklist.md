@@ -65,7 +65,7 @@ Curve Rise (Grid): 0.85 (when grid-dependent)
 
 ## Daily Monitoring
 
-- [ ] Check comfort compliance (target: ≥95%)
+- [ ] Check comfort compliance during occupied hours 08:00-22:00 (target: ≥95%)
 - [ ] Log any manual overrides
 - [ ] Note occupancy deviations
 - [ ] Record weather conditions
