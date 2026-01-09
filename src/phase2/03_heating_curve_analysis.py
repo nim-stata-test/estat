@@ -14,8 +14,8 @@ Key features:
 - Generates visualizations and documentation
 
 Output:
-- phase2_output/fig12_heating_curve_schedule.png (4-panel visualization)
-- phase2_output/heating_curve_analysis.csv (schedule regimes)
+- output/phase2/fig12_heating_curve_schedule.png (4-panel visualization)
+- output/phase2/heating_curve_analysis.csv (schedule regimes)
 """
 
 import pandas as pd
@@ -29,8 +29,8 @@ warnings.filterwarnings('ignore')
 
 # Project paths
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-PROCESSED_DIR = PROJECT_ROOT / 'phase1_output'
-OUTPUT_DIR = PROJECT_ROOT / 'phase2_output'
+PROCESSED_DIR = PROJECT_ROOT / 'output' / 'phase1'
+OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase2'
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 

@@ -107,9 +107,19 @@ src/
     └── 03_parameter_sets.py          # Generate Phase 5 parameter sets
 ```
 
+## Output Directory Structure
+
+```
+output/
+├── phase1/    # Preprocessing outputs (parquet files, reports)
+├── phase2/    # EDA outputs (figures, HTML reports)
+├── phase3/    # System modeling outputs (figures, model results)
+└── phase4/    # Optimization outputs (strategies, predictions)
+```
+
 ## Processed Data
 
-After preprocessing, data is saved to `phase1_output/`:
+After preprocessing, data is saved to `output/phase1/`:
 
 **Parquet datasets:**
 - `energy_balance_15min.parquet` - 15-min interval energy data (kWh)
@@ -131,7 +141,7 @@ After preprocessing, data is saved to `phase1_output/`:
 
 ## EDA Outputs
 
-After running `python src/phase2/run_eda.py`, outputs are saved to `phase2_output/`:
+After running `python src/phase2/run_eda.py`, outputs are saved to `output/phase2/`:
 
 **Figures (fig01-fig12):**
 - Energy patterns (time series, monthly, hourly heatmaps, seasonal)
@@ -153,8 +163,8 @@ python src/phase2/02_battery_degradation.py
 ```
 
 **Outputs:**
-- `phase2_output/battery_degradation_analysis.png` - 4-panel visualization
-- `phase2_output/battery_degradation_report.rtf` - Detailed report with methods & results
+- `output/phase2/battery_degradation_analysis.png` - 4-panel visualization
+- `output/phase2/battery_degradation_report.rtf` - Detailed report with methods & results
 
 **Analysis includes:**
 - OLS regression with time trend and post-event indicator
@@ -171,10 +181,10 @@ python src/phase2/03_heating_curve_analysis.py
 ```
 
 **Outputs:**
-- `phase2_output/fig12_heating_curve_schedule.png` - 4-panel visualization
-- `phase2_output/heating_curve_schedules.csv` - Detected schedule regimes
-- `phase2_output/heating_curve_setpoints.csv` - Detected setpoint regimes
-- `phase2_output/heating_curve_report_section.html` - HTML section for report
+- `output/phase2/fig12_heating_curve_schedule.png` - 4-panel visualization
+- `output/phase2/heating_curve_schedules.csv` - Detected schedule regimes
+- `output/phase2/heating_curve_setpoints.csv` - Detected setpoint regimes
+- `output/phase2/heating_curve_report_section.html` - HTML section for report
 
 **Model:**
 ```
@@ -199,7 +209,7 @@ T_target = T_setpoint + curve_rise × (T_ref - T_outdoor)
 
 ## Phase 3: System Modeling Outputs
 
-After running `python src/phase3/run_phase3.py`, outputs are saved to `phase3_output/`:
+After running `python src/phase3/run_phase3.py`, outputs are saved to `output/phase3/`:
 
 **Figures (fig13-fig15):**
 - Thermal model (temperature simulation, decay analysis)
@@ -226,7 +236,7 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `phase3_ou
 
 ## Phase 4: Optimization Strategy Outputs
 
-After running `python src/phase4/run_optimization.py`, outputs are saved to `phase4_output/`:
+After running `python src/phase4/run_optimization.py`, outputs are saved to `output/phase4/`:
 
 **Figures (fig16-fig18):**
 - Strategy comparison (COP by strategy, schedule alignment, expected improvements)

@@ -26,8 +26,8 @@ warnings.filterwarnings('ignore')
 
 # Project paths
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-PROCESSED_DIR = PROJECT_ROOT / 'phase1_output'
-OUTPUT_DIR = PROJECT_ROOT / 'phase3_output'
+PROCESSED_DIR = PROJECT_ROOT / 'output' / 'phase1'
+OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase3'
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 

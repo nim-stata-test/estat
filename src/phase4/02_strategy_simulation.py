@@ -26,9 +26,9 @@ import json
 
 # Project paths
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-PHASE1_DIR = PROJECT_ROOT / 'phase1_output'
-PHASE3_DIR = PROJECT_ROOT / 'phase3_output'
-OUTPUT_DIR = PROJECT_ROOT / 'phase4_output'
+PHASE1_DIR = PROJECT_ROOT / 'output' / 'phase1'
+PHASE3_DIR = PROJECT_ROOT / 'output' / 'phase3'
+OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase4'
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 # Model parameters (from Phase 3 - updated with weighted sensor model)

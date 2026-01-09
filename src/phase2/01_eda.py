@@ -22,8 +22,8 @@ warnings.filterwarnings('ignore')
 
 # Project root directory
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-PROCESSED_DIR = PROJECT_ROOT / 'phase1_output'
-OUTPUT_DIR = PROJECT_ROOT / 'phase2_output'
+PROCESSED_DIR = PROJECT_ROOT / 'output' / 'phase1'
+OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase2'
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 # Comfort temperature bounds

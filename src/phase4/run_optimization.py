@@ -19,7 +19,7 @@ from pathlib import Path
 from datetime import datetime
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
-OUTPUT_DIR = PROJECT_ROOT / 'phase4_output'
+OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase4'
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 

@@ -1,7 +1,9 @@
 # Data files
 data/
 *.csv
-phase1_output/
+
+# Phase 1 output (large parquet files)
+output/phase1/
 
 # Python
 .venv/

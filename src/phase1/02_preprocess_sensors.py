@@ -21,7 +21,7 @@ import sys
 # Project root directory
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
-OUTPUT_DIR = PROJECT_ROOT / "phase1_output"
+OUTPUT_DIR = PROJECT_ROOT / "output" / "phase1"
 
 # Sensor categorization
 HEATING_SENSORS = [
