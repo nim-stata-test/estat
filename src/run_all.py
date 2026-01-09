@@ -7,6 +7,7 @@ Usage:
     python src/run_all.py --phase 1    # Run only Phase 1 (Preprocessing)
     python src/run_all.py --phase 2    # Run only Phase 2 (EDA)
     python src/run_all.py --phase 3    # Run only Phase 3 (System Modeling)
+    python src/run_all.py --phase 4    # Run only Phase 4 (Optimization)
     python src/run_all.py --step 1.2   # Run specific step (Phase 1, Step 2)
 """
 
@@ -99,6 +100,33 @@ def run_phase3_step3():
     module.main()
 
 
+def run_phase4_step1():
+    """Phase 4, Step 1: Rule-Based Strategies."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 4, Step 1 - Rule-Based Optimization Strategies")
+    print("=" * 70)
+    module = load_module(4, 1)
+    module.main()
+
+
+def run_phase4_step2():
+    """Phase 4, Step 2: Strategy Simulation."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 4, Step 2 - Strategy Simulation")
+    print("=" * 70)
+    module = load_module(4, 2)
+    module.main()
+
+
+def run_phase4_step3():
+    """Phase 4, Step 3: Parameter Set Generation."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 4, Step 3 - Parameter Set Generation")
+    print("=" * 70)
+    module = load_module(4, 3)
+    module.main()
+
+
 # Define all phases and steps
 PHASES = {
     1: {
@@ -113,6 +141,11 @@ PHASES = {
         1: ("Thermal Model", run_phase3_step1),
         2: ("Heat Pump Model", run_phase3_step2),
         3: ("Energy System Model", run_phase3_step3),
+    },
+    4: {
+        1: ("Rule-Based Strategies", run_phase4_step1),
+        2: ("Strategy Simulation", run_phase4_step2),
+        3: ("Parameter Sets", run_phase4_step3),
     },
 }
 
@@ -188,8 +221,10 @@ Examples:
   python src/run_all.py --phase 1    # Run Phase 1 only (Preprocessing)
   python src/run_all.py --phase 2    # Run Phase 2 only (EDA)
   python src/run_all.py --phase 3    # Run Phase 3 only (System Modeling)
+  python src/run_all.py --phase 4    # Run Phase 4 only (Optimization)
   python src/run_all.py --step 1.2   # Run Phase 1, Step 2 only
   python src/run_all.py --step 3.2   # Run Phase 3, Step 2 only (Heat Pump Model)
+  python src/run_all.py --step 4.1   # Run Phase 4, Step 1 only (Strategies)
   python src/run_all.py --list       # List all available phases and steps
         """
     )

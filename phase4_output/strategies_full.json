@@ -1,0 +1,103 @@
+{
+  "baseline": {
+    "name": "Baseline",
+    "description": "Current system settings (control group)",
+    "goal": "Maintain current operation as reference",
+    "parameters": {
+      "comfort_start": 6.5,
+      "comfort_end": 20.0,
+      "setpoint_comfort": 20.2,
+      "setpoint_eco": 18.0,
+      "curve_rise": 1.08,
+      "buffer_target": 36.0,
+      "comfort_band_min": 18.0,
+      "comfort_band_max": 22.0
+    },
+    "rules": [
+      "Use current schedule (06:30-20:00 comfort mode)",
+      "Maintain current curve rise (1.08)",
+      "Standard comfort band (18-22\u00b0C)",
+      "No dynamic adjustments based on PV/grid state"
+    ],
+    "expected_improvement": {
+      "self_sufficiency": 0.0,
+      "grid_reduction": 0.0,
+      "cop_change": 0.0
+    }
+  },
+  "energy_optimized": {
+    "name": "Energy-Optimized",
+    "description": "Maximize solar self-consumption for heating",
+    "goal": "Minimize grid electricity consumption",
+    "parameters": {
+      "comfort_start": 10.0,
+      "comfort_end": 18.0,
+      "setpoint_comfort": 20.0,
+      "setpoint_eco": 17.5,
+      "curve_rise": 0.98,
+      "curve_rise_grid_fallback": 0.9,
+      "buffer_target": 40.0,
+      "buffer_boost_hours": [
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "comfort_band_min": 18.0,
+      "comfort_band_max": 22.0
+    },
+    "rules": [
+      "Shift comfort start to 10:00 (PV peak) - use thermal mass to coast morning",
+      "End comfort at 18:00 - rely on thermal inertia for evening",
+      "Lower curve_rise to 0.98 for better COP (+1.0 COP improvement)",
+      "When grid-dependent (battery<20%, no PV): use curve_rise 0.90",
+      "Boost buffer charging during 11:00-15:00 (40\u00b0C target)",
+      "Pre-heat building during solar hours into thermal mass"
+    ],
+    "expected_improvement": {
+      "self_sufficiency": 0.1,
+      "grid_reduction": 0.25,
+      "cop_change": 0.5
+    }
+  },
+  "aggressive_solar": {
+    "name": "Aggressive Solar",
+    "description": "Push to 85% self-sufficiency target",
+    "goal": "Maximum solar utilization with wider comfort tolerance",
+    "parameters": {
+      "comfort_start": 10.0,
+      "comfort_end": 17.0,
+      "setpoint_comfort": 21.0,
+      "setpoint_eco": 17.0,
+      "curve_rise": 0.95,
+      "curve_rise_grid_fallback": 0.85,
+      "buffer_target": 45.0,
+      "buffer_boost_hours": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "comfort_band_min": 17.0,
+      "comfort_band_max": 23.0
+    },
+    "rules": [
+      "All Energy-Optimized rules, plus:",
+      "Accept wider comfort band (17-23\u00b0C vs 18-22\u00b0C)",
+      "Boost to 21\u00b0C during PV peak - store heat in building mass",
+      "Deep evening/night setback to 17\u00b0C",
+      "Aggressive curve_rise reduction (0.95 normal, 0.85 on grid)",
+      "Maximum buffer charging (45\u00b0C) during solar hours",
+      "End comfort at 17:00 - rely on ~25h thermal time constant"
+    ],
+    "expected_improvement": {
+      "self_sufficiency": 0.27,
+      "grid_reduction": 0.4,
+      "cop_change": 0.7
+    }
+  }
+}

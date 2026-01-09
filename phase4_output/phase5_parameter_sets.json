@@ -1,0 +1,160 @@
+{
+  "baseline": {
+    "strategy_id": "baseline",
+    "name": "Baseline",
+    "description": "Current system settings (control group)",
+    "heat_pump_settings": {
+      "curve_rise": 1.08,
+      "curve_rise_unit": "dimensionless",
+      "curve_rise_notes": "Set via heat pump controller menu"
+    },
+    "schedule_settings": {
+      "comfort_start": "06:30",
+      "comfort_end": "20:00",
+      "schedule_notes": "Set comfort period start/end in heat pump scheduler"
+    },
+    "setpoint_settings": {
+      "setpoint_comfort": 20.2,
+      "setpoint_eco": 18.0,
+      "setpoint_unit": "celsius",
+      "setpoint_notes": "Set via Home Assistant climate entity"
+    },
+    "buffer_settings": {
+      "buffer_target": 36.0,
+      "buffer_unit": "celsius",
+      "buffer_notes": "Requires manual adjustment at heat pump"
+    },
+    "comfort_bounds": {
+      "min_temp": 18.0,
+      "max_temp": 22.0,
+      "unit": "celsius"
+    },
+    "dynamic_rules": {
+      "curve_rise_grid_fallback": 1.08,
+      "buffer_boost_hours": [],
+      "notes": "Optional automation rules - manual implementation in Phase 5"
+    },
+    "expected_outcomes": {
+      "cop_mean": 4.12,
+      "cop_vs_baseline": -0.11,
+      "self_sufficiency": 0.403,
+      "self_sufficiency_vs_baseline_pp": 0.0,
+      "comfort_compliance": 0.578
+    },
+    "confidence_intervals": {
+      "cop_ci_95": "\u00b10.3",
+      "self_sufficiency_ci_95": "\u00b15pp",
+      "notes": "Estimated from simulation; will refine in Phase 5"
+    }
+  },
+  "energy_optimized": {
+    "strategy_id": "energy_optimized",
+    "name": "Energy-Optimized",
+    "description": "Maximize solar self-consumption for heating",
+    "heat_pump_settings": {
+      "curve_rise": 0.98,
+      "curve_rise_unit": "dimensionless",
+      "curve_rise_notes": "Set via heat pump controller menu"
+    },
+    "schedule_settings": {
+      "comfort_start": "10:00",
+      "comfort_end": "18:00",
+      "schedule_notes": "Set comfort period start/end in heat pump scheduler"
+    },
+    "setpoint_settings": {
+      "setpoint_comfort": 20.0,
+      "setpoint_eco": 17.5,
+      "setpoint_unit": "celsius",
+      "setpoint_notes": "Set via Home Assistant climate entity"
+    },
+    "buffer_settings": {
+      "buffer_target": 40.0,
+      "buffer_unit": "celsius",
+      "buffer_notes": "Requires manual adjustment at heat pump"
+    },
+    "comfort_bounds": {
+      "min_temp": 18.0,
+      "max_temp": 22.0,
+      "unit": "celsius"
+    },
+    "dynamic_rules": {
+      "curve_rise_grid_fallback": 0.9,
+      "buffer_boost_hours": [
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "notes": "Optional automation rules - manual implementation in Phase 5"
+    },
+    "expected_outcomes": {
+      "cop_mean": 4.42,
+      "cop_vs_baseline": 0.19,
+      "self_sufficiency": 0.403,
+      "self_sufficiency_vs_baseline_pp": 0.0,
+      "comfort_compliance": 0.578
+    },
+    "confidence_intervals": {
+      "cop_ci_95": "\u00b10.3",
+      "self_sufficiency_ci_95": "\u00b15pp",
+      "notes": "Estimated from simulation; will refine in Phase 5"
+    }
+  },
+  "aggressive_solar": {
+    "strategy_id": "aggressive_solar",
+    "name": "Aggressive Solar",
+    "description": "Push to 85% self-sufficiency target",
+    "heat_pump_settings": {
+      "curve_rise": 0.95,
+      "curve_rise_unit": "dimensionless",
+      "curve_rise_notes": "Set via heat pump controller menu"
+    },
+    "schedule_settings": {
+      "comfort_start": "10:00",
+      "comfort_end": "17:00",
+      "schedule_notes": "Set comfort period start/end in heat pump scheduler"
+    },
+    "setpoint_settings": {
+      "setpoint_comfort": 21.0,
+      "setpoint_eco": 17.0,
+      "setpoint_unit": "celsius",
+      "setpoint_notes": "Set via Home Assistant climate entity"
+    },
+    "buffer_settings": {
+      "buffer_target": 45.0,
+      "buffer_unit": "celsius",
+      "buffer_notes": "Requires manual adjustment at heat pump"
+    },
+    "comfort_bounds": {
+      "min_temp": 17.0,
+      "max_temp": 23.0,
+      "unit": "celsius"
+    },
+    "dynamic_rules": {
+      "curve_rise_grid_fallback": 0.85,
+      "buffer_boost_hours": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "notes": "Optional automation rules - manual implementation in Phase 5"
+    },
+    "expected_outcomes": {
+      "cop_mean": 4.49,
+      "cop_vs_baseline": 0.26,
+      "self_sufficiency": 0.403,
+      "self_sufficiency_vs_baseline_pp": 0.0,
+      "comfort_compliance": 0.911
+    },
+    "confidence_intervals": {
+      "cop_ci_95": "\u00b10.3",
+      "self_sufficiency_ci_95": "\u00b15pp",
+      "notes": "Estimated from simulation; will refine in Phase 5"
+    }
+  }
+}

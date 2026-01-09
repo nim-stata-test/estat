@@ -1,0 +1,134 @@
+
+    <section id="parameter-sets">
+    <h2>4.3 Parameter Sets for Phase 5</h2>
+
+    <h3>Final Parameter Sets</h3>
+    <p>The following parameter sets are ready for the Phase 5 randomized intervention study (Winter 2027-2028).</p>
+    
+        <div class="parameter-card" style="border: 2px solid #333; padding: 15px; margin: 15px 0; border-radius: 8px;">
+        <h4>Baseline</h4>
+        <p><em>Current system settings (control group)</em></p>
+
+        <table>
+            <tr><th colspan="2">Heat Pump Settings</th></tr>
+            <tr><td>Curve Rise</td><td><strong>1.08</strong></td></tr>
+
+            <tr><th colspan="2">Schedule</th></tr>
+            <tr><td>Comfort Start</td><td><strong>06:30</strong></td></tr>
+            <tr><td>Comfort End</td><td><strong>20:00</strong></td></tr>
+
+            <tr><th colspan="2">Setpoints</th></tr>
+            <tr><td>Comfort</td><td><strong>20.2°C</strong></td></tr>
+            <tr><td>Eco</td><td><strong>18.0°C</strong></td></tr>
+
+            <tr><th colspan="2">Expected Outcomes</th></tr>
+            <tr><td>COP</td><td>4.12 (-0.11 vs baseline)</td></tr>
+            <tr><td>Self-Sufficiency</td><td>40.3% (+0.0pp)</td></tr>
+            <tr><td>Comfort Compliance</td><td>57.8%</td></tr>
+        </table>
+        </div>
+        
+        <div class="parameter-card" style="border: 2px solid #333; padding: 15px; margin: 15px 0; border-radius: 8px;">
+        <h4>Energy-Optimized</h4>
+        <p><em>Maximize solar self-consumption for heating</em></p>
+
+        <table>
+            <tr><th colspan="2">Heat Pump Settings</th></tr>
+            <tr><td>Curve Rise</td><td><strong>0.98</strong></td></tr>
+
+            <tr><th colspan="2">Schedule</th></tr>
+            <tr><td>Comfort Start</td><td><strong>10:00</strong></td></tr>
+            <tr><td>Comfort End</td><td><strong>18:00</strong></td></tr>
+
+            <tr><th colspan="2">Setpoints</th></tr>
+            <tr><td>Comfort</td><td><strong>20.0°C</strong></td></tr>
+            <tr><td>Eco</td><td><strong>17.5°C</strong></td></tr>
+
+            <tr><th colspan="2">Expected Outcomes</th></tr>
+            <tr><td>COP</td><td>4.42 (+0.19 vs baseline)</td></tr>
+            <tr><td>Self-Sufficiency</td><td>40.3% (+0.0pp)</td></tr>
+            <tr><td>Comfort Compliance</td><td>57.8%</td></tr>
+        </table>
+        </div>
+        
+        <div class="parameter-card" style="border: 2px solid #333; padding: 15px; margin: 15px 0; border-radius: 8px;">
+        <h4>Aggressive Solar</h4>
+        <p><em>Push to 85% self-sufficiency target</em></p>
+
+        <table>
+            <tr><th colspan="2">Heat Pump Settings</th></tr>
+            <tr><td>Curve Rise</td><td><strong>0.95</strong></td></tr>
+
+            <tr><th colspan="2">Schedule</th></tr>
+            <tr><td>Comfort Start</td><td><strong>10:00</strong></td></tr>
+            <tr><td>Comfort End</td><td><strong>17:00</strong></td></tr>
+
+            <tr><th colspan="2">Setpoints</th></tr>
+            <tr><td>Comfort</td><td><strong>21.0°C</strong></td></tr>
+            <tr><td>Eco</td><td><strong>17.0°C</strong></td></tr>
+
+            <tr><th colspan="2">Expected Outcomes</th></tr>
+            <tr><td>COP</td><td>4.49 (+0.26 vs baseline)</td></tr>
+            <tr><td>Self-Sufficiency</td><td>40.3% (+0.0pp)</td></tr>
+            <tr><td>Comfort Compliance</td><td>91.1%</td></tr>
+        </table>
+        </div>
+        
+    <h3>Testable Predictions</h3>
+    <p>For statistical validation in Phase 5:</p>
+    <table>
+        <tr>
+            <th>Strategy</th>
+            <th>Self-Sufficiency</th>
+            <th>COP</th>
+            <th>Comfort Compliance</th>
+        </tr>
+    
+        <tr>
+            <td>Baseline</td>
+            <td>40.3% (35.3-45.3%)</td>
+            <td>4.12 (3.82-4.42)</td>
+            <td>≥95.0% (target: 57.8%)</td>
+        </tr>
+        
+        <tr>
+            <td>Energy-Optimized</td>
+            <td>40.3% (35.3-45.3%)</td>
+            <td>4.42 (4.12-4.72)</td>
+            <td>≥95.0% (target: 57.8%)</td>
+        </tr>
+        
+        <tr>
+            <td>Aggressive Solar</td>
+            <td>40.3% (35.3-45.3%)</td>
+            <td>4.49 (4.19-4.79)</td>
+            <td>≥95.0% (target: 91.1%)</td>
+        </tr>
+        
+    </table>
+
+    <h3>Implementation Notes</h3>
+    <ul>
+        <li><strong>Curve Rise</strong>: Adjust via heat pump controller menu. Primary lever for COP improvement.</li>
+        <li><strong>Schedule</strong>: Set comfort period in heat pump scheduler. Aligns heating with PV availability.</li>
+        <li><strong>Setpoints</strong>: Control via Home Assistant climate entity. Automate if desired.</li>
+        <li><strong>Buffer Target</strong>: Requires manual adjustment at heat pump. Set once per strategy block.</li>
+    </ul>
+
+    <h3>Success Criteria</h3>
+    <p>A strategy is considered successful if:</p>
+    <ol>
+        <li>Self-sufficiency meets or exceeds prediction range</li>
+        <li>COP meets or exceeds prediction range</li>
+        <li>Comfort compliance ≥95%</li>
+        <li>No frequent manual overrides required</li>
+    </ol>
+
+    <figure>
+        <img src="fig18_parameter_space.png" alt="Parameter Space">
+        <figcaption>Parameter space visualization: curve rise vs COP (top-left), schedule duration
+        vs self-sufficiency (top-right), comfort-efficiency trade-off (bottom-left),
+        parameter summary table (bottom-right).</figcaption>
+    </figure>
+    </section>
+    

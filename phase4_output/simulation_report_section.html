@@ -1,0 +1,114 @@
+
+    <section id="strategy-simulation">
+    <h2>4.2 Strategy Simulation Results</h2>
+
+    <h3>Methodology</h3>
+    <p>Simulated all three strategies on 64 days of historical data using Phase 3 models:</p>
+    <ul>
+        <li>COP prediction based on outdoor and flow temperatures</li>
+        <li>Flow temperature estimation from heating curve parameters</li>
+        <li>Schedule-based comfort mode determination</li>
+        <li>Solar availability from actual PV generation data</li>
+    </ul>
+
+    <h3>Summary Comparison</h3>
+    <table>
+        <tr>
+            <th>Metric</th>
+            <th>Baseline</th>
+            <th>Energy-Optimized</th>
+            <th>Aggressive Solar</th>
+        </tr>
+        <tr>
+            <td>Average COP</td>
+            <td>4.12</td>
+            <td>4.42 (+0.19)</td>
+            <td>4.49 (+0.26)</td>
+        </tr>
+        <tr>
+            <td>Self-Sufficiency</td>
+            <td>40.3%</td>
+            <td>40.3% (+0.0pp)</td>
+            <td>40.3% (+0.0pp)</td>
+        </tr>
+        <tr>
+            <td>Comfort Compliance</td>
+            <td>57.8%</td>
+            <td>57.8%</td>
+            <td>91.1%</td>
+        </tr>
+        <tr>
+            <td>Solar Heating %</td>
+            <td>30.4%</td>
+            <td>25.8%</td>
+            <td>25.8%</td>
+        </tr>
+        <tr>
+            <td>Comfort Hours/Day</td>
+            <td>5.3h</td>
+            <td>3.1h</td>
+            <td>2.7h</td>
+        </tr>
+    </table>
+
+    <h3>Key Findings</h3>
+    <ul>
+        <li><strong>COP Improvement</strong>: Both optimized strategies achieve higher COP through
+            lower flow temperatures. Energy-optimized gains +0.19 COP,
+            Aggressive Solar gains +0.26 COP.</li>
+        <li><strong>Self-Sufficiency</strong>: Schedule shifting improves solar-heating alignment.
+            Energy-optimized: +0.0pp,
+            Aggressive Solar: +0.0pp.</li>
+        <li><strong>Comfort Trade-off</strong>: Aggressive Solar accepts wider temperature band
+            (17-23°C) to maximize solar utilization. Comfort compliance remains
+            91.1%.</li>
+    </ul>
+
+    <h3>Validation Against Expected Improvements</h3>
+    <table>
+        <tr>
+            <th>Metric</th>
+            <th>Strategy</th>
+            <th>Expected</th>
+            <th>Simulated</th>
+            <th>Status</th>
+        </tr>
+        <tr>
+            <td rowspan="2">Self-Sufficiency Gain</td>
+            <td>Energy-Optimized</td>
+            <td>+10pp</td>
+            <td>+0.0pp</td>
+            <td>Check</td>
+        </tr>
+        <tr>
+            <td>Aggressive Solar</td>
+            <td>+27pp</td>
+            <td>+0.0pp</td>
+            <td>Check</td>
+        </tr>
+        <tr>
+            <td rowspan="2">COP Improvement</td>
+            <td>Energy-Optimized</td>
+            <td>+0.5</td>
+            <td>+0.19</td>
+            <td>Check</td>
+        </tr>
+        <tr>
+            <td>Aggressive Solar</td>
+            <td>+0.7</td>
+            <td>+0.26</td>
+            <td>Check</td>
+        </tr>
+    </table>
+
+    <p><em>Note: Simulation uses actual historical data, so results reflect real weather conditions
+    during the 64-day overlap period. Full-season validation in Phase 5 will provide more
+    robust estimates.</em></p>
+
+    <figure>
+        <img src="fig17_simulation_results.png" alt="Simulation Results">
+        <figcaption>Simulation results: example week COP (top-left), daily self-sufficiency (top-right),
+        strategy comparison bars (bottom-left), hourly COP profile with PV availability (bottom-right).</figcaption>
+    </figure>
+    </section>
+    
