@@ -274,7 +274,7 @@ Low tariff: Nights, weekends, holidays
 
 **Strategy Goals**:
 - **Energy-Optimized**: Minimize grid electricity consumption, maximize self-sufficiency
-- **Aggressive Solar**: Maximum solar utilization with wider comfort tolerance (17-23°C)
+- **Aggressive Solar**: Maximum solar utilization with wider comfort tolerance (18-23°C)
 - **Cost-Optimized**: Minimize annual electricity bill via tariff arbitrage
 
 ### 4.4 Rule-Based Heuristics ✓ COMPLETED

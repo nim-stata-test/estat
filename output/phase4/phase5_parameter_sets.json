@@ -131,7 +131,7 @@
       "buffer_notes": "Requires manual adjustment at heat pump"
     },
     "comfort_bounds": {
-      "min_temp": 17.0,
+      "min_temp": 18.0,
       "max_temp": 23.0,
       "unit": "celsius"
     },
@@ -153,7 +153,7 @@
       "cop_vs_baseline": 0.25,
       "self_sufficiency": 0.401,
       "self_sufficiency_vs_baseline_pp": 0.0,
-      "comfort_compliance": 0.976,
+      "comfort_compliance": 0.767,
       "daily_net_cost_chf": 5.39,
       "cost_reduction_pct": 0.0
     },
@@ -189,7 +189,7 @@
       "buffer_notes": "Requires manual adjustment at heat pump"
     },
     "comfort_bounds": {
-      "min_temp": 17.5,
+      "min_temp": 18.0,
       "max_temp": 22.5,
       "unit": "celsius"
     },
@@ -209,7 +209,7 @@
       "cop_vs_baseline": 0.22,
       "self_sufficiency": 0.401,
       "self_sufficiency_vs_baseline_pp": 0.0,
-      "comfort_compliance": 0.919,
+      "comfort_compliance": 0.767,
       "daily_net_cost_chf": 5.39,
       "cost_reduction_pct": 0.0
     },

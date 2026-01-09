@@ -176,7 +176,7 @@ def generate_html_report():
         <p><strong>Key Findings:</strong></p>
         <ul>
             <li>Energy-Optimized strategy expected to improve self-sufficiency by +10pp and COP by +0.5</li>
-            <li>Aggressive Solar strategy targets 85% self-sufficiency (+27pp) with 17-23°C comfort band</li>
+            <li>Aggressive Solar strategy targets 85% self-sufficiency (+27pp) with 18-23°C comfort band</li>
             <li>Schedule shifting from 06:30-20:00 to 10:00-17:00/18:00 aligns heating with PV availability</li>
             <li>Reducing curve_rise from 1.08 to 0.95-0.98 improves COP through lower flow temperatures</li>
         </ul>

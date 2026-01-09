@@ -153,12 +153,12 @@ def define_strategies() -> dict:
             'curve_rise_grid_fallback': 0.85,  # Aggressive reduction when on grid
             'buffer_target': 45.0,  # Maximum thermal storage
             'buffer_boost_hours': [10, 11, 12, 13, 14, 15, 16],  # Extended boost
-            'comfort_band_min': 17.0,  # Wider band (user approved)
+            'comfort_band_min': 18.0,  # Wider band (user approved)
             'comfort_band_max': 23.0,  # Allow pre-heating overshoot
         },
         'rules': [
             'All Energy-Optimized rules, plus:',
-            'Accept wider comfort band (17-23°C vs 18-22°C)',
+            'Accept wider comfort band (18-23°C vs 18-22°C)',
             'Boost to 21°C during PV peak - store heat in building mass',
             'Deep evening/night setback to 17°C',
             'Aggressive curve_rise reduction (0.95 normal, 0.85 on grid)',
@@ -191,7 +191,7 @@ def define_strategies() -> dict:
             'buffer_target': 38.0,  # Moderate - charge during cheap hours
             'buffer_boost_hours': [11, 12, 13, 14, 15],  # Solar peak hours
             # Comfort band
-            'comfort_band_min': 17.5,  # Slightly wider
+            'comfort_band_min': 18.0,  # Same as baseline minimum
             'comfort_band_max': 22.5,
             # Cost-specific parameters
             'use_tariff_rates': True,
@@ -652,7 +652,7 @@ def main():
     print("\n  Aggressive Solar:")
     print("    - Comfort: 10:00-17:00 (vs 06:30-20:00)")
     print("    - Curve rise: 0.95 (vs 1.08)")
-    print("    - Comfort band: 17-23°C (vs 18-22°C)")
+    print("    - Comfort band: 18-23°C (vs 18-22°C)")
     print("    - Expected: +27pp self-sufficiency, +0.7 COP")
 
     print("\n  Cost-Optimized:")

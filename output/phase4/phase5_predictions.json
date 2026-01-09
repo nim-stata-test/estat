@@ -100,7 +100,7 @@
       "measurement": "produced_heating / consumed_heating (daily)"
     },
     "comfort_compliance": {
-      "target_pct": 97.6,
+      "target_pct": 76.7,
       "minimum_pct": 95.0,
       "measurement": "Percent of readings within comfort band"
     },
@@ -139,7 +139,7 @@
       "measurement": "produced_heating / consumed_heating (daily)"
     },
     "comfort_compliance": {
-      "target_pct": 91.9,
+      "target_pct": 76.7,
       "minimum_pct": 95.0,
       "measurement": "Percent of readings within comfort band"
     },

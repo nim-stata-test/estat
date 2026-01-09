@@ -99,7 +99,7 @@
 </head>
 <body>
     <h1>Phase 4: Optimization Strategy Development Report</h1>
-    <p><em>Generated: 2026-01-09 22:04</em></p>
+    <p><em>Generated: 2026-01-09 22:08</em></p>
 
     <div class="summary-box">
         <h3>Executive Summary</h3>
@@ -110,7 +110,7 @@
         <p><strong>Key Findings:</strong></p>
         <ul>
             <li>Energy-Optimized strategy expected to improve self-sufficiency by +10pp and COP by +0.5</li>
-            <li>Aggressive Solar strategy targets 85% self-sufficiency (+27pp) with 17-23°C comfort band</li>
+            <li>Aggressive Solar strategy targets 85% self-sufficiency (+27pp) with 18-23°C comfort band</li>
             <li>Schedule shifting from 06:30-20:00 to 10:00-17:00/18:00 aligns heating with PV availability</li>
             <li>Reducing curve_rise from 1.08 to 0.95-0.98 improves COP through lower flow temperatures</li>
         </ul>
@@ -215,13 +215,13 @@
         <tr><td>Setpoint (Eco)</td><td>17.0°C</td></tr>
         <tr><td>Curve Rise</td><td>0.95</td></tr>
         <tr><td>Buffer Target</td><td>45.0°C</td></tr>
-        <tr><td>Comfort Band</td><td>17.0-23.0°C</td></tr>
+        <tr><td>Comfort Band</td><td>18.0-23.0°C</td></tr>
         </table>
 
         <p><strong>Rules:</strong></p>
         <ul>
         <li>All Energy-Optimized rules, plus:</li>
-<li>Accept wider comfort band (17-23°C vs 18-22°C)</li>
+<li>Accept wider comfort band (18-23°C vs 18-22°C)</li>
 <li>Boost to 21°C during PV peak - store heat in building mass</li>
 <li>Deep evening/night setback to 17°C</li>
 <li>Aggressive curve_rise reduction (0.95 normal, 0.85 on grid)</li>
@@ -252,7 +252,7 @@
         <tr><td>Setpoint (Eco)</td><td>17.0°C</td></tr>
         <tr><td>Curve Rise</td><td>0.95</td></tr>
         <tr><td>Buffer Target</td><td>38.0°C</td></tr>
-        <tr><td>Comfort Band</td><td>17.5-22.5°C</td></tr>
+        <tr><td>Comfort Band</td><td>18.0-22.5°C</td></tr>
         </table>
 
         <p><strong>Rules:</strong></p>
@@ -350,8 +350,8 @@
             <td>Comfort Compliance</td>
             <td>76.7%</td>
             <td>76.7%</td>
-            <td>97.6%</td>
-            <td>91.9%</td>
+            <td>76.7%</td>
+            <td>76.7%</td>
         </tr>
         <tr>
             <td>Solar Heating %</td>
@@ -393,7 +393,7 @@
             Aggressive Solar: +0.0pp, Cost-optimized: +0.0pp.</li>
         <li><strong>Comfort Trade-off</strong>: Aggressive Solar accepts wider temperature band
             (17-23°C) to maximize solar utilization. Comfort compliance remains
-            97.6%.</li>
+            76.7%.</li>
         <li><strong>Cost Optimization</strong>: Cost-optimized strategy shifts heating to low-tariff periods (21:00-06:00, weekends) and reduces setpoints during high-tariff hours. Daily cost change: +0.0% vs baseline.</li>
     </ul>
 
@@ -521,7 +521,7 @@
             <tr><th colspan="2">Expected Outcomes</th></tr>
             <tr><td>COP</td><td>4.46 (+0.25 vs baseline)</td></tr>
             <tr><td>Self-Sufficiency</td><td>40.1% (+0.0pp)</td></tr>
-            <tr><td>Comfort Compliance</td><td>97.6%</td></tr>
+            <tr><td>Comfort Compliance</td><td>76.7%</td></tr>
             <tr><td>Daily Net Cost</td><td>CHF 5.39 (+0.0% vs baseline)</td></tr>
         </table>
         </div>
@@ -545,7 +545,7 @@
             <tr><th colspan="2">Expected Outcomes</th></tr>
             <tr><td>COP</td><td>4.43 (+0.22 vs baseline)</td></tr>
             <tr><td>Self-Sufficiency</td><td>40.1% (+0.0pp)</td></tr>
-            <tr><td>Comfort Compliance</td><td>91.9%</td></tr>
+            <tr><td>Comfort Compliance</td><td>76.7%</td></tr>
             <tr><td>Daily Net Cost</td><td>CHF 5.39 (+0.0% vs baseline)</td></tr>
         </table>
         </div>
@@ -581,7 +581,7 @@
             <td>Aggressive Solar</td>
             <td>40.1% (35.1-45.1%)</td>
             <td>4.46 (4.16-4.76)</td>
-            <td>≥95.0% (target: 97.6%)</td>
+            <td>≥95.0% (target: 76.7%)</td>
             <td>+0.0%</td>
         </tr>
         
@@ -589,7 +589,7 @@
             <td>Cost-Optimized</td>
             <td>40.1% (35.1-45.1%)</td>
             <td>4.43 (4.13-4.73)</td>
-            <td>≥95.0% (target: 91.9%)</td>
+            <td>≥95.0% (target: 76.7%)</td>
             <td>+0.0%</td>
         </tr>
         

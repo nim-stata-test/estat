@@ -338,7 +338,7 @@ Where:
 **Key optimization levers:**
 - Shift comfort mode to PV peak hours (10:00-17:00)
 - Lower curve_rise for better COP (~0.1 COP improvement per 1°C flow temp reduction)
-- Wider comfort band (17-23°C for aggressive strategy)
+- Wider comfort band (18-23°C for aggressive strategy)
 - Dynamic curve_rise reduction when grid-dependent (0.85-0.90)
 - Tariff arbitrage: shift heating to low-tariff periods (21:00-06:00, weekends)
 

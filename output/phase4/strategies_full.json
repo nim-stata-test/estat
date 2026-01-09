@@ -82,12 +82,12 @@
         15,
         16
       ],
-      "comfort_band_min": 17.0,
+      "comfort_band_min": 18.0,
       "comfort_band_max": 23.0
     },
     "rules": [
       "All Energy-Optimized rules, plus:",
-      "Accept wider comfort band (17-23\u00b0C vs 18-22\u00b0C)",
+      "Accept wider comfort band (18-23\u00b0C vs 18-22\u00b0C)",
       "Boost to 21\u00b0C during PV peak - store heat in building mass",
       "Deep evening/night setback to 17\u00b0C",
       "Aggressive curve_rise reduction (0.95 normal, 0.85 on grid)",
@@ -119,7 +119,7 @@
         14,
         15
       ],
-      "comfort_band_min": 17.5,
+      "comfort_band_min": 18.0,
       "comfort_band_max": 22.5,
       "use_tariff_rates": true,
       "high_tariff_setpoint_reduction": 1.0,
