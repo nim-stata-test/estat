@@ -328,13 +328,12 @@ Where:
 - T_ref = 21.32°C (comfort mode) or 19.18°C (eco mode)
 - curve_rise typically 0.85-1.08
 
-**Four Optimization Strategies:**
+**Three Optimization Strategies:**
 
 | Strategy | Schedule | Curve Rise | COP | vs Baseline | Goal |
 |----------|----------|------------|-----|-------------|------|
 | Baseline | 06:30-20:00 | 1.08 | 4.09 | — | Reference |
 | Energy-Optimized | 10:00-18:00 | 0.98 | 4.39 | +0.18 | Minimize grid |
-| Aggressive Solar | 10:00-17:00 | 0.95 | 4.46 | +0.25 | Maximum solar |
 | Cost-Optimized | 11:00-21:00 | 0.95/0.85* | 4.43 | +0.22 | Minimize costs |
 
 *Cost-Optimized uses curve_rise 0.85 when grid-dependent
@@ -342,12 +341,11 @@ Where:
 **Comfort Evaluation:**
 - Comfort compliance evaluated **only during occupied hours (08:00-22:00)**
 - Night temperatures (22:00-08:00) are excluded from comfort objectives
-- This allows aggressive energy-saving at night without penalty
+- This allows energy-saving at night without penalty
 
 **Key optimization levers:**
 - Shift comfort mode to PV peak hours (10:00-17:00)
 - Lower curve_rise for better COP (~0.1 COP improvement per 1°C flow temp reduction)
-- Wider comfort band (18-23°C for aggressive strategy)
 - Dynamic curve_rise reduction when grid-dependent (0.85-0.90)
 - Tariff arbitrage: shift heating to low-tariff periods (21:00-06:00, weekends)
 
@@ -367,9 +365,9 @@ python src/phase5/generate_schedule.py --start 2027-11-01 --weeks 20 --seed 42
 **Study Design (data-driven):**
 - Duration: 20 weeks (November 2027 - March 2028)
 - Block length: 5 days (3-day washout + 2-day measurement)
-- Conditions: 4 strategies (A=Baseline, B=Energy-Opt, C=Aggressive, D=Cost-Opt)
-- Total blocks: 28 (7 per strategy)
-- Statistical power: 93% to detect +0.30 COP change
+- Conditions: 3 strategies (A=Baseline, B=Energy-Optimized, C=Cost-Optimized)
+- Total blocks: 28 (~9 per strategy)
+- Statistical power: >95% to detect +0.30 COP change
 
 **Controllable Parameters:**
 
@@ -378,27 +376,26 @@ python src/phase5/generate_schedule.py --start 2027-11-01 --weeks 20 --seed 42
 | Comfort start/end | Heat pump scheduler | Heat pump interface |
 | Setpoint comfort/eco | Climate entity | Home Assistant |
 | Curve rise (Steilheit) | Heating curve menu | Heat pump interface |
-| Buffer tank target | Buffer menu | Heat pump interface |
 
 **Strategy Parameter Summary:**
 
-| Parameter | A (Baseline) | B (Energy) | C (Aggressive) | D (Cost) |
-|-----------|--------------|------------|----------------|----------|
-| Comfort start | 06:30 | 10:00 | 10:00 | 11:00 |
-| Comfort end | 20:00 | 18:00 | 17:00 | 21:00 |
-| Setpoint comfort | 20.2°C | 20.0°C | 21.0°C | 20.0°C |
-| Setpoint eco | 18.0°C | 17.5°C | 17.0°C | 17.0°C |
-| Curve rise | 1.08 | 0.98 | 0.95 | 0.95 |
-| Buffer target | 36°C | 40°C | 45°C | 38°C |
+| Parameter | A (Baseline) | B (Energy) | C (Cost) |
+|-----------|--------------|------------|----------|
+| Comfort start | 06:30 | 10:00 | 11:00 |
+| Comfort end | 20:00 | 18:00 | 21:00 |
+| Setpoint comfort | 20.2°C | 20.0°C | 20.0°C |
+| Setpoint eco | 18.5°C | 18.0°C | 17.5°C |
+| Curve rise | 1.08 | 0.98 | 0.95 |
 
 **Outputs:**
 ```
 output/phase5/
-├── block_schedule.csv      # Randomized block schedule
-├── block_schedule.json     # Machine-readable schedule
-├── daily_logs/             # Daily checklist entries
-├── block_summaries/        # Block summary entries
-└── analysis/               # Statistical outputs
+├── block_schedule.csv          # Randomized block schedule
+├── block_schedule.json         # Machine-readable schedule
+├── experimental_protocol.html  # HTML report for study execution
+├── daily_logs/                 # Daily checklist entries
+├── block_summaries/            # Block summary entries
+└── analysis/                   # Statistical outputs
 ```
 
 **Documentation:**

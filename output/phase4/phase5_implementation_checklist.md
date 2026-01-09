@@ -27,9 +27,8 @@
 Comfort Start:    06:30
 Comfort End:      20:00
 Setpoint Comfort: 20.2°C
-Setpoint Eco:     18.0°C
+Setpoint Eco:     18.5°C
 Curve Rise:       1.08
-Buffer Target:    36°C
 ```
 
 ### Energy-Optimized Settings
@@ -37,19 +36,8 @@ Buffer Target:    36°C
 Comfort Start:    10:00
 Comfort End:      18:00
 Setpoint Comfort: 20.0°C
-Setpoint Eco:     17.5°C
+Setpoint Eco:     18.0°C
 Curve Rise:       0.98
-Buffer Target:    40°C
-```
-
-### Aggressive Solar Settings
-```
-Comfort Start:    10:00
-Comfort End:      17:00
-Setpoint Comfort: 21.0°C
-Setpoint Eco:     17.0°C
-Curve Rise:       0.95
-Buffer Target:    45°C
 ```
 
 ### Cost-Optimized Settings
@@ -57,9 +45,8 @@ Buffer Target:    45°C
 Comfort Start:    11:00
 Comfort End:      21:00
 Setpoint Comfort: 20.0°C
-Setpoint Eco:     17.0°C
+Setpoint Eco:     17.5°C
 Curve Rise:       0.95
-Buffer Target:    40°C
 Curve Rise (Grid): 0.85 (when grid-dependent)
 ```
 
@@ -85,7 +72,6 @@ Curve Rise (Grid): 0.85 (when grid-dependent)
 |----------|------------------------|------------|-------------|-------------|
 | Baseline | 58% | 3.5 | 95% | — |
 | Energy-Optimized | 68% | 4.0 | 95% | +5-10% savings |
-| Aggressive Solar | 85% | 4.2 | 95% | +10-15% savings |
 | Cost-Optimized | 61% | 3.4 | 90% | +15-25% savings |
 
 ## Safety Limits

@@ -3,7 +3,7 @@
     <h2>4.2 Strategy Simulation Results</h2>
 
     <h3>Methodology</h3>
-    <p>Simulated all four strategies on 64 days of historical data using Phase 3 models:</p>
+    <p>Simulated all three strategies on 64 days of historical data using Phase 3 models:</p>
     <ul>
         <li>COP prediction based on outdoor and flow temperatures</li>
         <li>Flow temperature estimation from heating curve parameters</li>
@@ -18,34 +18,29 @@
             <th>Metric</th>
             <th>Baseline</th>
             <th>Energy-Optimized</th>
-            <th>Aggressive Solar</th>
             <th>Cost-Optimized</th>
         </tr>
         <tr>
             <td>Average COP</td>
-            <td>4.09</td>
-            <td>4.39 (+0.18)</td>
-            <td>4.46 (+0.25)</td>
-            <td>4.43 (+0.22)</td>
+            <td>4.07</td>
+            <td>4.36 (+0.14)</td>
+            <td>4.40 (+0.19)</td>
         </tr>
         <tr>
             <td>Self-Sufficiency</td>
             <td>40.1%</td>
             <td>40.1% (+0.0pp)</td>
             <td>40.1% (+0.0pp)</td>
-            <td>40.1% (+0.0pp)</td>
         </tr>
         <tr>
             <td>Comfort Compliance (08:00-22:00)</td>
-            <td>84.9%</td>
-            <td>84.9%</td>
-            <td>84.9%</td>
-            <td>84.9%</td>
+            <td>62.4%</td>
+            <td>62.4%</td>
+            <td>62.4%</td>
         </tr>
         <tr>
             <td>Solar Heating %</td>
             <td>29.8%</td>
-            <td>25.7%</td>
             <td>25.7%</td>
             <td>21.4%</td>
         </tr>
@@ -53,7 +48,6 @@
             <td>Comfort Hours/Day</td>
             <td>11.1h</td>
             <td>6.7h</td>
-            <td>5.8h</td>
             <td>8.1h</td>
         </tr>
         <tr>
@@ -61,11 +55,9 @@
             <td>CHF 5.39</td>
             <td>CHF 5.39 (+0.0%)</td>
             <td>CHF 5.39 (+0.0%)</td>
-            <td>CHF 5.39 (+0.0%)</td>
         </tr>
         <tr>
             <td>High Tariff Exposure</td>
-            <td>48.0%</td>
             <td>48.0%</td>
             <td>48.0%</td>
             <td>48.0%</td>
@@ -75,15 +67,14 @@
     <h3>Key Findings</h3>
     <ul>
         <li><strong>COP Improvement</strong>: Optimized strategies achieve higher COP through
-            lower flow temperatures. Energy-optimized gains +0.18 COP,
-            Aggressive Solar gains +0.25 COP, Cost-optimized gains +0.22 COP.</li>
+            lower flow temperatures. Energy-optimized gains +0.14 COP,
+            Cost-optimized gains +0.19 COP.</li>
         <li><strong>Self-Sufficiency</strong>: Schedule shifting improves solar-heating alignment.
             Energy-optimized: +0.0pp,
-            Aggressive Solar: +0.0pp, Cost-optimized: +0.0pp.</li>
-        <li><strong>Comfort Trade-off</strong>: Aggressive Solar accepts wider temperature band
-            (17-23°C) to maximize solar utilization. Comfort compliance remains
-            84.9%.</li>
-        <li><strong>Cost Optimization</strong>: Cost-optimized strategy shifts heating to low-tariff periods (21:00-06:00, weekends) and reduces setpoints during high-tariff hours. Daily cost change: +0.0% vs baseline.</li>
+            Cost-optimized: +0.0pp.</li>
+        <li><strong>Cost Optimization</strong>: Cost-optimized strategy shifts heating to low-tariff
+            periods (21:00-06:00, weekends) and reduces setpoints during high-tariff hours.
+            Daily cost change: +0.0% vs baseline.</li>
     </ul>
 
     <h3>Validation Against Expected Improvements</h3>
@@ -96,34 +87,38 @@
             <th>Status</th>
         </tr>
         <tr>
-            <td rowspan="3">Self-Sufficiency Gain</td>
+            <td rowspan="2">Self-Sufficiency Gain</td>
             <td>Energy-Optimized</td>
             <td>+10pp</td>
             <td>+0.0pp</td>
             <td>Check</td>
         </tr>
         <tr>
-            <td>Aggressive Solar</td>
-            <td>+27pp</td>
+            <td>Cost-Optimized</td>
+            <td>+3pp</td>
             <td>+0.0pp</td>
-            <td>Check</td>
+            <td>OK</td>
         </tr>
-        <tr><td>Cost-Optimized</td><td>+3pp</td><td>+0.0pp</td><td>OK</td></tr>
         <tr>
-            <td rowspan="3">COP Improvement</td>
+            <td rowspan="2">COP Improvement</td>
             <td>Energy-Optimized</td>
             <td>+0.5</td>
-            <td>+0.18</td>
+            <td>+0.14</td>
             <td>Check</td>
         </tr>
         <tr>
-            <td>Aggressive Solar</td>
-            <td>+0.7</td>
-            <td>+0.25</td>
+            <td>Cost-Optimized</td>
+            <td>-0.15</td>
+            <td>+0.19</td>
             <td>Check</td>
         </tr>
-        <tr><td>Cost-Optimized</td><td>-0.15</td><td>+0.22</td><td>Check</td></tr>
-        <tr><td>Cost Reduction</td><td>Cost-Optimized</td><td>-20%</td><td>+0.0%</td><td>Check</td></tr>
+        <tr>
+            <td>Cost Reduction</td>
+            <td>Cost-Optimized</td>
+            <td>-20%</td>
+            <td>+0.0%</td>
+            <td>Check</td>
+        </tr>
     </table>
 
     <p><em>Note: Simulation uses actual historical data, so results reflect real weather conditions

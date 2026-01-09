@@ -32,11 +32,11 @@ Optimize heating strategy for a residential building with solar/battery system t
 
 3. **Schedule already efficient**: Only 4.7% of heating requires grid. Gains likely come from shifting heating into solar hours, not reducing total consumption.
 
-4. **Control parameters identified**: Setpoint, curve rise, and schedule timing are controllable. Buffer tank requires manual adjustment.
+4. **Control parameters identified**: Setpoint, curve rise, and schedule timing are controllable via heat pump interface and Home Assistant.
 
 5. **Tariff arbitrage potential**: High/low tariff spread of 8.1 Rp/kWh. Shifting 20-30% of grid consumption to low-tariff periods could increase annual income by 2.4-3.6%.
 
-6. **Four optimization strategies defined**: Baseline, Energy-Optimized (+0.18 COP), Aggressive Solar (+0.25 COP), and Cost-Optimized (+0.22 COP, tariff-aware).
+6. **Three optimization strategies defined**: Baseline, Energy-Optimized (+0.18 COP), and Cost-Optimized (+0.22 COP, tariff-aware).
 
 ---
 
@@ -121,7 +121,7 @@ Optimize heating strategy for a residential building with solar/battery system t
 - **Mean COP: 3.55** (range 2.49–5.18)
 - Daily heating electricity: mean 23.7 kWh, max 50.0 kWh
 - Heating curve slope: 1.08, Model R² = 0.94, RMSE = 1.03°C
-- Setpoints: Comfort 20.2°C, Eco 18.0°C
+- Setpoints: Comfort 20.2°C, Eco 18.5°C
 - Schedule detected: Comfort 06:30–20:00 (extended to 21:30 late Dec)
 
 ### 2.3 Solar-Heating Correlation ✓
@@ -244,12 +244,11 @@ Low tariff: Nights, weekends, holidays
 | Variable | Current Value | Controllable? | Impact (from models) |
 |----------|---------------|---------------|----------------------|
 | Room setpoint (comfort) | 20.2°C | Yes (Home Assistant) | +1°C → +1°C flow temp |
-| Room setpoint (eco) | 18.0°C | Yes (Home Assistant) | +1°C → +1°C flow temp |
+| Room setpoint (eco) | 18.5°C | Yes (Home Assistant) | +1°C → +1°C flow temp |
 | Curve rise | 1.08 | Yes (heat pump) | +0.1 → +1.6–2.1°C flow temp |
 | Flow temperature | ~34°C mean | Indirect (via setpoint/curve) | **-1°C → +0.10 COP** |
 | Comfort schedule start | 06:30 | Yes (heat pump) | Pre-heat timing |
 | Comfort schedule end | 20:00–21:30 | Yes (heat pump) | Evening heating mode |
-| Buffer tank target | ~36°C mean | Manual only | Thermal storage |
 
 ### 4.2 Model Parameters for Optimization
 | Parameter | Value | Source |
@@ -263,20 +262,18 @@ Low tariff: Nights, weekends, holidays
 | Peak PV hours | 10:00-16:00 | Energy system model |
 | Daily PV generation | 56.2 kWh mean | Energy system model |
 
-### 4.3 Four Optimization Strategies ✓ COMPLETED
+### 4.3 Three Optimization Strategies ✓ COMPLETED
 
 | Strategy | Schedule | Curve Rise | Setpoints | COP | vs Baseline |
 |----------|----------|------------|-----------|-----|-------------|
-| **Baseline** | 06:30-20:00 | 1.08 | 20.2°C / 18.0°C | 4.09 | — |
-| **Energy-Optimized** | 10:00-18:00 | 0.98 | 20.0°C / 17.5°C | 4.39 | +0.18 |
-| **Aggressive Solar** | 10:00-17:00 | 0.95 | 21.0°C / 17.0°C | 4.46 | +0.25 |
-| **Cost-Optimized** | 11:00-21:00 | 0.95/0.85* | 20.0°C / 17.0°C | 4.43 | +0.22 |
+| **Baseline** | 06:30-20:00 | 1.08 | 20.2°C / 18.5°C | 4.09 | — |
+| **Energy-Optimized** | 10:00-18:00 | 0.98 | 20.0°C / 18.0°C | 4.39 | +0.18 |
+| **Cost-Optimized** | 11:00-21:00 | 0.95/0.85* | 20.0°C / 17.5°C | 4.43 | +0.22 |
 
 *Cost-Optimized uses curve_rise 0.85 when grid-dependent
 
 **Strategy Goals**:
 - **Energy-Optimized**: Minimize grid electricity consumption, maximize self-sufficiency
-- **Aggressive Solar**: Maximum solar utilization with wider comfort tolerance (18-23°C)
 - **Cost-Optimized**: Minimize annual electricity bill via tariff arbitrage
 
 ### 4.4 Rule-Based Heuristics ✓ COMPLETED
@@ -293,7 +290,6 @@ Validated strategies on 64 days of historical data:
 |----------|-----------------|-------------------|-----------------|
 | Baseline | 40.1% | 76.7% | 29.8% |
 | Energy-Optimized | 40.1% | 76.7% | 25.7% |
-| Aggressive Solar | 40.1% | 97.6% | 25.7% |
 | Cost-Optimized | 40.1% | 91.9% | 21.4% |
 
 **Note**: Self-sufficiency identical in simulation because it uses historical energy data. Real differences will emerge in Phase 5 intervention study.
@@ -301,7 +297,7 @@ Validated strategies on 64 days of historical data:
 ### 4.6 Constraint Handling
 - **Comfort compliance minimum: 95%** (90% for Cost-Optimized) — primary constraint
 - **Comfort evaluation period: 08:00-22:00 only** (night temperatures not considered)
-- Comfort bounds: 18–22°C standard, 17-23°C for Aggressive Solar
+- Comfort bounds: 18–22°C standard (18-22.5°C for Cost-Optimized)
 - Solar priority: penalize grid consumption in objective function
 - Equipment limits: heat pump capacity 136 kWh/day max observed
 - Battery degradation: account for reduced efficiency (83.7%) post-event
@@ -321,17 +317,18 @@ Validated strategies on 64 days of historical data:
 ### 5.1 Study Design
 - **Type**: Randomized crossover intervention study
 - **Duration**: November 2027 - March 2028 (~20 weeks)
-- **Intervention period**: 3-5 days per condition (randomized)
-- **Conditions**: 4 parameter sets (baseline + 3 optimized strategies)
+- **Intervention period**: 5 days per condition (3-day washout + 2-day measurement)
+- **Conditions**: 3 strategies (baseline + 2 optimized strategies)
+- **Total blocks**: 28 (~9 per strategy)
+- **Statistical power**: >95% to detect +0.30 COP change
 
 ### 5.2 Parameter Sets to Compare
-Four strategies defined in Phase 4:
+Three strategies defined in Phase 4:
 
 | Strategy | Schedule | Curve Rise | Key Focus |
 |----------|----------|------------|-----------|
 | **Baseline** | 06:30-20:00 | 1.08 | Control (current settings) |
 | **Energy-Optimized** | 10:00-18:00 | 0.98 | Minimize grid consumption |
-| **Aggressive Solar** | 10:00-17:00 | 0.95 | Maximum solar utilization |
 | **Cost-Optimized** | 11:00-21:00 | 0.95/0.85 | Minimize costs via tariff arbitrage |
 
 See `phase5_parameter_sets.json` for exact parameter values.
@@ -367,10 +364,9 @@ See `phase5_parameter_sets.json` for exact parameter values.
 - Identify interaction effects (e.g., strategy × weather conditions)
 
 ### 5.7 Sample Size Considerations
-- ~20 weeks ÷ 4 days/block = ~35 blocks
-- With 4 strategies: ~9 blocks per strategy
-- Power analysis: sufficient to detect 15% difference in energy consumption
-- Consider extending study or reducing block size to maintain statistical power
+- 20 weeks ÷ 5 days/block = 28 blocks
+- With 3 strategies: ~9 blocks per strategy
+- Power analysis: >95% power to detect +0.30 COP change (equivalent to ~10% efficiency improvement)
 
 ---
 
@@ -406,13 +402,12 @@ See `phase5_parameter_sets.json` for exact parameter values.
 
 ## Confirmed Requirements (Updated from Analysis)
 
-- **Heat pump control**: Partial
+- **Heat pump control**: Yes
   - Via Home Assistant: room setpoints (comfort/eco)
   - Via heat pump interface: curve rise, schedule timing
-  - Manual only: buffer tank target temperatures
 - **Room sensors**: 12 temperature sensors confirmed:
   - atelier, bric, dorme, halle, office1, simlab, studio, guest, cave, plant, bano, davis_inside
-- **Comfort bounds**: Flexible range 18–23°C acceptable (17-23°C for Aggressive Solar), **evaluated during 08:00-22:00 only**
+- **Comfort bounds**: Flexible range 18–22°C standard (18-22.5°C for Cost-Optimized), **evaluated during 08:00-22:00 only**
 - **Tariff optimization**: ✓ Implemented - Cost-Optimized strategy uses Primeo Energie high/low tariffs
 - **Current baseline performance**:
   - Heat pump COP: 4.01 mean (good efficiency)

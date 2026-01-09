@@ -15,31 +15,25 @@
     },
     "setpoint_settings": {
       "setpoint_comfort": 20.2,
-      "setpoint_eco": 18.0,
+      "setpoint_eco": 18.5,
       "setpoint_unit": "celsius",
       "setpoint_notes": "Set via Home Assistant climate entity"
     },
-    "buffer_settings": {
-      "buffer_target": 36.0,
-      "buffer_unit": "celsius",
-      "buffer_notes": "Requires manual adjustment at heat pump"
-    },
     "comfort_bounds": {
-      "min_temp": 18.0,
+      "min_temp": 18.5,
       "max_temp": 22.0,
       "unit": "celsius"
     },
     "dynamic_rules": {
       "curve_rise_grid_fallback": 1.08,
-      "buffer_boost_hours": [],
       "notes": "Optional automation rules - manual implementation in Phase 5"
     },
     "expected_outcomes": {
-      "cop_mean": 4.09,
-      "cop_vs_baseline": -0.12,
+      "cop_mean": 4.07,
+      "cop_vs_baseline": -0.14,
       "self_sufficiency": 0.401,
       "self_sufficiency_vs_baseline_pp": 0.0,
-      "comfort_compliance": 0.849,
+      "comfort_compliance": 0.624,
       "daily_net_cost_chf": 5.39,
       "cost_reduction_pct": 0.0
     },
@@ -65,95 +59,25 @@
     },
     "setpoint_settings": {
       "setpoint_comfort": 20.0,
-      "setpoint_eco": 17.5,
+      "setpoint_eco": 18.0,
       "setpoint_unit": "celsius",
       "setpoint_notes": "Set via Home Assistant climate entity"
     },
-    "buffer_settings": {
-      "buffer_target": 40.0,
-      "buffer_unit": "celsius",
-      "buffer_notes": "Requires manual adjustment at heat pump"
-    },
     "comfort_bounds": {
-      "min_temp": 18.0,
+      "min_temp": 18.5,
       "max_temp": 22.0,
       "unit": "celsius"
     },
     "dynamic_rules": {
       "curve_rise_grid_fallback": 0.9,
-      "buffer_boost_hours": [
-        11,
-        12,
-        13,
-        14,
-        15
-      ],
       "notes": "Optional automation rules - manual implementation in Phase 5"
     },
     "expected_outcomes": {
-      "cop_mean": 4.39,
-      "cop_vs_baseline": 0.18,
+      "cop_mean": 4.36,
+      "cop_vs_baseline": 0.14,
       "self_sufficiency": 0.401,
       "self_sufficiency_vs_baseline_pp": 0.0,
-      "comfort_compliance": 0.849,
-      "daily_net_cost_chf": 5.39,
-      "cost_reduction_pct": 0.0
-    },
-    "confidence_intervals": {
-      "cop_ci_95": "\u00b10.3",
-      "self_sufficiency_ci_95": "\u00b15pp",
-      "notes": "Estimated from simulation; will refine in Phase 5"
-    }
-  },
-  "aggressive_solar": {
-    "strategy_id": "aggressive_solar",
-    "name": "Aggressive Solar",
-    "description": "Push to 85% self-sufficiency target",
-    "heat_pump_settings": {
-      "curve_rise": 0.95,
-      "curve_rise_unit": "dimensionless",
-      "curve_rise_notes": "Set via heat pump controller menu"
-    },
-    "schedule_settings": {
-      "comfort_start": "10:00",
-      "comfort_end": "17:00",
-      "schedule_notes": "Set comfort period start/end in heat pump scheduler"
-    },
-    "setpoint_settings": {
-      "setpoint_comfort": 21.0,
-      "setpoint_eco": 17.0,
-      "setpoint_unit": "celsius",
-      "setpoint_notes": "Set via Home Assistant climate entity"
-    },
-    "buffer_settings": {
-      "buffer_target": 45.0,
-      "buffer_unit": "celsius",
-      "buffer_notes": "Requires manual adjustment at heat pump"
-    },
-    "comfort_bounds": {
-      "min_temp": 18.0,
-      "max_temp": 23.0,
-      "unit": "celsius"
-    },
-    "dynamic_rules": {
-      "curve_rise_grid_fallback": 0.85,
-      "buffer_boost_hours": [
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16
-      ],
-      "notes": "Optional automation rules - manual implementation in Phase 5"
-    },
-    "expected_outcomes": {
-      "cop_mean": 4.46,
-      "cop_vs_baseline": 0.25,
-      "self_sufficiency": 0.401,
-      "self_sufficiency_vs_baseline_pp": 0.0,
-      "comfort_compliance": 0.849,
+      "comfort_compliance": 0.624,
       "daily_net_cost_chf": 5.39,
       "cost_reduction_pct": 0.0
     },
@@ -179,37 +103,25 @@
     },
     "setpoint_settings": {
       "setpoint_comfort": 20.0,
-      "setpoint_eco": 17.0,
+      "setpoint_eco": 17.5,
       "setpoint_unit": "celsius",
       "setpoint_notes": "Set via Home Assistant climate entity"
     },
-    "buffer_settings": {
-      "buffer_target": 38.0,
-      "buffer_unit": "celsius",
-      "buffer_notes": "Requires manual adjustment at heat pump"
-    },
     "comfort_bounds": {
-      "min_temp": 18.0,
+      "min_temp": 18.5,
       "max_temp": 22.5,
       "unit": "celsius"
     },
     "dynamic_rules": {
       "curve_rise_grid_fallback": 0.85,
-      "buffer_boost_hours": [
-        11,
-        12,
-        13,
-        14,
-        15
-      ],
       "notes": "Optional automation rules - manual implementation in Phase 5"
     },
     "expected_outcomes": {
-      "cop_mean": 4.43,
-      "cop_vs_baseline": 0.22,
+      "cop_mean": 4.4,
+      "cop_vs_baseline": 0.19,
       "self_sufficiency": 0.401,
       "self_sufficiency_vs_baseline_pp": 0.0,
-      "comfort_compliance": 0.849,
+      "comfort_compliance": 0.624,
       "daily_net_cost_chf": 5.39,
       "cost_reduction_pct": 0.0
     },

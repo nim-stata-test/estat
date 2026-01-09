@@ -80,21 +80,14 @@ def generate_parameter_sets(strategies: dict, comparison: pd.DataFrame) -> dict:
             # Temperature setpoints (via Home Assistant)
             'setpoint_settings': {
                 'setpoint_comfort': params.get('setpoint_comfort', 20.0),
-                'setpoint_eco': params.get('setpoint_eco', 18.0),
+                'setpoint_eco': params.get('setpoint_eco', 18.5),
                 'setpoint_unit': 'celsius',
                 'setpoint_notes': 'Set via Home Assistant climate entity',
             },
 
-            # Buffer tank (manual adjustment)
-            'buffer_settings': {
-                'buffer_target': params.get('buffer_target', 36.0),
-                'buffer_unit': 'celsius',
-                'buffer_notes': 'Requires manual adjustment at heat pump',
-            },
-
             # Comfort bounds for monitoring
             'comfort_bounds': {
-                'min_temp': params.get('comfort_band_min', 18.0),
+                'min_temp': params.get('comfort_band_min', 18.5),
                 'max_temp': params.get('comfort_band_max', 22.0),
                 'unit': 'celsius',
             },
@@ -102,7 +95,6 @@ def generate_parameter_sets(strategies: dict, comparison: pd.DataFrame) -> dict:
             # Dynamic rules (for future automation)
             'dynamic_rules': {
                 'curve_rise_grid_fallback': params.get('curve_rise_grid_fallback', params.get('curve_rise', 1.08)),
-                'buffer_boost_hours': params.get('buffer_boost_hours', []),
                 'notes': 'Optional automation rules - manual implementation in Phase 5',
             },
 
@@ -251,13 +243,11 @@ def plot_parameter_space(parameter_sets: dict) -> None:
     colors = {
         'baseline': '#2E86AB',
         'energy_optimized': '#A23B72',
-        'aggressive_solar': '#F18F01',
         'cost_optimized': '#00A896',
     }
     markers = {
         'baseline': 'o',
         'energy_optimized': 's',
-        'aggressive_solar': '^',
         'cost_optimized': 'D',
     }
 
@@ -344,14 +334,10 @@ def plot_parameter_space(parameter_sets: dict) -> None:
     ax = axes[1, 1]
     ax.axis('off')
 
-    # Create table - include cost_optimized if present
+    # Create table
     table_data = []
-    strategy_ids = ['baseline', 'energy_optimized', 'aggressive_solar']
-    headers = ['Parameter', 'Baseline', 'Energy-Opt', 'Aggressive']
-
-    if 'cost_optimized' in parameter_sets:
-        strategy_ids.append('cost_optimized')
-        headers.append('Cost-Opt')
+    strategy_ids = ['baseline', 'energy_optimized', 'cost_optimized']
+    headers = ['Parameter', 'Baseline', 'Energy-Opt', 'Cost-Opt']
 
     params_to_show = [
         ('Comfort Start', 'comfort_start'),
@@ -435,9 +421,8 @@ def generate_implementation_checklist(parameter_sets: dict) -> str:
 Comfort Start:    06:30
 Comfort End:      20:00
 Setpoint Comfort: 20.2°C
-Setpoint Eco:     18.0°C
+Setpoint Eco:     18.5°C
 Curve Rise:       1.08
-Buffer Target:    36°C
 ```
 
 ### Energy-Optimized Settings
@@ -445,19 +430,8 @@ Buffer Target:    36°C
 Comfort Start:    10:00
 Comfort End:      18:00
 Setpoint Comfort: 20.0°C
-Setpoint Eco:     17.5°C
+Setpoint Eco:     18.0°C
 Curve Rise:       0.98
-Buffer Target:    40°C
-```
-
-### Aggressive Solar Settings
-```
-Comfort Start:    10:00
-Comfort End:      17:00
-Setpoint Comfort: 21.0°C
-Setpoint Eco:     17.0°C
-Curve Rise:       0.95
-Buffer Target:    45°C
 ```
 
 ### Cost-Optimized Settings
@@ -465,9 +439,8 @@ Buffer Target:    45°C
 Comfort Start:    11:00
 Comfort End:      21:00
 Setpoint Comfort: 20.0°C
-Setpoint Eco:     17.0°C
+Setpoint Eco:     17.5°C
 Curve Rise:       0.95
-Buffer Target:    40°C
 Curve Rise (Grid): 0.85 (when grid-dependent)
 ```
 
@@ -493,7 +466,6 @@ Curve Rise (Grid): 0.85 (when grid-dependent)
 |----------|------------------------|------------|-------------|-------------|
 | Baseline | 58% | 3.5 | 95% | — |
 | Energy-Optimized | 68% | 4.0 | 95% | +5-10% savings |
-| Aggressive Solar | 85% | 4.2 | 95% | +10-15% savings |
 | Cost-Optimized | 61% | 3.4 | 90% | +15-25% savings |
 
 ## Safety Limits
@@ -590,7 +562,6 @@ def generate_report(parameter_sets: dict, predictions: dict) -> str:
         <li><strong>Curve Rise</strong>: Adjust via heat pump controller menu. Primary lever for COP improvement.</li>
         <li><strong>Schedule</strong>: Set comfort period in heat pump scheduler. Aligns heating with PV availability.</li>
         <li><strong>Setpoints</strong>: Control via Home Assistant climate entity. Automate if desired.</li>
-        <li><strong>Buffer Target</strong>: Requires manual adjustment at heat pump. Set once per strategy block.</li>
     </ul>
 
     <h3>Success Criteria</h3>

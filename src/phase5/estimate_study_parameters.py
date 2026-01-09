@@ -117,7 +117,7 @@ def estimate_block_length(tau_weighted):
     # Parameters
     study_weeks = 20
     study_days = study_weeks * 7
-    n_strategies = 4
+    n_strategies = 3
     alpha = 0.05
     target_power = 0.80
 
@@ -228,7 +228,6 @@ def refined_power_analysis(tau_weighted):
     print("-" * 40)
     expected_effects = {
         'Energy-Optimized vs Baseline': 0.30,
-        'Aggressive Solar vs Baseline': 0.37,
         'Cost-Optimized vs Baseline': 0.34,
     }
     for name, effect in expected_effects.items():
@@ -241,7 +240,7 @@ def refined_power_analysis(tau_weighted):
 
     study_weeks = 20
     study_days = study_weeks * 7
-    n_strategies = 4
+    n_strategies = 3
     alpha = 0.05
     target_effect = 0.30  # Minimum expected effect (Energy-Optimized)
 
@@ -320,11 +319,11 @@ def sensitivity_analysis():
     residual_std = residuals.std()
 
     print("\nPower to detect different COP improvements:")
-    print("(5-day blocks, 3-day washout, 2-day measurement, 7 blocks/strategy)")
+    print("(5-day blocks, 3-day washout, 2-day measurement, 9 blocks/strategy)")
     print(f"\n{'COP change':<12} {'Power':<10} {'Detectable?':<15}")
     print("-" * 40)
 
-    blocks_per_strategy = 7
+    blocks_per_strategy = 9
     measure_days = 2
     df = 2 * blocks_per_strategy - 2
     alpha = 0.05

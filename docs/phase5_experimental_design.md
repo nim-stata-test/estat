@@ -7,7 +7,7 @@
 ## 1. Study Overview
 
 ### 1.1 Objective
-Evaluate four heating control strategies in a real-world setting to determine which optimizes the trade-off between comfort, energy efficiency, and cost.
+Evaluate three heating control strategies in a real-world setting to determine which optimizes the trade-off between comfort, energy efficiency, and cost.
 
 ### 1.2 Study Design
 | Aspect | Value |
@@ -17,9 +17,9 @@ Evaluate four heating control strategies in a real-world setting to determine wh
 | **Block length** | 5 days per condition |
 | **Washout period** | 3 days (excluded from analysis) |
 | **Measurement period** | 2 days (used for analysis) |
-| **Conditions** | 4 strategies |
-| **Total blocks** | 28 blocks (7 per strategy) |
-| **Statistical power** | 93% to detect +0.30 COP change |
+| **Conditions** | 3 strategies |
+| **Total blocks** | 28 blocks (~9 per strategy) |
+| **Statistical power** | >95% to detect +0.30 COP change |
 | **Randomization** | Latin square with weather stratification |
 
 ### 1.3 Data-Driven Parameter Estimates
@@ -52,14 +52,12 @@ These parameters were estimated from 69 days of historical data using `src/phase
 | Setpoint (comfort) | `T_setpoint_comfort` | 19 - 22°C | Home Assistant climate entity |
 | Setpoint (eco) | `T_setpoint_eco` | 16 - 19°C | Home Assistant climate entity |
 | Curve rise (Steilheit) | `curve_rise` | 0.80 - 1.20 | Heat pump interface menu |
-| Buffer tank target | `T_buffer` | 35 - 50°C | Heat pump interface (manual) |
 
 ### 2.2 Parameter Change Locations
 
 #### Heat Pump Interface (Stiebel Eltron ISG)
 - **Schedule timing**: Menu → Time Programs → Heating → Set comfort period start/end
 - **Curve rise**: Menu → Heating → Heating Curve → Steilheit (slope)
-- **Buffer target**: Menu → Buffer Tank → Target Temperature
 
 #### Home Assistant
 - **Setpoints**: Climate entity → Set target temperature
@@ -90,9 +88,8 @@ Current system settings serving as reference.
 | Comfort start | **06:30** | Early morning pre-heat |
 | Comfort end | **20:00** | Evening cooldown |
 | Setpoint comfort | **20.2°C** | Current winter setting |
-| Setpoint eco | **18.0°C** | Night/away setting |
+| Setpoint eco | **18.5°C** | Night/away setting |
 | Curve rise | **1.08** | Factory default |
-| Buffer target | **36°C** | Current setting |
 
 **Expected outcomes**: COP 4.09, Self-sufficiency 40%, Comfort 85%
 
@@ -106,33 +103,14 @@ Minimize grid electricity while maintaining comfort.
 | Comfort start | **10:00** | Aligned with solar production |
 | Comfort end | **18:00** | Before evening peak demand |
 | Setpoint comfort | **20.0°C** | Slightly reduced |
-| Setpoint eco | **17.5°C** | Morning pre-heat lower |
+| Setpoint eco | **18.0°C** | Morning pre-heat lower |
 | Curve rise | **0.98** | 10% reduction for better COP |
-| Buffer target | **40°C** | Higher for thermal storage |
 
 **Expected outcomes**: COP 4.39 (+0.30), Grid -15%, Comfort 85%
 
 ---
 
-### 3.3 Strategy C: Aggressive Solar
-Maximum solar utilization with wider comfort tolerance.
-
-| Parameter | Value | Notes |
-|-----------|-------|-------|
-| Comfort start | **10:00** | Peak solar alignment |
-| Comfort end | **17:00** | Shorter comfort window |
-| Setpoint comfort | **21.0°C** | Higher to store thermal energy |
-| Setpoint eco | **17.0°C** | Aggressive night setback |
-| Curve rise | **0.95** | Lowest tested value |
-| Buffer target | **45°C** | Maximum thermal storage |
-
-**Comfort bounds**: 17-23°C (wider than standard)
-
-**Expected outcomes**: COP 4.46 (+0.37), Grid -25%, Comfort 98%
-
----
-
-### 3.4 Strategy D: Cost-Optimized
+### 3.3 Strategy C: Cost-Optimized
 Minimize electricity costs via tariff arbitrage.
 
 | Parameter | Value | Notes |
@@ -140,9 +118,8 @@ Minimize electricity costs via tariff arbitrage.
 | Comfort start | **11:00** | After morning high-tariff peak |
 | Comfort end | **21:00** | Into low-tariff evening |
 | Setpoint comfort | **20.0°C** | Standard comfort |
-| Setpoint eco | **17.0°C** | Aggressive night setback |
+| Setpoint eco | **17.5°C** | Aggressive night setback |
 | Curve rise | **0.95** | Low flow temps |
-| Buffer target | **38°C** | Moderate storage |
 
 **Dynamic rule**: When grid-dependent, reduce curve_rise to 0.85
 
@@ -169,10 +146,10 @@ Output: `output/phase5/block_schedule.csv`
 
 | Block | Start Date | End Date | Strategy | Season | Washout | Measurement |
 |-------|------------|----------|----------|--------|---------|-------------|
-| 1 | 2027-11-01 | 2027-11-05 | B | Early | Nov 1-3 | Nov 4-5 |
-| 2 | 2027-11-06 | 2027-11-10 | A | Early | Nov 6-8 | Nov 9-10 |
-| 3 | 2027-11-11 | 2027-11-15 | D | Early | Nov 11-13 | Nov 14-15 |
-| 4 | 2027-11-16 | 2027-11-20 | C | Early | Nov 16-18 | Nov 19-20 |
+| 1 | 2027-11-01 | 2027-11-05 | C | Early | Nov 1-3 | Nov 4-5 |
+| 2 | 2027-11-06 | 2027-11-10 | B | Early | Nov 6-8 | Nov 9-10 |
+| 3 | 2027-11-11 | 2027-11-15 | C | Early | Nov 11-13 | Nov 14-15 |
+| 4 | 2027-11-16 | 2027-11-20 | A | Early | Nov 16-18 | Nov 19-20 |
 | ... | ... | ... | ... | ... | ... | ... |
 
 ### 4.4 Season Definitions
@@ -202,9 +179,8 @@ The 3-day washout is based on the building's thermal time constant (19.3 hours).
 #### At Transition Time (00:00)
 1. [ ] **Heat pump scheduler**: Set new comfort start/end times
 2. [ ] **Curve rise**: Navigate to Heating Curve menu, adjust Steilheit
-3. [ ] **Buffer target**: Adjust if different from current
-4. [ ] **Home Assistant**: Update climate entity setpoints
-5. [ ] **Log**: Record exact change time in block log
+3. [ ] **Home Assistant**: Update climate entity setpoints
+4. [ ] **Log**: Record exact change time in block log
 
 #### Verification (Morning After)
 1. [ ] Confirm schedule is active (check heat pump display)
@@ -216,27 +192,18 @@ The 3-day washout is based on the building's thermal time constant (19.3 hours).
 ```
 STRATEGY A (Baseline):
   Schedule: 06:30 - 20:00
-  Setpoints: Comfort 20.2°C, Eco 18.0°C
+  Setpoints: Comfort 20.2°C, Eco 18.5°C
   Curve rise: 1.08
-  Buffer: 36°C
 
 STRATEGY B (Energy-Optimized):
   Schedule: 10:00 - 18:00
-  Setpoints: Comfort 20.0°C, Eco 17.5°C
+  Setpoints: Comfort 20.0°C, Eco 18.0°C
   Curve rise: 0.98
-  Buffer: 40°C
 
-STRATEGY C (Aggressive Solar):
-  Schedule: 10:00 - 17:00
-  Setpoints: Comfort 21.0°C, Eco 17.0°C
-  Curve rise: 0.95
-  Buffer: 45°C
-
-STRATEGY D (Cost-Optimized):
+STRATEGY C (Cost-Optimized):
   Schedule: 11:00 - 21:00
-  Setpoints: Comfort 20.0°C, Eco 17.0°C
+  Setpoints: Comfort 20.0°C, Eco 17.5°C
   Curve rise: 0.95
-  Buffer: 38°C
 ```
 
 ---
@@ -266,8 +233,8 @@ Complete each day during the study:
 
 ```
 Date: ________
-Block: ___ of 35
-Strategy: [ ] A  [ ] B  [ ] C  [ ] D
+Block: ___ of 28
+Strategy: [ ] A  [ ] B  [ ] C
 
 Weather:
   - Outdoor temp (min/max): ___°C / ___°C
@@ -352,10 +319,9 @@ Block quality: [ ] Good  [ ] Usable  [ ] Exclude (reason: ___)
 
 | Strategy | Min Temp | Max Temp | Evaluation Hours |
 |----------|----------|----------|------------------|
-| A (Baseline) | 18°C | 22°C | 08:00-22:00 |
-| B (Energy-Opt) | 18°C | 22°C | 08:00-22:00 |
-| C (Aggressive) | 17°C | 23°C | 08:00-22:00 |
-| D (Cost-Opt) | 18°C | 22.5°C | 08:00-22:00 |
+| A (Baseline) | 18.5°C | 22°C | 08:00-22:00 |
+| B (Energy-Opt) | 18.5°C | 22°C | 08:00-22:00 |
+| C (Cost-Opt) | 18.5°C | 22.5°C | 08:00-22:00 |
 
 ---
 
@@ -521,7 +487,6 @@ Example calculations (T_outdoor = 0°C):
 |----------|----------|------------|-------|--------|
 | Baseline | 20.2°C | 1.08 | 21.3°C | 43.2°C |
 | Energy-Opt | 20.0°C | 0.98 | 21.3°C | 40.9°C |
-| Aggressive | 21.0°C | 0.95 | 21.3°C | 41.2°C |
 | Cost-Opt | 20.0°C | 0.95 | 21.3°C | 40.2°C |
 
 ### Appendix B: Tariff Schedule Reference

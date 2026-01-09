@@ -3,7 +3,7 @@
     <h2>4.1 Rule-Based Optimization Strategies</h2>
 
     <h3>Methodology</h3>
-    <p>Three heating strategies were developed using Phase 3 model parameters:</p>
+    <p>Three heating optimization strategies were developed using Phase 3 model parameters:</p>
     <ul>
         <li><strong>COP Model</strong>: COP = 6.52 + 0.13×T_outdoor - 0.10×T_flow (R²=0.95)</li>
         <li><strong>Building Time Constant</strong>: ~19 hours (weighted average from target sensors)</li>
@@ -24,17 +24,16 @@
         <tr><td>Comfort Start</td><td>06:30</td></tr>
         <tr><td>Comfort End</td><td>20:00</td></tr>
         <tr><td>Setpoint (Comfort)</td><td>20.2°C</td></tr>
-        <tr><td>Setpoint (Eco)</td><td>18.0°C</td></tr>
+        <tr><td>Setpoint (Eco)</td><td>18.5°C</td></tr>
         <tr><td>Curve Rise</td><td>1.08</td></tr>
-        <tr><td>Buffer Target</td><td>36.0°C</td></tr>
-        <tr><td>Comfort Band</td><td>18.0-22.0°C</td></tr>
+        <tr><td>Comfort Band</td><td>18.5-22.0°C</td></tr>
         </table>
 
         <p><strong>Rules:</strong></p>
         <ul>
         <li>Use current schedule (06:30-20:00 comfort mode)</li>
 <li>Maintain current curve rise (1.08)</li>
-<li>Standard comfort band (18-22°C)</li>
+<li>Standard comfort band (18.5-22°C)</li>
 <li>No dynamic adjustments based on PV/grid state</li>
 
         </ul>
@@ -58,10 +57,9 @@
         <tr><td>Comfort Start</td><td>10:00</td></tr>
         <tr><td>Comfort End</td><td>18:00</td></tr>
         <tr><td>Setpoint (Comfort)</td><td>20.0°C</td></tr>
-        <tr><td>Setpoint (Eco)</td><td>17.5°C</td></tr>
+        <tr><td>Setpoint (Eco)</td><td>18.0°C</td></tr>
         <tr><td>Curve Rise</td><td>0.98</td></tr>
-        <tr><td>Buffer Target</td><td>40.0°C</td></tr>
-        <tr><td>Comfort Band</td><td>18.0-22.0°C</td></tr>
+        <tr><td>Comfort Band</td><td>18.5-22.0°C</td></tr>
         </table>
 
         <p><strong>Rules:</strong></p>
@@ -70,7 +68,6 @@
 <li>End comfort at 18:00 - rely on thermal inertia for evening</li>
 <li>Lower curve_rise to 0.98 for better COP (+1.0 COP improvement)</li>
 <li>When grid-dependent (battery<20%, no PV): use curve_rise 0.90</li>
-<li>Boost buffer charging during 11:00-15:00 (40°C target)</li>
 <li>Pre-heat building during solar hours into thermal mass</li>
 
         </ul>
@@ -85,43 +82,6 @@
         </div>
         
         <div class="strategy-card" style="border: 1px solid #ccc; padding: 15px; margin: 10px 0; border-radius: 5px;">
-        <h4>Aggressive Solar</h4>
-        <p><em>Push to 85% self-sufficiency target</em></p>
-        <p><strong>Goal:</strong> Maximum solar utilization with wider comfort tolerance</p>
-
-        <table>
-        <tr><th>Parameter</th><th>Value</th></tr>
-        <tr><td>Comfort Start</td><td>10:00</td></tr>
-        <tr><td>Comfort End</td><td>17:00</td></tr>
-        <tr><td>Setpoint (Comfort)</td><td>21.0°C</td></tr>
-        <tr><td>Setpoint (Eco)</td><td>17.0°C</td></tr>
-        <tr><td>Curve Rise</td><td>0.95</td></tr>
-        <tr><td>Buffer Target</td><td>45.0°C</td></tr>
-        <tr><td>Comfort Band</td><td>18.0-23.0°C</td></tr>
-        </table>
-
-        <p><strong>Rules:</strong></p>
-        <ul>
-        <li>All Energy-Optimized rules, plus:</li>
-<li>Accept wider comfort band (18-23°C vs 18-22°C)</li>
-<li>Boost to 21°C during PV peak - store heat in building mass</li>
-<li>Deep evening/night setback to 17°C</li>
-<li>Aggressive curve_rise reduction (0.95 normal, 0.85 on grid)</li>
-<li>Maximum buffer charging (45°C) during solar hours</li>
-<li>End comfort at 17:00 - rely on ~19h thermal time constant</li>
-
-        </ul>
-
-        <p><strong>Expected Improvement vs Baseline:</strong></p>
-        <ul>
-            <li>Self-sufficiency: +27 percentage points</li>
-            <li>Grid reduction: 40%</li>
-            <li>COP improvement: +0.7</li>
-            
-        </ul>
-        </div>
-        
-        <div class="strategy-card" style="border: 1px solid #ccc; padding: 15px; margin: 10px 0; border-radius: 5px;">
         <h4>Cost-Optimized</h4>
         <p><em>Minimize electricity costs while maintaining comfort</em></p>
         <p><strong>Goal:</strong> Maintain comfort, minimize annual electricity bill</p>
@@ -131,10 +91,9 @@
         <tr><td>Comfort Start</td><td>11:00</td></tr>
         <tr><td>Comfort End</td><td>21:00</td></tr>
         <tr><td>Setpoint (Comfort)</td><td>20.0°C</td></tr>
-        <tr><td>Setpoint (Eco)</td><td>17.0°C</td></tr>
+        <tr><td>Setpoint (Eco)</td><td>17.5°C</td></tr>
         <tr><td>Curve Rise</td><td>0.95</td></tr>
-        <tr><td>Buffer Target</td><td>38.0°C</td></tr>
-        <tr><td>Comfort Band</td><td>18.0-22.5°C</td></tr>
+        <tr><td>Comfort Band</td><td>18.5-22.5°C</td></tr>
         </table>
 
         <p><strong>Rules:</strong></p>
@@ -163,7 +122,6 @@
         <tr><th>Strategy</th><th>Average COP</th><th>vs Baseline</th></tr>
         <tr><td>Baseline</td><td>3.25</td><td>—</td></tr>
         <tr><td>Energy-Optimized</td><td>3.44</td><td>+0.19</td></tr>
-        <tr><td>Aggressive Solar</td><td>3.39</td><td>+0.14</td></tr>
         <tr><td>Cost-Optimized</td><td>3.49</td><td>+0.24</td></tr>
     </table>
 
@@ -177,7 +135,7 @@
     <h3>Schedule Optimization Rationale</h3>
     <p>Shifting comfort mode from 06:30-20:00 to 10:00-17:00/18:00:</p>
     <ul>
-        <li><strong>Morning (06:30-10:00)</strong>: Building maintains 17-18°C using ~19h thermal mass.
+        <li><strong>Morning (06:30-10:00)</strong>: Building maintains 17.5-18.5°C using ~19h thermal mass.
             PV not yet available, so early heating uses grid/battery.</li>
         <li><strong>Midday (10:00-16:00)</strong>: Maximum heating during PV peak. Pre-heat to 20-21°C,
             storing energy in building thermal mass.</li>

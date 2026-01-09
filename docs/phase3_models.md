@@ -377,7 +377,7 @@ Three scenarios were modeled to estimate improvement potential:
 ```
 Maximize: Comfort_Compliance (% time T_room in comfort band)
 Subject to:
-  - T_room ∈ [18°C, 23°C] for comfort hours (primary constraint)
+  - T_room ∈ [18.5°C, 23°C] for comfort hours (primary constraint)
   - T_room ∈ [16°C, 25°C] for eco hours
   - Equipment capacity limits
   - Solar priority (prefer PV over grid)

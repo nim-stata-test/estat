@@ -221,10 +221,10 @@ def simulate_strategy(sim_data: pd.DataFrame, strategy: dict,
     comfort_start = params.get('comfort_start', 6.5)
     comfort_end = params.get('comfort_end', 20.0)
     setpoint_comfort = params.get('setpoint_comfort', 20.0)
-    setpoint_eco = params.get('setpoint_eco', 18.0)
+    setpoint_eco = params.get('setpoint_eco', 18.5)
     curve_rise = params.get('curve_rise', 1.08)
     curve_rise_grid = params.get('curve_rise_grid_fallback', curve_rise)
-    comfort_min = params.get('comfort_band_min', 18.0)
+    comfort_min = params.get('comfort_band_min', 18.5)
     comfort_max = params.get('comfort_band_max', 22.0)
 
     results = []
@@ -439,7 +439,6 @@ def plot_simulation_results(simulation_results: pd.DataFrame, daily_metrics: pd.
     colors = {
         'baseline': '#2E86AB',
         'energy_optimized': '#A23B72',
-        'aggressive_solar': '#F18F01',
         'cost_optimized': '#00A896',
     }
 
@@ -492,7 +491,7 @@ def plot_simulation_results(simulation_results: pd.DataFrame, daily_metrics: pd.
     x = np.arange(len(metrics))
     width = 0.35
 
-    for i, strategy_id in enumerate(['energy_optimized', 'aggressive_solar']):
+    for i, strategy_id in enumerate(['energy_optimized', 'cost_optimized']):
         row = comparison[comparison['strategy'] == strategy_id].iloc[0]
         values = [
             row['cop_vs_baseline'],
@@ -553,20 +552,14 @@ def generate_report(comparison: pd.DataFrame, daily_metrics: pd.DataFrame,
     # Calculate summary stats
     baseline_row = comparison[comparison['strategy'] == 'baseline'].iloc[0]
     energy_row = comparison[comparison['strategy'] == 'energy_optimized'].iloc[0]
-    aggressive_row = comparison[comparison['strategy'] == 'aggressive_solar'].iloc[0]
-
-    # Cost-optimized may not exist in older runs
-    cost_row = comparison[comparison['strategy'] == 'cost_optimized']
-    has_cost = len(cost_row) > 0
-    if has_cost:
-        cost_row = cost_row.iloc[0]
+    cost_row = comparison[comparison['strategy'] == 'cost_optimized'].iloc[0]
 
     html = f"""
     <section id="strategy-simulation">
     <h2>4.2 Strategy Simulation Results</h2>
 
     <h3>Methodology</h3>
-    <p>Simulated all four strategies on 64 days of historical data using Phase 3 models:</p>
+    <p>Simulated all three strategies on 64 days of historical data using Phase 3 models:</p>
     <ul>
         <li>COP prediction based on outdoor and flow temperatures</li>
         <li>Flow temperature estimation from heating curve parameters</li>
@@ -581,57 +574,49 @@ def generate_report(comparison: pd.DataFrame, daily_metrics: pd.DataFrame,
             <th>Metric</th>
             <th>Baseline</th>
             <th>Energy-Optimized</th>
-            <th>Aggressive Solar</th>
-            {'<th>Cost-Optimized</th>' if has_cost else ''}
+            <th>Cost-Optimized</th>
         </tr>
         <tr>
             <td>Average COP</td>
             <td>{baseline_row['avg_cop']:.2f}</td>
             <td>{energy_row['avg_cop']:.2f} ({energy_row['cop_vs_baseline']:+.2f})</td>
-            <td>{aggressive_row['avg_cop']:.2f} ({aggressive_row['cop_vs_baseline']:+.2f})</td>
-            {'<td>' + f"{cost_row['avg_cop']:.2f} ({cost_row['cop_vs_baseline']:+.2f})" + '</td>' if has_cost else ''}
+            <td>{cost_row['avg_cop']:.2f} ({cost_row['cop_vs_baseline']:+.2f})</td>
         </tr>
         <tr>
             <td>Self-Sufficiency</td>
             <td>{baseline_row['self_sufficiency']*100:.1f}%</td>
             <td>{energy_row['self_sufficiency']*100:.1f}% ({energy_row['ss_vs_baseline']*100:+.1f}pp)</td>
-            <td>{aggressive_row['self_sufficiency']*100:.1f}% ({aggressive_row['ss_vs_baseline']*100:+.1f}pp)</td>
-            {'<td>' + f"{cost_row['self_sufficiency']*100:.1f}% ({cost_row['ss_vs_baseline']*100:+.1f}pp)" + '</td>' if has_cost else ''}
+            <td>{cost_row['self_sufficiency']*100:.1f}% ({cost_row['ss_vs_baseline']*100:+.1f}pp)</td>
         </tr>
         <tr>
             <td>Comfort Compliance (08:00-22:00)</td>
             <td>{baseline_row['comfort_compliance']*100:.1f}%</td>
             <td>{energy_row['comfort_compliance']*100:.1f}%</td>
-            <td>{aggressive_row['comfort_compliance']*100:.1f}%</td>
-            {'<td>' + f"{cost_row['comfort_compliance']*100:.1f}%" + '</td>' if has_cost else ''}
+            <td>{cost_row['comfort_compliance']*100:.1f}%</td>
         </tr>
         <tr>
             <td>Solar Heating %</td>
             <td>{baseline_row['solar_heating_pct']*100:.1f}%</td>
             <td>{energy_row['solar_heating_pct']*100:.1f}%</td>
-            <td>{aggressive_row['solar_heating_pct']*100:.1f}%</td>
-            {'<td>' + f"{cost_row['solar_heating_pct']*100:.1f}%" + '</td>' if has_cost else ''}
+            <td>{cost_row['solar_heating_pct']*100:.1f}%</td>
         </tr>
         <tr>
             <td>Comfort Hours/Day</td>
             <td>{baseline_row['comfort_hours_per_day']:.1f}h</td>
             <td>{energy_row['comfort_hours_per_day']:.1f}h</td>
-            <td>{aggressive_row['comfort_hours_per_day']:.1f}h</td>
-            {'<td>' + f"{cost_row['comfort_hours_per_day']:.1f}h" + '</td>' if has_cost else ''}
+            <td>{cost_row['comfort_hours_per_day']:.1f}h</td>
         </tr>
         <tr>
             <td>Daily Net Cost</td>
             <td>CHF {baseline_row['daily_net_cost_chf']:.2f}</td>
             <td>CHF {energy_row['daily_net_cost_chf']:.2f} ({energy_row['cost_reduction_pct']:+.1f}%)</td>
-            <td>CHF {aggressive_row['daily_net_cost_chf']:.2f} ({aggressive_row['cost_reduction_pct']:+.1f}%)</td>
-            {'<td>CHF ' + f"{cost_row['daily_net_cost_chf']:.2f} ({cost_row['cost_reduction_pct']:+.1f}%)" + '</td>' if has_cost else ''}
+            <td>CHF {cost_row['daily_net_cost_chf']:.2f} ({cost_row['cost_reduction_pct']:+.1f}%)</td>
         </tr>
         <tr>
             <td>High Tariff Exposure</td>
             <td>{baseline_row['high_tariff_pct']*100:.1f}%</td>
             <td>{energy_row['high_tariff_pct']*100:.1f}%</td>
-            <td>{aggressive_row['high_tariff_pct']*100:.1f}%</td>
-            {'<td>' + f"{cost_row['high_tariff_pct']*100:.1f}%" + '</td>' if has_cost else ''}
+            <td>{cost_row['high_tariff_pct']*100:.1f}%</td>
         </tr>
     </table>
 
@@ -639,14 +624,13 @@ def generate_report(comparison: pd.DataFrame, daily_metrics: pd.DataFrame,
     <ul>
         <li><strong>COP Improvement</strong>: Optimized strategies achieve higher COP through
             lower flow temperatures. Energy-optimized gains +{energy_row['cop_vs_baseline']:.2f} COP,
-            Aggressive Solar gains +{aggressive_row['cop_vs_baseline']:.2f} COP{',' + f" Cost-optimized gains +{cost_row['cop_vs_baseline']:.2f} COP." if has_cost else '.'}</li>
+            Cost-optimized gains +{cost_row['cop_vs_baseline']:.2f} COP.</li>
         <li><strong>Self-Sufficiency</strong>: Schedule shifting improves solar-heating alignment.
             Energy-optimized: {energy_row['ss_vs_baseline']*100:+.1f}pp,
-            Aggressive Solar: {aggressive_row['ss_vs_baseline']*100:+.1f}pp{',' + f" Cost-optimized: {cost_row['ss_vs_baseline']*100:+.1f}pp." if has_cost else '.'}</li>
-        <li><strong>Comfort Trade-off</strong>: Aggressive Solar accepts wider temperature band
-            (17-23°C) to maximize solar utilization. Comfort compliance remains
-            {aggressive_row['comfort_compliance']*100:.1f}%.</li>
-        {'<li><strong>Cost Optimization</strong>: Cost-optimized strategy shifts heating to low-tariff periods (21:00-06:00, weekends) and reduces setpoints during high-tariff hours. Daily cost change: ' + f"{cost_row['cost_reduction_pct']:+.1f}%" + ' vs baseline.</li>' if has_cost else ''}
+            Cost-optimized: {cost_row['ss_vs_baseline']*100:+.1f}pp.</li>
+        <li><strong>Cost Optimization</strong>: Cost-optimized strategy shifts heating to low-tariff
+            periods (21:00-06:00, weekends) and reduces setpoints during high-tariff hours.
+            Daily cost change: {cost_row['cost_reduction_pct']:+.1f}% vs baseline.</li>
     </ul>
 
     <h3>Validation Against Expected Improvements</h3>
@@ -659,34 +643,38 @@ def generate_report(comparison: pd.DataFrame, daily_metrics: pd.DataFrame,
             <th>Status</th>
         </tr>
         <tr>
-            <td rowspan="{'3' if has_cost else '2'}">Self-Sufficiency Gain</td>
+            <td rowspan="2">Self-Sufficiency Gain</td>
             <td>Energy-Optimized</td>
             <td>+10pp</td>
             <td>{energy_row['ss_vs_baseline']*100:+.1f}pp</td>
             <td>{'OK' if abs(energy_row['ss_vs_baseline']*100 - 10) < 5 else 'Check'}</td>
         </tr>
         <tr>
-            <td>Aggressive Solar</td>
-            <td>+27pp</td>
-            <td>{aggressive_row['ss_vs_baseline']*100:+.1f}pp</td>
-            <td>{'OK' if abs(aggressive_row['ss_vs_baseline']*100 - 27) < 10 else 'Check'}</td>
+            <td>Cost-Optimized</td>
+            <td>+3pp</td>
+            <td>{cost_row['ss_vs_baseline']*100:+.1f}pp</td>
+            <td>{'OK' if abs(cost_row['ss_vs_baseline']*100 - 3) < 5 else 'Check'}</td>
         </tr>
-        {'<tr><td>Cost-Optimized</td><td>+3pp</td><td>' + f"{cost_row['ss_vs_baseline']*100:+.1f}pp" + '</td><td>' + ('OK' if abs(cost_row['ss_vs_baseline']*100 - 3) < 5 else 'Check') + '</td></tr>' if has_cost else ''}
         <tr>
-            <td rowspan="{'3' if has_cost else '2'}">COP Improvement</td>
+            <td rowspan="2">COP Improvement</td>
             <td>Energy-Optimized</td>
             <td>+0.5</td>
             <td>{energy_row['cop_vs_baseline']:+.2f}</td>
             <td>{'OK' if abs(energy_row['cop_vs_baseline'] - 0.5) < 0.3 else 'Check'}</td>
         </tr>
         <tr>
-            <td>Aggressive Solar</td>
-            <td>+0.7</td>
-            <td>{aggressive_row['cop_vs_baseline']:+.2f}</td>
-            <td>{'OK' if abs(aggressive_row['cop_vs_baseline'] - 0.7) < 0.4 else 'Check'}</td>
+            <td>Cost-Optimized</td>
+            <td>-0.15</td>
+            <td>{cost_row['cop_vs_baseline']:+.2f}</td>
+            <td>{'OK' if abs(cost_row['cop_vs_baseline'] + 0.15) < 0.3 else 'Check'}</td>
         </tr>
-        {'<tr><td>Cost-Optimized</td><td>-0.15</td><td>' + f"{cost_row['cop_vs_baseline']:+.2f}" + '</td><td>' + ('OK' if abs(cost_row['cop_vs_baseline'] + 0.15) < 0.3 else 'Check') + '</td></tr>' if has_cost else ''}
-        {'<tr><td>Cost Reduction</td><td>Cost-Optimized</td><td>-20%</td><td>' + f"{cost_row['cost_reduction_pct']:+.1f}%" + '</td><td>' + ('OK' if abs(cost_row['cost_reduction_pct'] + 20) < 15 else 'Check') + '</td></tr>' if has_cost else ''}
+        <tr>
+            <td>Cost Reduction</td>
+            <td>Cost-Optimized</td>
+            <td>-20%</td>
+            <td>{cost_row['cost_reduction_pct']:+.1f}%</td>
+            <td>{'OK' if abs(cost_row['cost_reduction_pct'] + 20) < 15 else 'Check'}</td>
+        </tr>
     </table>
 
     <p><em>Note: Simulation uses actual historical data, so results reflect real weather conditions
@@ -765,7 +753,7 @@ def main():
     print(f"  Self-sufficiency: {baseline['self_sufficiency']*100:.1f}%")
     print(f"  Daily net cost: CHF {baseline['daily_net_cost_chf']:.2f}")
 
-    for strategy_id in ['energy_optimized', 'aggressive_solar', 'cost_optimized']:
+    for strategy_id in ['energy_optimized', 'cost_optimized']:
         if strategy_id not in strategies:
             continue
         row = comparison[comparison['strategy'] == strategy_id].iloc[0]

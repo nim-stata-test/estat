@@ -27,7 +27,7 @@ OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase2'
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 # Comfort temperature bounds
-COMFORT_MIN = 18.0
+COMFORT_MIN = 18.5
 COMFORT_MAX = 23.0
 BASE_TEMP_HDD = 15.0  # Base temperature for heating degree days (Celsius)
 

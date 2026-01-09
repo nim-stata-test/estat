@@ -2,11 +2,10 @@
 """
 Phase 4, Step 1: Rule-Based Optimization Strategies
 
-Defines four heating optimization strategies based on Phase 3 model parameters:
+Defines three heating optimization strategies based on Phase 3 model parameters:
 1. Baseline: Current settings (control)
 2. Energy-Optimized: Maintain comfort, maximize solar self-consumption
-3. Aggressive Solar: Maintain comfort (wider band), push to 85% self-sufficiency
-4. Cost-Optimized: Maintain comfort, minimize electricity costs via tariff arbitrage
+3. Cost-Optimized: Maintain comfort, minimize electricity costs via tariff arbitrage
 
 Primary objective: Maintain comfortable temperature in key rooms
 Secondary objective: Minimize energy expenditure
@@ -82,10 +81,9 @@ BASELINE_SETTINGS = {
     'comfort_start': 6.5,  # 06:30
     'comfort_end': 20.0,  # 20:00
     'setpoint_comfort': 20.2,
-    'setpoint_eco': 18.0,
+    'setpoint_eco': 18.5,
     'curve_rise': 1.08,
-    'buffer_target': 36.0,
-    'comfort_band_min': 18.0,
+    'comfort_band_min': 18.5,
     'comfort_band_max': 22.0,
 }
 
@@ -107,7 +105,7 @@ def define_strategies() -> dict:
         'rules': [
             'Use current schedule (06:30-20:00 comfort mode)',
             'Maintain current curve rise (1.08)',
-            'Standard comfort band (18-22°C)',
+            'Standard comfort band (18.5-22°C)',
             'No dynamic adjustments based on PV/grid state',
         ],
         'expected_improvement': {
@@ -126,12 +124,10 @@ def define_strategies() -> dict:
             'comfort_start': 10.0,  # Delay to 10:00 (PV peak start)
             'comfort_end': 18.0,  # Earlier end to coast through evening
             'setpoint_comfort': 20.0,  # Slightly lower
-            'setpoint_eco': 17.5,  # Deeper setback
+            'setpoint_eco': 18.0,  # Deeper setback
             'curve_rise': 0.98,  # Lower flow temps = higher COP
             'curve_rise_grid_fallback': 0.90,  # Even lower when grid-dependent
-            'buffer_target': 40.0,  # Higher buffer for thermal storage
-            'buffer_boost_hours': [11, 12, 13, 14, 15],  # Charge buffer at PV peak
-            'comfort_band_min': 18.0,
+            'comfort_band_min': 18.5,
             'comfort_band_max': 22.0,
         },
         'rules': [
@@ -139,7 +135,6 @@ def define_strategies() -> dict:
             'End comfort at 18:00 - rely on thermal inertia for evening',
             'Lower curve_rise to 0.98 for better COP (+1.0 COP improvement)',
             'When grid-dependent (battery<20%, no PV): use curve_rise 0.90',
-            'Boost buffer charging during 11:00-15:00 (40°C target)',
             'Pre-heat building during solar hours into thermal mass',
         ],
         'expected_improvement': {
@@ -149,40 +144,7 @@ def define_strategies() -> dict:
         }
     }
 
-    # Strategy 3: Aggressive Solar (maximum self-sufficiency)
-    strategies['aggressive_solar'] = {
-        'name': 'Aggressive Solar',
-        'description': 'Push to 85% self-sufficiency target',
-        'goal': 'Maximum solar utilization with wider comfort tolerance',
-        'parameters': {
-            'comfort_start': 10.0,  # Same as energy-optimized
-            'comfort_end': 17.0,  # Even earlier - long coast-down
-            'setpoint_comfort': 21.0,  # Higher peak to store more heat
-            'setpoint_eco': 17.0,  # Deep setback (acceptable per user)
-            'curve_rise': 0.95,  # Lowest practical flow temp
-            'curve_rise_grid_fallback': 0.85,  # Aggressive reduction when on grid
-            'buffer_target': 45.0,  # Maximum thermal storage
-            'buffer_boost_hours': [10, 11, 12, 13, 14, 15, 16],  # Extended boost
-            'comfort_band_min': 18.0,  # Wider band (user approved)
-            'comfort_band_max': 23.0,  # Allow pre-heating overshoot
-        },
-        'rules': [
-            'All Energy-Optimized rules, plus:',
-            'Accept wider comfort band (18-23°C vs 18-22°C)',
-            'Boost to 21°C during PV peak - store heat in building mass',
-            'Deep evening/night setback to 17°C',
-            'Aggressive curve_rise reduction (0.95 normal, 0.85 on grid)',
-            'Maximum buffer charging (45°C) during solar hours',
-            'End comfort at 17:00 - rely on ~19h thermal time constant',
-        ],
-        'expected_improvement': {
-            'self_sufficiency': 0.27,  # +27pp (to reach 85% target)
-            'grid_reduction': 0.40,  # 40% less grid import
-            'cop_change': 0.7,  # +0.7 average COP
-        }
-    }
-
-    # Strategy 4: Cost-Optimized (minimize electricity costs while maintaining comfort)
+    # Strategy 3: Cost-Optimized (minimize electricity costs while maintaining comfort)
     strategies['cost_optimized'] = {
         'name': 'Cost-Optimized',
         'description': 'Minimize electricity costs while maintaining comfort',
@@ -193,15 +155,12 @@ def define_strategies() -> dict:
             'comfort_end': 21.0,    # Extend to low-tariff transition (21:00)
             # Temperature: Accept slightly lower comfort for savings
             'setpoint_comfort': 20.0,  # Reduced from 20.5
-            'setpoint_eco': 17.0,      # Lower eco = less night heating cost
+            'setpoint_eco': 17.5,      # Lower eco = less night heating cost
             # Heating curve: Aggressive reduction during grid-dependent periods
             'curve_rise': 0.95,
             'curve_rise_grid_fallback': 0.85,  # Very aggressive when on grid
-            # Buffer tank
-            'buffer_target': 38.0,  # Moderate - charge during cheap hours
-            'buffer_boost_hours': [11, 12, 13, 14, 15],  # Solar peak hours
             # Comfort band
-            'comfort_band_min': 18.0,  # Same as baseline minimum
+            'comfort_band_min': 18.5,  # Same as baseline minimum
             'comfort_band_max': 22.5,
             # Cost-specific parameters
             'use_tariff_rates': True,
@@ -374,7 +333,7 @@ def plot_strategy_comparison(strategies: dict, cop_analysis: pd.DataFrame,
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
-    colors = {'baseline': '#2E86AB', 'energy_optimized': '#A23B72', 'aggressive_solar': '#F18F01', 'cost_optimized': '#27AE60'}
+    colors = {'baseline': '#2E86AB', 'energy_optimized': '#A23B72', 'cost_optimized': '#27AE60'}
 
     # Panel 1: COP vs Outdoor Temperature by Strategy
     ax = axes[0, 0]
@@ -393,7 +352,7 @@ def plot_strategy_comparison(strategies: dict, cop_analysis: pd.DataFrame,
 
     # Panel 2: COP Improvement over Baseline
     ax = axes[0, 1]
-    for strategy_id in ['energy_optimized', 'aggressive_solar']:
+    for strategy_id in ['energy_optimized', 'cost_optimized']:
         data = cop_analysis[cop_analysis['strategy'] == strategy_id]
         ax.fill_between(data['T_outdoor'], 0, data['COP_improvement'],
                        label=strategies[strategy_id]['name'],
@@ -432,7 +391,7 @@ def plot_strategy_comparison(strategies: dict, cop_analysis: pd.DataFrame,
     ax.set_ylabel('Relative Intensity / Schedule')
     ax.set_title('Schedule Optimization: Shift Comfort to PV Hours')
     ax.set_xlim(0, 24)
-    ax.set_ylim(0, 1.7)
+    ax.set_ylim(0, 1.6)
     ax.set_xticks(range(0, 25, 2))
     ax.legend(loc='upper right', fontsize=8)
     ax.grid(True, alpha=0.3)
@@ -482,7 +441,7 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
     <h2>4.1 Rule-Based Optimization Strategies</h2>
 
     <h3>Methodology</h3>
-    <p>Three heating strategies were developed using Phase 3 model parameters:</p>
+    <p>Three heating optimization strategies were developed using Phase 3 model parameters:</p>
     <ul>
         <li><strong>COP Model</strong>: COP = 6.52 + 0.13×T_outdoor - 0.10×T_flow (R²=0.95)</li>
         <li><strong>Building Time Constant</strong>: ~19 hours (weighted average from target sensors)</li>
@@ -511,8 +470,7 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
         <tr><td>Setpoint (Comfort)</td><td>{params.get('setpoint_comfort', 'N/A')}°C</td></tr>
         <tr><td>Setpoint (Eco)</td><td>{params.get('setpoint_eco', 'N/A')}°C</td></tr>
         <tr><td>Curve Rise</td><td>{params.get('curve_rise', 'N/A')}</td></tr>
-        <tr><td>Buffer Target</td><td>{params.get('buffer_target', 'N/A')}°C</td></tr>
-        <tr><td>Comfort Band</td><td>{params.get('comfort_band_min', 18)}-{params.get('comfort_band_max', 22)}°C</td></tr>
+        <tr><td>Comfort Band</td><td>{params.get('comfort_band_min', 18.5)}-{params.get('comfort_band_max', 22)}°C</td></tr>
         </table>
 
         <p><strong>Rules:</strong></p>
@@ -538,8 +496,7 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
     # COP analysis summary
     baseline_cop = cop_analysis[cop_analysis['strategy'] == 'baseline']['COP'].mean()
     energy_cop = cop_analysis[cop_analysis['strategy'] == 'energy_optimized']['COP'].mean()
-    aggressive_cop = cop_analysis[cop_analysis['strategy'] == 'aggressive_solar']['COP'].mean()
-    cost_cop = cop_analysis[cop_analysis['strategy'] == 'cost_optimized']['COP'].mean() if 'cost_optimized' in cop_analysis['strategy'].values else baseline_cop
+    cost_cop = cop_analysis[cop_analysis['strategy'] == 'cost_optimized']['COP'].mean()
 
     html += f"""
     <h3>COP Impact Analysis</h3>
@@ -548,7 +505,6 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
         <tr><th>Strategy</th><th>Average COP</th><th>vs Baseline</th></tr>
         <tr><td>Baseline</td><td>{baseline_cop:.2f}</td><td>—</td></tr>
         <tr><td>Energy-Optimized</td><td>{energy_cop:.2f}</td><td>+{energy_cop-baseline_cop:.2f}</td></tr>
-        <tr><td>Aggressive Solar</td><td>{aggressive_cop:.2f}</td><td>+{aggressive_cop-baseline_cop:.2f}</td></tr>
         <tr><td>Cost-Optimized</td><td>{cost_cop:.2f}</td><td>{'+' if cost_cop >= baseline_cop else ''}{cost_cop-baseline_cop:.2f}</td></tr>
     </table>
 
@@ -562,7 +518,7 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
     <h3>Schedule Optimization Rationale</h3>
     <p>Shifting comfort mode from 06:30-20:00 to 10:00-17:00/18:00:</p>
     <ul>
-        <li><strong>Morning (06:30-10:00)</strong>: Building maintains 17-18°C using ~19h thermal mass.
+        <li><strong>Morning (06:30-10:00)</strong>: Building maintains 17.5-18.5°C using ~19h thermal mass.
             PV not yet available, so early heating uses grid/battery.</li>
         <li><strong>Midday (10:00-16:00)</strong>: Maximum heating during PV peak. Pre-heat to 20-21°C,
             storing energy in building thermal mass.</li>
@@ -658,12 +614,6 @@ def main():
     print("    - Comfort: 10:00-18:00 (vs 06:30-20:00)")
     print("    - Curve rise: 0.98 (vs 1.08)")
     print("    - Expected: +10pp self-sufficiency, +0.5 COP")
-
-    print("\n  Aggressive Solar:")
-    print("    - Comfort: 10:00-17:00 (vs 06:30-20:00)")
-    print("    - Curve rise: 0.95 (vs 1.08)")
-    print("    - Comfort band: 18-23°C (vs 18-22°C)")
-    print("    - Expected: +27pp self-sufficiency, +0.7 COP")
 
     print("\n  Cost-Optimized:")
     print("    - Comfort: 11:00-21:00 (vs 06:30-20:00)")
