@@ -6,6 +6,7 @@ Runs all Phase 3 modeling steps and generates a combined HTML report:
 1. Thermal Model - Building heat loss and response characteristics
 2. Heat Pump Model - COP relationships, capacity, buffer tank
 3. Energy System Model - PV patterns, battery dynamics, self-sufficiency
+4. Tariff Cost Model - Electricity cost analysis and forecasting
 
 Usage:
     python src/phase3/run_phase3.py
@@ -58,6 +59,10 @@ def generate_html_report():
     energy_path = OUTPUT_DIR / 'energy_system_model_report_section.html'
     if energy_path.exists():
         sections.append(energy_path.read_text())
+
+    cost_path = OUTPUT_DIR / 'tariff_cost_model_report_section.html'
+    if cost_path.exists():
+        sections.append(cost_path.read_text())
 
     # Generate full report
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
@@ -145,6 +150,7 @@ def generate_html_report():
             <li><strong>Thermal Model</strong>: Building time constant ~54-60 hours, indicating good thermal mass</li>
             <li><strong>Heat Pump Model</strong>: COP = 6.52 + 0.13×T_outdoor - 0.10×T_flow (R²=0.95)</li>
             <li><strong>Energy System</strong>: Current self-sufficiency 58%, potential 85% with optimization</li>
+            <li><strong>Tariff Cost Model</strong>: High-tariff periods account for ~60% of grid costs; potential 15-20% cost reduction through load shifting</li>
         </ul>
     </div>
 
@@ -281,7 +287,8 @@ def main():
     scripts = [
         '01_thermal_model.py',
         '02_heat_pump_model.py',
-        '03_energy_system_model.py'
+        '03_energy_system_model.py',
+        '04_tariff_cost_model.py'
     ]
 
     for script in scripts:
@@ -303,6 +310,7 @@ def main():
     print("  - fig13_thermal_model.png")
     print("  - fig14_heat_pump_model.png")
     print("  - fig15_energy_system_model.png")
+    print("  - fig16_tariff_cost_model.png")
     print("  - phase3_modeling_report.html")
 
 

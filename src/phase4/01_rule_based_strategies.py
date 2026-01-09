@@ -2,10 +2,11 @@
 """
 Phase 4, Step 1: Rule-Based Optimization Strategies
 
-Defines three heating optimization strategies based on Phase 3 model parameters:
+Defines four heating optimization strategies based on Phase 3 model parameters:
 1. Baseline: Current settings (control)
 2. Energy-Optimized: Maximize solar self-consumption, minimize grid
 3. Aggressive Solar: Push to 85% self-sufficiency with wider comfort band
+4. Cost-Optimized: Minimize electricity costs using time-of-use tariffs
 
 Key model parameters used:
 - Building time constant: 14-33h (weighted avg ~19h)
@@ -171,6 +172,48 @@ def define_strategies() -> dict:
         }
     }
 
+    # Strategy 4: Cost-Optimized (minimize electricity costs)
+    strategies['cost_optimized'] = {
+        'name': 'Cost-Optimized',
+        'description': 'Minimize electricity costs using time-of-use tariffs',
+        'goal': 'Minimize annual electricity bill (primary objective)',
+        'parameters': {
+            # Schedule: Avoid expensive high-tariff morning hours (06:00-21:00)
+            'comfort_start': 11.0,  # Late start - use solar, avoid morning peak
+            'comfort_end': 21.0,    # Extend to low-tariff transition (21:00)
+            # Temperature: Accept slightly lower comfort for savings
+            'setpoint_comfort': 20.0,  # Reduced from 20.5
+            'setpoint_eco': 17.0,      # Lower eco = less night heating cost
+            # Heating curve: Aggressive reduction during grid-dependent periods
+            'curve_rise': 0.95,
+            'curve_rise_grid_fallback': 0.85,  # Very aggressive when on grid
+            # Buffer tank
+            'buffer_target': 38.0,  # Moderate - charge during cheap hours
+            'buffer_boost_hours': [11, 12, 13, 14, 15],  # Solar peak hours
+            # Comfort band
+            'comfort_band_min': 17.5,  # Slightly wider
+            'comfort_band_max': 22.5,
+            # Cost-specific parameters
+            'use_tariff_rates': True,
+            'high_tariff_setpoint_reduction': 1.0,  # -1°C during high tariff
+            'preheat_before_low_tariff': False,  # Already heating during solar
+        },
+        'rules': [
+            'Shift heating to low-tariff periods (21:00-06:00 weekdays, weekends)',
+            'Pre-heat during solar hours (11:00-16:00) using free PV',
+            'Reduce setpoint by 1°C during high-tariff grid-dependent periods',
+            'Aggressively reduce flow temp when grid consumption unavoidable',
+            'Accept COP reduction if tariff arbitrage saves more money',
+            'Use thermal mass to coast through expensive evening hours (18:00-21:00)',
+        ],
+        'expected_improvement': {
+            'self_sufficiency': 0.03,   # +3pp (secondary benefit)
+            'grid_reduction': 0.10,     # 10% less grid import
+            'cop_change': -0.15,        # Accept small COP trade-off
+            'cost_reduction': 0.20,     # Target -20% cost vs baseline
+        }
+    }
+
     return strategies
 
 
@@ -321,7 +364,7 @@ def plot_strategy_comparison(strategies: dict, cop_analysis: pd.DataFrame,
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
-    colors = {'baseline': '#2E86AB', 'energy_optimized': '#A23B72', 'aggressive_solar': '#F18F01'}
+    colors = {'baseline': '#2E86AB', 'energy_optimized': '#A23B72', 'aggressive_solar': '#F18F01', 'cost_optimized': '#27AE60'}
 
     # Panel 1: COP vs Outdoor Temperature by Strategy
     ax = axes[0, 0]
@@ -476,7 +519,8 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
         <ul>
             <li>Self-sufficiency: +{improvement['self_sufficiency']*100:.0f} percentage points</li>
             <li>Grid reduction: {improvement['grid_reduction']*100:.0f}%</li>
-            <li>COP improvement: +{improvement['cop_change']:.1f}</li>
+            <li>COP improvement: {'+' if improvement['cop_change'] >= 0 else ''}{improvement['cop_change']:.1f}</li>
+            {f"<li>Cost reduction: {improvement.get('cost_reduction', 0)*100:.0f}%</li>" if 'cost_reduction' in improvement else ''}
         </ul>
         </div>
         """
@@ -485,6 +529,7 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
     baseline_cop = cop_analysis[cop_analysis['strategy'] == 'baseline']['COP'].mean()
     energy_cop = cop_analysis[cop_analysis['strategy'] == 'energy_optimized']['COP'].mean()
     aggressive_cop = cop_analysis[cop_analysis['strategy'] == 'aggressive_solar']['COP'].mean()
+    cost_cop = cop_analysis[cop_analysis['strategy'] == 'cost_optimized']['COP'].mean() if 'cost_optimized' in cop_analysis['strategy'].values else baseline_cop
 
     html += f"""
     <h3>COP Impact Analysis</h3>
@@ -494,6 +539,7 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
         <tr><td>Baseline</td><td>{baseline_cop:.2f}</td><td>—</td></tr>
         <tr><td>Energy-Optimized</td><td>{energy_cop:.2f}</td><td>+{energy_cop-baseline_cop:.2f}</td></tr>
         <tr><td>Aggressive Solar</td><td>{aggressive_cop:.2f}</td><td>+{aggressive_cop-baseline_cop:.2f}</td></tr>
+        <tr><td>Cost-Optimized</td><td>{cost_cop:.2f}</td><td>{'+' if cost_cop >= baseline_cop else ''}{cost_cop-baseline_cop:.2f}</td></tr>
     </table>
 
     <p><strong>Heating curve formula</strong> (from Phase 2 analysis):<br>
@@ -608,6 +654,12 @@ def main():
     print("    - Curve rise: 0.95 (vs 1.08)")
     print("    - Comfort band: 17-23°C (vs 18-22°C)")
     print("    - Expected: +27pp self-sufficiency, +0.7 COP")
+
+    print("\n  Cost-Optimized:")
+    print("    - Comfort: 11:00-21:00 (vs 06:30-20:00)")
+    print("    - Curve rise: 0.95, 0.85 on grid (vs 1.08)")
+    print("    - Focus: Minimize costs via tariff arbitrage")
+    print("    - Expected: +3pp self-sufficiency, -20% cost")
 
     print("\n" + "="*60)
     print("STEP COMPLETE")

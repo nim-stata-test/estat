@@ -72,7 +72,7 @@
 </head>
 <body>
     <h1>Phase 3: System Modeling Report</h1>
-    <p><em>Generated: 2026-01-09 19:18</em></p>
+    <p><em>Generated: 2026-01-09 21:42</em></p>
 
     <div class="summary-box">
         <h3>Executive Summary</h3>
@@ -81,6 +81,7 @@
             <li><strong>Thermal Model</strong>: Building time constant ~54-60 hours, indicating good thermal mass</li>
             <li><strong>Heat Pump Model</strong>: COP = 6.52 + 0.13×T_outdoor - 0.10×T_flow (R²=0.95)</li>
             <li><strong>Energy System</strong>: Current self-sufficiency 58%, potential 85% with optimization</li>
+            <li><strong>Tariff Cost Model</strong>: High-tariff periods account for ~60% of grid costs; potential 15-20% cost reduction through load shifting</li>
         </ul>
     </div>
 
@@ -355,6 +356,128 @@
         <figcaption>Energy system analysis: daily profile (top-left),
         battery patterns (top-right), monthly grid balance (bottom-left),
         self-sufficiency scenarios (bottom-right).</figcaption>
+    </figure>
+    </section>
+    
+    <section id="tariff-cost-model">
+    <h2>3.4 Tariff Cost Model</h2>
+
+    <h3>Historical Cost Analysis</h3>
+    <table>
+        <tr><th>Metric</th><th>Daily Average</th><th>Annual Projection</th></tr>
+        <tr>
+            <td>Grid purchase cost</td>
+            <td>CHF 3.15</td>
+            <td>CHF 1,148</td>
+        </tr>
+        <tr>
+            <td>Feed-in revenue</td>
+            <td>CHF 6.02</td>
+            <td>CHF 2,196</td>
+        </tr>
+        <tr>
+            <td><strong>Net cost</strong></td>
+            <td><strong>CHF -2.87</strong></td>
+            <td><strong>CHF -1,048</strong></td>
+        </tr>
+    </table>
+
+    <h3>High vs Low Tariff Breakdown</h3>
+    <table>
+        <tr><th>Tariff Period</th><th>Grid Import (kWh)</th><th>Cost (CHF)</th><th>Share</th></tr>
+        <tr>
+            <td>High Tariff (HT)</td>
+            <td>4,486.0</td>
+            <td>1,597.13</td>
+            <td>48.9%</td>
+        </tr>
+        <tr>
+            <td>Low Tariff (NT)</td>
+            <td>6,055.8</td>
+            <td>1,668.15</td>
+            <td>51.1%</td>
+        </tr>
+    </table>
+
+    <p><strong>Insight:</strong> 49% of grid costs occur during high-tariff
+    periods. Shifting consumption to low-tariff hours (21:00-06:00 weekdays, weekends) can reduce costs.</p>
+
+    <h3>Seasonal Patterns</h3>
+    <table>
+        <tr><th>Season</th><th>Daily Net Cost</th><th>Notes</th></tr>
+        <tr>
+            <td>Winter (Oct-Mar)</td>
+            <td>CHF 2.27</td>
+            <td>Higher heating demand, less PV</td>
+        </tr>
+        <tr>
+            <td>Summer (Apr-Sep)</td>
+            <td>CHF -5.84</td>
+            <td>Higher PV, often net producer</td>
+        </tr>
+    </table>
+
+    <h3>Cost Forecast Model</h3>
+    <table>
+        <tr><th>Model</th><th>R²</th><th>RMSE</th><th>Key Coefficient</th></tr>
+        <tr>
+            <td>Seasonal model</td>
+            <td>0.703</td>
+            <td>CHF 5.36</td>
+            <td>Weekend: CHF -0.12</td>
+        </tr>
+        <tr><td>HDD model</td><td>0.580</td><td>CHF 3.07</td><td>HDD: CHF 0.88/HDD</td></tr>
+    </table>
+
+    <h3>Cost Optimization Scenarios</h3>
+    <table>
+        <tr><th>Scenario</th><th>Net Cost</th><th>Annual</th><th>Savings</th><th>Reduction</th></tr>
+        <tr>
+            <td>Baseline (current)</td>
+            <td>CHF -2,979.84</td>
+            <td>CHF -1,048</td>
+            <td>—</td>
+            <td>—</td>
+        </tr>
+        <tr>
+            <td>Shift 20% to low tariff</td>
+            <td>CHF -3,052.18</td>
+            <td>CHF -1,073</td>
+            <td>CHF 25/yr</td>
+            <td>2.4%</td>
+        </tr>
+        <tr>
+            <td>Shift 30% to low tariff</td>
+            <td>CHF -3,088.35</td>
+            <td>CHF -1,086</td>
+            <td>CHF 38/yr</td>
+            <td>3.6%</td>
+        </tr>
+        <tr>
+            <td><strong>Combined (load + battery)</strong></td>
+            <td><strong>CHF -3,082.93</strong></td>
+            <td><strong>CHF -1,084</strong></td>
+            <td><strong>CHF 36/yr</strong></td>
+            <td><strong>3.5%</strong></td>
+        </tr>
+    </table>
+
+    <h3>Recommendations</h3>
+    <ul>
+        <li><strong>Load shifting</strong>: Schedule heating comfort mode to start during solar hours
+            and extend into low-tariff evening periods.</li>
+        <li><strong>High-tariff avoidance</strong>: Reduce grid import during 06:00-21:00 weekdays
+            by pre-heating with PV or using stored heat/battery.</li>
+        <li><strong>Potential savings</strong>: 3% reduction (~CHF 36/year)
+            achievable through combined load shifting and battery optimization.</li>
+        <li><strong>Rate differential</strong>: High-low tariff spread of ~8.1 Rp/kWh
+            provides economic incentive for time-shifting.</li>
+    </ul>
+
+    <figure>
+        <img src="fig16_tariff_cost_model.png" alt="Tariff Cost Model">
+        <figcaption>Cost analysis: monthly costs (top-left), tariff breakdown (top-right),
+        daily profile (bottom-left), optimization scenarios (bottom-right).</figcaption>
     </figure>
     </section>
     

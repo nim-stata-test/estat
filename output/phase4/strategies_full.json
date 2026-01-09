@@ -99,5 +99,45 @@
       "grid_reduction": 0.4,
       "cop_change": 0.7
     }
+  },
+  "cost_optimized": {
+    "name": "Cost-Optimized",
+    "description": "Minimize electricity costs using time-of-use tariffs",
+    "goal": "Minimize annual electricity bill (primary objective)",
+    "parameters": {
+      "comfort_start": 11.0,
+      "comfort_end": 21.0,
+      "setpoint_comfort": 20.0,
+      "setpoint_eco": 17.0,
+      "curve_rise": 0.95,
+      "curve_rise_grid_fallback": 0.85,
+      "buffer_target": 38.0,
+      "buffer_boost_hours": [
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "comfort_band_min": 17.5,
+      "comfort_band_max": 22.5,
+      "use_tariff_rates": true,
+      "high_tariff_setpoint_reduction": 1.0,
+      "preheat_before_low_tariff": false
+    },
+    "rules": [
+      "Shift heating to low-tariff periods (21:00-06:00 weekdays, weekends)",
+      "Pre-heat during solar hours (11:00-16:00) using free PV",
+      "Reduce setpoint by 1\u00b0C during high-tariff grid-dependent periods",
+      "Aggressively reduce flow temp when grid consumption unavoidable",
+      "Accept COP reduction if tariff arbitrage saves more money",
+      "Use thermal mass to coast through expensive evening hours (18:00-21:00)"
+    ],
+    "expected_improvement": {
+      "self_sufficiency": 0.03,
+      "grid_reduction": 0.1,
+      "cop_change": -0.15,
+      "cost_reduction": 0.2
+    }
   }
 }

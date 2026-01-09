@@ -105,7 +105,8 @@ src/
 │   ├── run_phase3.py                 # Wrapper: runs all models + HTML report
 │   ├── 01_thermal_model.py           # Building thermal characteristics
 │   ├── 02_heat_pump_model.py         # COP relationships, buffer tank
-│   └── 03_energy_system_model.py     # PV patterns, battery, self-sufficiency
+│   ├── 03_energy_system_model.py     # PV patterns, battery, self-sufficiency
+│   └── 04_tariff_cost_model.py       # Electricity cost analysis + forecasting
 └── phase4/              # Optimization Strategy Development
     ├── run_optimization.py           # Wrapper: runs all steps + HTML report
     ├── 01_rule_based_strategies.py   # Strategy definitions and rules
@@ -269,15 +270,18 @@ T_target = T_setpoint + curve_rise × (T_ref - T_outdoor)
 
 After running `python src/phase3/run_phase3.py`, outputs are saved to `output/phase3/`:
 
-**Figures (fig13-fig15):**
-- Thermal model (temperature simulation, decay analysis)
-- Heat pump model (COP vs temperature, capacity, buffer tank)
-- Energy system (daily profiles, battery patterns, self-sufficiency)
+**Figures (fig13-fig16):**
+- fig13: Thermal model (temperature simulation, decay analysis)
+- fig14: Heat pump model (COP vs temperature, capacity, buffer tank)
+- fig15: Energy system (daily profiles, battery patterns, self-sufficiency)
+- fig16: Tariff cost model (cost breakdown, high/low tariff, forecasting)
 
 **Reports:**
 - `phase3_modeling_report.html` - Combined modeling report
 - `thermal_model_results.csv` - Per-room thermal parameters
 - `heat_pump_daily_stats.csv` - Daily COP and energy statistics
+- `cost_model_daily_stats.csv` - Daily cost breakdown (grid, feedin, net)
+- `cost_forecast_model.json` - Cost forecasting model coefficients
 
 **Thermal Model Sensors (weighted indoor temperature):**
 - davis_inside_temperature: 40%
@@ -297,9 +301,9 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
 After running `python src/phase4/run_optimization.py`, outputs are saved to `output/phase4/`:
 
 **Figures (fig16-fig18):**
-- Strategy comparison (COP by strategy, schedule alignment, expected improvements)
-- Simulation results (time series, self-sufficiency, hourly COP profiles)
-- Parameter space (trade-offs, parameter summary table)
+- fig16: Strategy comparison (COP by strategy, schedule alignment, expected improvements)
+- fig17: Simulation results (time series, self-sufficiency, hourly COP profiles)
+- fig18: Parameter space (trade-offs, parameter summary table)
 
 **Reports:**
 - `phase4_optimization_report.html` - Combined optimization report
@@ -320,19 +324,23 @@ Where:
 - T_ref = 21.32°C (comfort mode) or 19.18°C (eco mode)
 - curve_rise typically 0.85-1.08
 
-**Three Optimization Strategies:**
+**Four Optimization Strategies:**
 
-| Strategy | Schedule | Curve Rise | COP | vs Baseline |
-|----------|----------|------------|-----|-------------|
-| Baseline | 06:30-20:00 | 1.08 | 4.09 | — |
-| Energy-Optimized | 10:00-18:00 | 0.98 | 4.39 | +0.18 |
-| Aggressive Solar | 10:00-17:00 | 0.95 | 4.46 | +0.25 |
+| Strategy | Schedule | Curve Rise | COP | vs Baseline | Goal |
+|----------|----------|------------|-----|-------------|------|
+| Baseline | 06:30-20:00 | 1.08 | 4.09 | — | Reference |
+| Energy-Optimized | 10:00-18:00 | 0.98 | 4.39 | +0.18 | Minimize grid |
+| Aggressive Solar | 10:00-17:00 | 0.95 | 4.46 | +0.25 | Maximum solar |
+| Cost-Optimized | 11:00-21:00 | 0.95/0.85* | 4.43 | +0.22 | Minimize costs |
+
+*Cost-Optimized uses curve_rise 0.85 when grid-dependent
 
 **Key optimization levers:**
 - Shift comfort mode to PV peak hours (10:00-17:00)
 - Lower curve_rise for better COP (~0.1 COP improvement per 1°C flow temp reduction)
 - Wider comfort band (17-23°C for aggressive strategy)
 - Dynamic curve_rise reduction when grid-dependent (0.85-0.90)
+- Tariff arbitrage: shift heating to low-tariff periods (21:00-06:00, weekends)
 
 ## Documentation
 

@@ -39,7 +39,9 @@
       "cop_vs_baseline": -0.12,
       "self_sufficiency": 0.401,
       "self_sufficiency_vs_baseline_pp": 0.0,
-      "comfort_compliance": 0.767
+      "comfort_compliance": 0.767,
+      "daily_net_cost_chf": 5.39,
+      "cost_reduction_pct": 0.0
     },
     "confidence_intervals": {
       "cop_ci_95": "\u00b10.3",
@@ -93,7 +95,9 @@
       "cop_vs_baseline": 0.18,
       "self_sufficiency": 0.401,
       "self_sufficiency_vs_baseline_pp": 0.0,
-      "comfort_compliance": 0.767
+      "comfort_compliance": 0.767,
+      "daily_net_cost_chf": 5.39,
+      "cost_reduction_pct": 0.0
     },
     "confidence_intervals": {
       "cop_ci_95": "\u00b10.3",
@@ -149,7 +153,65 @@
       "cop_vs_baseline": 0.25,
       "self_sufficiency": 0.401,
       "self_sufficiency_vs_baseline_pp": 0.0,
-      "comfort_compliance": 0.976
+      "comfort_compliance": 0.976,
+      "daily_net_cost_chf": 5.39,
+      "cost_reduction_pct": 0.0
+    },
+    "confidence_intervals": {
+      "cop_ci_95": "\u00b10.3",
+      "self_sufficiency_ci_95": "\u00b15pp",
+      "notes": "Estimated from simulation; will refine in Phase 5"
+    }
+  },
+  "cost_optimized": {
+    "strategy_id": "cost_optimized",
+    "name": "Cost-Optimized",
+    "description": "Minimize electricity costs using time-of-use tariffs",
+    "heat_pump_settings": {
+      "curve_rise": 0.95,
+      "curve_rise_unit": "dimensionless",
+      "curve_rise_notes": "Set via heat pump controller menu"
+    },
+    "schedule_settings": {
+      "comfort_start": "11:00",
+      "comfort_end": "21:00",
+      "schedule_notes": "Set comfort period start/end in heat pump scheduler"
+    },
+    "setpoint_settings": {
+      "setpoint_comfort": 20.0,
+      "setpoint_eco": 17.0,
+      "setpoint_unit": "celsius",
+      "setpoint_notes": "Set via Home Assistant climate entity"
+    },
+    "buffer_settings": {
+      "buffer_target": 38.0,
+      "buffer_unit": "celsius",
+      "buffer_notes": "Requires manual adjustment at heat pump"
+    },
+    "comfort_bounds": {
+      "min_temp": 17.5,
+      "max_temp": 22.5,
+      "unit": "celsius"
+    },
+    "dynamic_rules": {
+      "curve_rise_grid_fallback": 0.85,
+      "buffer_boost_hours": [
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "notes": "Optional automation rules - manual implementation in Phase 5"
+    },
+    "expected_outcomes": {
+      "cop_mean": 4.43,
+      "cop_vs_baseline": 0.22,
+      "self_sufficiency": 0.401,
+      "self_sufficiency_vs_baseline_pp": 0.0,
+      "comfort_compliance": 0.919,
+      "daily_net_cost_chf": 5.39,
+      "cost_reduction_pct": 0.0
     },
     "confidence_intervals": {
       "cop_ci_95": "\u00b10.3",

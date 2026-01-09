@@ -113,6 +113,9 @@ def generate_parameter_sets(strategies: dict, comparison: pd.DataFrame) -> dict:
                 'self_sufficiency': round(sim_results['self_sufficiency'], 3),
                 'self_sufficiency_vs_baseline_pp': round(sim_results['ss_vs_baseline'] * 100, 1),
                 'comfort_compliance': round(sim_results['comfort_compliance'], 3),
+                # Cost metrics
+                'daily_net_cost_chf': float(round(sim_results.get('daily_net_cost_chf', 0), 2)),
+                'cost_reduction_pct': float(round(sim_results.get('cost_reduction_pct', 0), 1)),
             },
 
             # Confidence intervals (estimated from daily variation)
@@ -170,6 +173,10 @@ def generate_testable_predictions(parameter_sets: dict, daily_metrics: pd.DataFr
         ss_improvement = outcomes['self_sufficiency_vs_baseline_pp'] / 100
         expected_grid_per_hdd = baseline_grid_per_hdd * (1 - ss_improvement * 0.5)
 
+        # Cost predictions
+        cost_reduction = outcomes.get('cost_reduction_pct', 0)
+        daily_cost = outcomes.get('daily_net_cost_chf', 0)
+
         predictions[strategy_id] = {
             'strategy_name': param_set['name'],
 
@@ -206,6 +213,13 @@ def generate_testable_predictions(parameter_sets: dict, daily_metrics: pd.DataFr
                 'measurement': 'Percent of readings within comfort band',
             },
 
+            # Cost prediction (new)
+            'cost': {
+                'daily_net_chf': round(daily_cost, 2),
+                'cost_reduction_pct': round(cost_reduction, 1),
+                'measurement': '(grid_import × purchase_rate - pv_export × feedin_rate) / 100',
+            },
+
             # Success criteria
             'success_criteria': [
                 f"Self-sufficiency ≥ {round((outcomes['self_sufficiency'] - 0.03) * 100, 1)}%",
@@ -214,6 +228,12 @@ def generate_testable_predictions(parameter_sets: dict, daily_metrics: pd.DataFr
                 f"No manual overrides required",
             ],
         }
+
+        # Add cost-specific success criterion for cost_optimized
+        if strategy_id == 'cost_optimized':
+            predictions[strategy_id]['success_criteria'].append(
+                f"Cost reduction ≥ {round(cost_reduction - 10, 1)}% vs baseline"
+            )
 
         print(f"  {param_set['name']}:")
         print(f"    Target self-sufficiency: {predictions[strategy_id]['self_sufficiency']['target']}%")
@@ -228,8 +248,18 @@ def plot_parameter_space(parameter_sets: dict) -> None:
 
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 
-    colors = {'baseline': '#2E86AB', 'energy_optimized': '#A23B72', 'aggressive_solar': '#F18F01'}
-    markers = {'baseline': 'o', 'energy_optimized': 's', 'aggressive_solar': '^'}
+    colors = {
+        'baseline': '#2E86AB',
+        'energy_optimized': '#A23B72',
+        'aggressive_solar': '#F18F01',
+        'cost_optimized': '#00A896',
+    }
+    markers = {
+        'baseline': 'o',
+        'energy_optimized': 's',
+        'aggressive_solar': '^',
+        'cost_optimized': 'D',
+    }
 
     # Extract data for plotting
     data = []
@@ -314,9 +344,14 @@ def plot_parameter_space(parameter_sets: dict) -> None:
     ax = axes[1, 1]
     ax.axis('off')
 
-    # Create table
+    # Create table - include cost_optimized if present
     table_data = []
+    strategy_ids = ['baseline', 'energy_optimized', 'aggressive_solar']
     headers = ['Parameter', 'Baseline', 'Energy-Opt', 'Aggressive']
+
+    if 'cost_optimized' in parameter_sets:
+        strategy_ids.append('cost_optimized')
+        headers.append('Cost-Opt')
 
     params_to_show = [
         ('Comfort Start', 'comfort_start'),
@@ -326,11 +361,12 @@ def plot_parameter_space(parameter_sets: dict) -> None:
         ('Curve Rise', 'curve_rise'),
         ('Self-Sufficiency', 'self_sufficiency'),
         ('COP', 'cop'),
+        ('Cost Change', 'cost_reduction'),
     ]
 
     for param_name, param_key in params_to_show:
         row = [param_name]
-        for strategy_id in ['baseline', 'energy_optimized', 'aggressive_solar']:
+        for strategy_id in strategy_ids:
             ps = parameter_sets[strategy_id]
             if param_key == 'comfort_start':
                 row.append(ps['schedule_settings']['comfort_start'])
@@ -346,13 +382,16 @@ def plot_parameter_space(parameter_sets: dict) -> None:
                 row.append(f"{ps['expected_outcomes']['self_sufficiency']*100:.1f}%")
             elif param_key == 'cop':
                 row.append(f"{ps['expected_outcomes']['cop_mean']:.2f}")
+            elif param_key == 'cost_reduction':
+                cost_pct = ps['expected_outcomes'].get('cost_reduction_pct', 0)
+                row.append(f"{cost_pct:+.1f}%")
         table_data.append(row)
 
     table = ax.table(cellText=table_data, colLabels=headers,
                     loc='center', cellLoc='center',
-                    colColours=['#f0f0f0']*4)
+                    colColours=['#f0f0f0'] * len(headers))
     table.auto_set_font_size(False)
-    table.set_fontsize(10)
+    table.set_fontsize(9 if len(strategy_ids) > 3 else 10)
     table.scale(1.2, 1.5)
 
     ax.set_title('Parameter Summary', pad=20, fontsize=12, fontweight='bold')
@@ -421,6 +460,17 @@ Curve Rise:       0.95
 Buffer Target:    45°C
 ```
 
+### Cost-Optimized Settings
+```
+Comfort Start:    11:00
+Comfort End:      21:00
+Setpoint Comfort: 20.0°C
+Setpoint Eco:     17.0°C
+Curve Rise:       0.95
+Buffer Target:    40°C
+Curve Rise (Grid): 0.85 (when grid-dependent)
+```
+
 ## Daily Monitoring
 
 - [ ] Check comfort compliance (target: ≥95%)
@@ -439,11 +489,12 @@ Buffer Target:    45°C
 
 ## Success Metrics
 
-| Strategy | Self-Sufficiency Target | COP Target | Comfort Min |
-|----------|------------------------|------------|-------------|
-| Baseline | 58% | 3.5 | 95% |
-| Energy-Optimized | 68% | 4.0 | 95% |
-| Aggressive Solar | 85% | 4.2 | 95% |
+| Strategy | Self-Sufficiency Target | COP Target | Comfort Min | Cost Change |
+|----------|------------------------|------------|-------------|-------------|
+| Baseline | 58% | 3.5 | 95% | — |
+| Energy-Optimized | 68% | 4.0 | 95% | +5-10% savings |
+| Aggressive Solar | 85% | 4.2 | 95% | +10-15% savings |
+| Cost-Optimized | 61% | 3.4 | 90% | +15-25% savings |
 
 ## Safety Limits
 
@@ -472,6 +523,9 @@ def generate_report(parameter_sets: dict, predictions: dict) -> str:
         sched = param_set['schedule_settings']
         outcomes = param_set['expected_outcomes']
 
+        cost_reduction = outcomes.get('cost_reduction_pct', 0)
+        daily_cost = outcomes.get('daily_net_cost_chf', 0)
+
         html += f"""
         <div class="parameter-card" style="border: 2px solid #333; padding: 15px; margin: 15px 0; border-radius: 8px;">
         <h4>{param_set['name']}</h4>
@@ -493,6 +547,7 @@ def generate_report(parameter_sets: dict, predictions: dict) -> str:
             <tr><td>COP</td><td>{outcomes['cop_mean']} ({outcomes['cop_vs_baseline']:+.2f} vs baseline)</td></tr>
             <tr><td>Self-Sufficiency</td><td>{outcomes['self_sufficiency']*100:.1f}% ({outcomes['self_sufficiency_vs_baseline_pp']:+.1f}pp)</td></tr>
             <tr><td>Comfort Compliance</td><td>{outcomes['comfort_compliance']*100:.1f}%</td></tr>
+            <tr><td>Daily Net Cost</td><td>CHF {daily_cost:.2f} ({cost_reduction:+.1f}% vs baseline)</td></tr>
         </table>
         </div>
         """
@@ -506,6 +561,7 @@ def generate_report(parameter_sets: dict, predictions: dict) -> str:
             <th>Self-Sufficiency</th>
             <th>COP</th>
             <th>Comfort Compliance</th>
+            <th>Cost Change</th>
         </tr>
     """
 
@@ -513,6 +569,8 @@ def generate_report(parameter_sets: dict, predictions: dict) -> str:
         ss = pred['self_sufficiency']
         cop = pred['cop']
         comfort = pred['comfort_compliance']
+        cost = pred.get('cost', {})
+        cost_pct = cost.get('cost_reduction_pct', 0)
 
         html += f"""
         <tr>
@@ -520,6 +578,7 @@ def generate_report(parameter_sets: dict, predictions: dict) -> str:
             <td>{ss['target']}% ({ss['range_min']}-{ss['range_max']}%)</td>
             <td>{cop['target']} ({cop['range_min']}-{cop['range_max']})</td>
             <td>≥{comfort['minimum_pct']}% (target: {comfort['target_pct']}%)</td>
+            <td>{cost_pct:+.1f}%</td>
         </tr>
         """
 
@@ -539,7 +598,8 @@ def generate_report(parameter_sets: dict, predictions: dict) -> str:
     <ol>
         <li>Self-sufficiency meets or exceeds prediction range</li>
         <li>COP meets or exceeds prediction range</li>
-        <li>Comfort compliance ≥95%</li>
+        <li>Comfort compliance ≥95% (≥90% for Cost-Optimized)</li>
+        <li>Cost savings meet or exceed prediction (for Cost-Optimized: ≥10% reduction)</li>
         <li>No frequent manual overrides required</li>
     </ol>
 
@@ -603,11 +663,13 @@ def main():
     print("\nPhase 5 Parameter Sets Generated:")
     for strategy_id, param_set in parameter_sets.items():
         outcomes = param_set['expected_outcomes']
+        cost_pct = outcomes.get('cost_reduction_pct', 0)
         print(f"\n  {param_set['name']}:")
         print(f"    Schedule: {param_set['schedule_settings']['comfort_start']} - {param_set['schedule_settings']['comfort_end']}")
         print(f"    Curve Rise: {param_set['heat_pump_settings']['curve_rise']}")
         print(f"    Expected COP: {outcomes['cop_mean']} ({outcomes['cop_vs_baseline']:+.2f})")
         print(f"    Expected Self-Sufficiency: {outcomes['self_sufficiency']*100:.1f}%")
+        print(f"    Expected Cost Change: {cost_pct:+.1f}%")
 
     print("\nOutputs ready for Phase 5:")
     print("  - phase5_parameter_sets.json (exact settings)")

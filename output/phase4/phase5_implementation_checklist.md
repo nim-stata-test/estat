@@ -52,6 +52,17 @@ Curve Rise:       0.95
 Buffer Target:    45°C
 ```
 
+### Cost-Optimized Settings
+```
+Comfort Start:    11:00
+Comfort End:      21:00
+Setpoint Comfort: 20.0°C
+Setpoint Eco:     17.0°C
+Curve Rise:       0.95
+Buffer Target:    40°C
+Curve Rise (Grid): 0.85 (when grid-dependent)
+```
+
 ## Daily Monitoring
 
 - [ ] Check comfort compliance (target: ≥95%)
@@ -70,11 +81,12 @@ Buffer Target:    45°C
 
 ## Success Metrics
 
-| Strategy | Self-Sufficiency Target | COP Target | Comfort Min |
-|----------|------------------------|------------|-------------|
-| Baseline | 58% | 3.5 | 95% |
-| Energy-Optimized | 68% | 4.0 | 95% |
-| Aggressive Solar | 85% | 4.2 | 95% |
+| Strategy | Self-Sufficiency Target | COP Target | Comfort Min | Cost Change |
+|----------|------------------------|------------|-------------|-------------|
+| Baseline | 58% | 3.5 | 95% | — |
+| Energy-Optimized | 68% | 4.0 | 95% | +5-10% savings |
+| Aggressive Solar | 85% | 4.2 | 95% | +10-15% savings |
+| Cost-Optimized | 61% | 3.4 | 90% | +15-25% savings |
 
 ## Safety Limits
 

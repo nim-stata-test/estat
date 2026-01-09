@@ -25,6 +25,7 @@
             <tr><td>COP</td><td>4.09 (-0.12 vs baseline)</td></tr>
             <tr><td>Self-Sufficiency</td><td>40.1% (+0.0pp)</td></tr>
             <tr><td>Comfort Compliance</td><td>76.7%</td></tr>
+            <tr><td>Daily Net Cost</td><td>CHF 5.39 (+0.0% vs baseline)</td></tr>
         </table>
         </div>
         
@@ -48,6 +49,7 @@
             <tr><td>COP</td><td>4.39 (+0.18 vs baseline)</td></tr>
             <tr><td>Self-Sufficiency</td><td>40.1% (+0.0pp)</td></tr>
             <tr><td>Comfort Compliance</td><td>76.7%</td></tr>
+            <tr><td>Daily Net Cost</td><td>CHF 5.39 (+0.0% vs baseline)</td></tr>
         </table>
         </div>
         
@@ -71,6 +73,31 @@
             <tr><td>COP</td><td>4.46 (+0.25 vs baseline)</td></tr>
             <tr><td>Self-Sufficiency</td><td>40.1% (+0.0pp)</td></tr>
             <tr><td>Comfort Compliance</td><td>97.6%</td></tr>
+            <tr><td>Daily Net Cost</td><td>CHF 5.39 (+0.0% vs baseline)</td></tr>
+        </table>
+        </div>
+        
+        <div class="parameter-card" style="border: 2px solid #333; padding: 15px; margin: 15px 0; border-radius: 8px;">
+        <h4>Cost-Optimized</h4>
+        <p><em>Minimize electricity costs using time-of-use tariffs</em></p>
+
+        <table>
+            <tr><th colspan="2">Heat Pump Settings</th></tr>
+            <tr><td>Curve Rise</td><td><strong>0.95</strong></td></tr>
+
+            <tr><th colspan="2">Schedule</th></tr>
+            <tr><td>Comfort Start</td><td><strong>11:00</strong></td></tr>
+            <tr><td>Comfort End</td><td><strong>21:00</strong></td></tr>
+
+            <tr><th colspan="2">Setpoints</th></tr>
+            <tr><td>Comfort</td><td><strong>20.0°C</strong></td></tr>
+            <tr><td>Eco</td><td><strong>17.0°C</strong></td></tr>
+
+            <tr><th colspan="2">Expected Outcomes</th></tr>
+            <tr><td>COP</td><td>4.43 (+0.22 vs baseline)</td></tr>
+            <tr><td>Self-Sufficiency</td><td>40.1% (+0.0pp)</td></tr>
+            <tr><td>Comfort Compliance</td><td>91.9%</td></tr>
+            <tr><td>Daily Net Cost</td><td>CHF 5.39 (+0.0% vs baseline)</td></tr>
         </table>
         </div>
         
@@ -82,6 +109,7 @@
             <th>Self-Sufficiency</th>
             <th>COP</th>
             <th>Comfort Compliance</th>
+            <th>Cost Change</th>
         </tr>
     
         <tr>
@@ -89,6 +117,7 @@
             <td>40.1% (35.1-45.1%)</td>
             <td>4.09 (3.79-4.39)</td>
             <td>≥95.0% (target: 76.7%)</td>
+            <td>+0.0%</td>
         </tr>
         
         <tr>
@@ -96,6 +125,7 @@
             <td>40.1% (35.1-45.1%)</td>
             <td>4.39 (4.09-4.69)</td>
             <td>≥95.0% (target: 76.7%)</td>
+            <td>+0.0%</td>
         </tr>
         
         <tr>
@@ -103,6 +133,15 @@
             <td>40.1% (35.1-45.1%)</td>
             <td>4.46 (4.16-4.76)</td>
             <td>≥95.0% (target: 97.6%)</td>
+            <td>+0.0%</td>
+        </tr>
+        
+        <tr>
+            <td>Cost-Optimized</td>
+            <td>40.1% (35.1-45.1%)</td>
+            <td>4.43 (4.13-4.73)</td>
+            <td>≥95.0% (target: 91.9%)</td>
+            <td>+0.0%</td>
         </tr>
         
     </table>
@@ -120,7 +159,8 @@
     <ol>
         <li>Self-sufficiency meets or exceeds prediction range</li>
         <li>COP meets or exceeds prediction range</li>
-        <li>Comfort compliance ≥95%</li>
+        <li>Comfort compliance ≥95% (≥90% for Cost-Optimized)</li>
+        <li>Cost savings meet or exceed prediction (for Cost-Optimized: ≥10% reduction)</li>
         <li>No frequent manual overrides required</li>
     </ol>
 

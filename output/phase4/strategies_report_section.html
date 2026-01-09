@@ -44,6 +44,7 @@
             <li>Self-sufficiency: +0 percentage points</li>
             <li>Grid reduction: 0%</li>
             <li>COP improvement: +0.0</li>
+            
         </ul>
         </div>
         
@@ -79,6 +80,7 @@
             <li>Self-sufficiency: +10 percentage points</li>
             <li>Grid reduction: 25%</li>
             <li>COP improvement: +0.5</li>
+            
         </ul>
         </div>
         
@@ -115,6 +117,43 @@
             <li>Self-sufficiency: +27 percentage points</li>
             <li>Grid reduction: 40%</li>
             <li>COP improvement: +0.7</li>
+            
+        </ul>
+        </div>
+        
+        <div class="strategy-card" style="border: 1px solid #ccc; padding: 15px; margin: 10px 0; border-radius: 5px;">
+        <h4>Cost-Optimized</h4>
+        <p><em>Minimize electricity costs using time-of-use tariffs</em></p>
+        <p><strong>Goal:</strong> Minimize annual electricity bill (primary objective)</p>
+
+        <table>
+        <tr><th>Parameter</th><th>Value</th></tr>
+        <tr><td>Comfort Start</td><td>11.0:00</td></tr>
+        <tr><td>Comfort End</td><td>21.0:00</td></tr>
+        <tr><td>Setpoint (Comfort)</td><td>20.0°C</td></tr>
+        <tr><td>Setpoint (Eco)</td><td>17.0°C</td></tr>
+        <tr><td>Curve Rise</td><td>0.95</td></tr>
+        <tr><td>Buffer Target</td><td>38.0°C</td></tr>
+        <tr><td>Comfort Band</td><td>17.5-22.5°C</td></tr>
+        </table>
+
+        <p><strong>Rules:</strong></p>
+        <ul>
+        <li>Shift heating to low-tariff periods (21:00-06:00 weekdays, weekends)</li>
+<li>Pre-heat during solar hours (11:00-16:00) using free PV</li>
+<li>Reduce setpoint by 1°C during high-tariff grid-dependent periods</li>
+<li>Aggressively reduce flow temp when grid consumption unavoidable</li>
+<li>Accept COP reduction if tariff arbitrage saves more money</li>
+<li>Use thermal mass to coast through expensive evening hours (18:00-21:00)</li>
+
+        </ul>
+
+        <p><strong>Expected Improvement vs Baseline:</strong></p>
+        <ul>
+            <li>Self-sufficiency: +3 percentage points</li>
+            <li>Grid reduction: 10%</li>
+            <li>COP improvement: -0.1</li>
+            <li>Cost reduction: 20%</li>
         </ul>
         </div>
         
@@ -125,6 +164,7 @@
         <tr><td>Baseline</td><td>3.25</td><td>—</td></tr>
         <tr><td>Energy-Optimized</td><td>3.44</td><td>+0.19</td></tr>
         <tr><td>Aggressive Solar</td><td>3.39</td><td>+0.14</td></tr>
+        <tr><td>Cost-Optimized</td><td>3.49</td><td>+0.24</td></tr>
     </table>
 
     <p><strong>Heating curve formula</strong> (from Phase 2 analysis):<br>

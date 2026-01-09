@@ -395,7 +395,9 @@ def create_indexed_tariff_series(start_date: str, end_date: str,
     Create a time-indexed tariff series for the analysis period.
 
     Returns DataFrame with columns:
-    - purchase_rate_rp_kwh: applicable purchase rate
+    - purchase_rate_rp_kwh: applicable purchase rate (high or low based on time)
+    - purchase_rate_high_rp_kwh: high tariff rate for reference
+    - purchase_rate_low_rp_kwh: low tariff rate for reference
     - feedin_rate_rp_kwh: applicable feed-in rate
     - is_high_tariff: boolean flag
     """
@@ -410,6 +412,8 @@ def create_indexed_tariff_series(start_date: str, end_date: str,
 
     # Look up rates for each period
     purchase_rates = []
+    purchase_rates_high = []
+    purchase_rates_low = []
     feedin_rates = []
 
     for ts in result.index:
@@ -420,11 +424,40 @@ def create_indexed_tariff_series(start_date: str, end_date: str,
             get_tariff_at_time(ts, tariff_schedule, tariff_flags, "feedin")
         )
 
+        # Also look up explicit high/low rates for reference
+        mask = (
+            (tariff_schedule["tariff_type"] == "purchase") &
+            (tariff_schedule["valid_from"] <= ts) &
+            (tariff_schedule["valid_to"] >= ts)
+        )
+        applicable = tariff_schedule[mask]
+
+        high_rate = applicable[applicable["rate_type"] == "high"]
+        low_rate = applicable[applicable["rate_type"] == "low"]
+
+        if not high_rate.empty:
+            purchase_rates_high.append(high_rate.iloc[0]["rate_rp_kwh"])
+        else:
+            # Fall back to average estimate
+            avg = applicable[applicable["rate_type"] == "average_estimate"]
+            purchase_rates_high.append(avg.iloc[0]["rate_rp_kwh"] * 1.10 if not avg.empty else np.nan)
+
+        if not low_rate.empty:
+            purchase_rates_low.append(low_rate.iloc[0]["rate_rp_kwh"])
+        else:
+            # Fall back to average estimate
+            avg = applicable[applicable["rate_type"] == "average_estimate"]
+            purchase_rates_low.append(avg.iloc[0]["rate_rp_kwh"] * 0.85 if not avg.empty else np.nan)
+
     result["purchase_rate_rp_kwh"] = purchase_rates
+    result["purchase_rate_high_rp_kwh"] = purchase_rates_high
+    result["purchase_rate_low_rp_kwh"] = purchase_rates_low
     result["feedin_rate_rp_kwh"] = feedin_rates
 
     # Convert to CHF/kWh for convenience
     result["purchase_rate_chf_kwh"] = result["purchase_rate_rp_kwh"] / 100
+    result["purchase_rate_high_chf_kwh"] = result["purchase_rate_high_rp_kwh"] / 100
+    result["purchase_rate_low_chf_kwh"] = result["purchase_rate_low_rp_kwh"] / 100
     result["feedin_rate_chf_kwh"] = result["feedin_rate_rp_kwh"] / 100
 
     return result

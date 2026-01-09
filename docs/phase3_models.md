@@ -10,7 +10,8 @@ This document provides detailed documentation of the models developed in Phase 3
 2. [Heat Pump Model (3.2)](#2-heat-pump-model)
 3. [Energy System Model (3.3)](#3-energy-system-model)
 4. [Model Integration for Optimization](#4-model-integration)
-5. [Known Limitations](#5-known-limitations)
+5. [Tariff Cost Model (3.4)](#5-tariff-cost-model)
+6. [Known Limitations](#6-known-limitations)
 
 ---
 
@@ -405,9 +406,84 @@ Subject to:
 
 ---
 
-## 5. Known Limitations
+## 5. Tariff Cost Model
 
-### 5.1 Data Limitations
+### 5.1 Overview
+
+The tariff cost model analyzes electricity costs using time-of-use tariff data from Primeo Energie and builds a forecasting model for cost prediction.
+
+### 5.2 Data Sources
+
+| Source | Data | Time Range |
+|--------|------|------------|
+| Primeo Energie | Purchase and feed-in tariffs | 2023-2025 |
+| ElCom LINDAS | Official Swiss tariff database | 2023-2025 |
+
+### 5.3 Tariff Structure
+
+**Time-of-Use Windows:**
+- **High tariff (Hochtarif)**: Mon-Fri 06:00-21:00, Sat 06:00-12:00
+- **Low tariff (Niedertarif)**: Mon-Fri 21:00-06:00, Sat 12:00 - Mon 06:00, Federal holidays
+
+**Current Rates (2025):**
+| Tariff Type | High (Rp/kWh) | Low (Rp/kWh) | Spread |
+|-------------|---------------|--------------|--------|
+| Purchase | 35.9 | 27.7 | 8.2 |
+| Feed-in (with HKN) | 13.0-15.5 | 13.0-15.5 | — |
+
+### 5.4 Cost Calculation
+
+**Daily net cost:**
+```
+Net_Cost = Grid_Import × Purchase_Rate - PV_Export × Feedin_Rate
+```
+
+**Where rates are time-dependent:**
+```
+Purchase_Rate(t) = High_Rate if is_high_tariff(t) else Low_Rate
+```
+
+### 5.5 Key Findings
+
+**Historical Analysis:**
+- Household is typically a **net producer** (revenue exceeds costs)
+- Annual net income: ~CHF 1,048 (average over analysis period)
+- High-tariff hours account for ~60% of grid purchase costs
+
+**Cost Optimization Potential:**
+- Shifting heating from high-tariff morning (06:00-10:00) to solar hours (10:00-16:00) can reduce costs by ~2-4%
+- Low-tariff evening heating (21:00+) provides additional savings potential
+- Battery should discharge during high-tariff peak demand (17:00-21:00)
+
+### 5.6 Forecasting Model
+
+A regression model predicts daily costs from weather and seasonal factors:
+
+```
+Daily_Cost = β₀ + β₁×HDD + β₂×Month + β₃×Weekday
+```
+
+Where:
+- HDD = Heating Degree Days (max(18 - T_outdoor, 0))
+- Month = categorical for seasonality
+- Weekday = binary indicator for weekday vs weekend
+
+### 5.7 Optimization Implications
+
+The tariff cost model enables the **Cost-Optimized** strategy in Phase 4:
+
+| Strategy Element | Implementation | Expected Impact |
+|-----------------|----------------|-----------------|
+| Avoid morning high-tariff | Comfort start at 11:00 vs 06:30 | -10% morning grid cost |
+| Maximize solar self-consumption | Shift heating to 10:00-16:00 | Direct use > export |
+| Aggressive grid fallback | Curve rise 0.85 when grid-dependent | Lower energy per heating event |
+| Pre-heat before high-tariff | Buffer charging at 21:00 | Avoid morning grid peaks |
+
+---
+
+## 6. Known Limitations
+
+### 6.1 Data Limitations
 
 | Issue | Impact | Mitigation |
 |-------|--------|------------|
@@ -416,7 +492,7 @@ Subject to:
 | Sparse room sensor data | Some rooms have gaps | Focus on rooms with best coverage |
 | No solar irradiance sensor | Use PV as proxy | Imperfect correlation |
 
-### 5.2 Model Limitations
+### 6.2 Model Limitations
 
 | Model | Limitation | Impact |
 |-------|------------|--------|
@@ -425,9 +501,9 @@ Subject to:
 | Heat Pump | Daily resolution | Misses cycling effects |
 | Heat Pump | No defrost modeling | Underestimates cold-weather losses |
 | Energy | Static scenarios | Real optimization is dynamic |
-| Energy | No tariff modeling | Financial optimization deferred |
+| Tariff | No dynamic simulation | Uses historical data, not strategy-specific costs |
 
-### 5.3 Validation Status
+### 6.3 Validation Status
 
 | Model | Validation Method | Status |
 |-------|-------------------|--------|
@@ -435,7 +511,7 @@ Subject to:
 | Heat Pump | R² of COP regression | 0.95 (excellent) |
 | Energy | Compare calculated vs actual self-sufficiency | Within 5% (good) |
 
-### 5.4 Recommended Improvements
+### 6.4 Recommended Improvements
 
 1. **Higher-resolution COP model**: Use 15-min or hourly data for better part-load characterization.
 
@@ -443,7 +519,7 @@ Subject to:
 
 3. **Weather forecast integration**: Use forecasts for predictive optimization.
 
-4. **Tariff data**: Add electricity price data for cost optimization.
+4. **Dynamic cost simulation**: Simulate energy consumption changes under different strategies to predict actual cost savings.
 
 5. **Longer sensor coverage**: Continue data collection through full heating season.
 
