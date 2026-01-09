@@ -75,6 +75,7 @@ python src/phase1/02_preprocess_sensors.py         # Phase 1, Step 2 (~10 min)
 python src/phase1/03_integrate_data.py             # Phase 1, Step 3
 python src/phase1/04_preprocess_tariffs.py         # Phase 1, Step 4 (tariffs)
 python src/phase2/01_eda.py                        # Phase 2, Step 1
+python src/phase2/04_tariff_analysis.py            # Phase 2, Step 4 (tariff EDA)
 python src/phase3/01_thermal_model.py              # Phase 3, Step 1
 python src/phase3/02_heat_pump_model.py            # Phase 3, Step 2
 python src/phase3/03_energy_system_model.py        # Phase 3, Step 3
@@ -98,7 +99,8 @@ src/
 │   ├── run_eda.py                    # Wrapper: filters sensors + HTML report
 │   ├── 01_eda.py                     # Main EDA (energy, heating, solar)
 │   ├── 02_battery_degradation.py     # Standalone battery analysis
-│   └── 03_heating_curve_analysis.py  # Heating curve model + schedule detection
+│   ├── 03_heating_curve_analysis.py  # Heating curve model + schedule detection
+│   └── 04_tariff_analysis.py         # Electricity tariff analysis (HKN-only)
 ├── phase3/              # System Modeling
 │   ├── run_phase3.py                 # Wrapper: runs all models + HTML report
 │   ├── 01_thermal_model.py           # Building thermal characteristics
@@ -145,7 +147,13 @@ After preprocessing, data is saved to `output/phase1/`:
 
 ## Electricity Tariffs
 
-Tariff data from Primeo Energie (provider) for cost modeling. Run:
+Tariff data from Primeo Energie (provider) for cost modeling.
+
+**Important:** Only feed-in tariffs WITH HKN (Herkunftsnachweis) are used in analysis.
+Base-only feed-in rates are excluded because this installation participates in the
+HKN program, receiving the additional HKN bonus on top of the base rate.
+
+Run:
 
 ```bash
 python src/phase1/04_preprocess_tariffs.py
@@ -192,12 +200,13 @@ python src/phase1/04_preprocess_tariffs.py
 
 After running `python src/phase2/run_eda.py`, outputs are saved to `output/phase2/`:
 
-**Figures (fig01-fig12):**
+**Figures (fig01-fig15):**
 - Energy patterns (time series, monthly, hourly heatmaps, seasonal)
 - Heating system (COP analysis, temperature differentials, indoor/outdoor)
 - Solar-heating correlation (hourly patterns, battery usage, forced grid)
 - Summary statistics (monthly breakdown, HDD analysis, yearly totals)
 - Heating curve analysis (schedule detection, model fit, residuals)
+- Electricity tariffs (timeline, time windows, cost implications)
 
 **HTML Report:**
 - `eda_report.html` - Comprehensive EDA documentation with all figures
