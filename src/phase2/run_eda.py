@@ -145,6 +145,37 @@ def run_eda_script() -> tuple[bool, str]:
         return False, f"ERROR: {e}"
 
 
+def run_heating_curve_analysis() -> tuple[bool, str]:
+    """Run the heating curve analysis script."""
+    print("\n" + "="*60)
+    print("Running Heating Curve Analysis")
+    print("="*60)
+
+    script_path = SRC_DIR / "03_heating_curve_analysis.py"
+
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script_path)],
+            capture_output=True,
+            text=True,
+            cwd=str(PROJECT_ROOT),
+            timeout=300
+        )
+
+        output = result.stdout
+        if result.stderr:
+            output += "\n\nSTDERR:\n" + result.stderr
+
+        print(output)
+
+        return result.returncode == 0, output
+
+    except subprocess.TimeoutExpired:
+        return False, "ERROR: Heating curve script timed out"
+    except Exception as e:
+        return False, f"ERROR: {e}"
+
+
 def collect_figure_info() -> list[dict]:
     """Collect information about generated figures."""
     figures = []
@@ -161,6 +192,8 @@ def collect_figure_info() -> list[dict]:
         "fig09_battery_evening_heating.png": "Battery charging/discharging patterns and evening energy sources",
         "fig10_forced_grid_heating.png": "Periods of grid-dependent heating when no PV is available",
         "fig11_summary_statistics.png": "Monthly breakdown, HDD analysis, consumption distribution, yearly totals",
+        "fig12_heating_curve_schedule.png": "Heating curve analysis: setpoint regimes, target vs outdoor temperature, model residuals",
+        "fig12a_heating_curve_censored.png": "Heating curve analysis (censored): excluding anomalous eco >= comfort periods",
     }
 
     for fig_file, description in figure_descriptions.items():
@@ -219,7 +252,16 @@ def extract_stats_from_log(log: str) -> dict:
     return stats
 
 
-def generate_html_report(figures: list[dict], stats: dict, eda_log: str) -> str:
+def load_heating_curve_section() -> str:
+    """Load the heating curve HTML section if available."""
+    section_path = OUTPUT_DIR / "heating_curve_report_section.html"
+    if section_path.exists():
+        return section_path.read_text()
+    return ""
+
+
+def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
+                         heating_curve_log: str = "") -> str:
     """Generate comprehensive HTML EDA report."""
 
     # Helper to format stats with fallback for missing values
@@ -375,7 +417,8 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str) -> str:
                 <li><a href="#heating">5. Heating System</a></li>
                 <li><a href="#solar">6. Solar-Heating Correlation</a></li>
                 <li><a href="#summary">7. Summary Statistics</a></li>
-                <li><a href="#log">8. Detailed Log</a></li>
+                <li><a href="#heating-curve">8. Heating Curve Analysis</a></li>
+                <li><a href="#log">9. Detailed Log</a></li>
             </ul>
         </div>
 
@@ -540,11 +583,18 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str) -> str:
 
         {''.join([f for f in figures_html.split('</div>') if 'fig11' in f])}
 
-        <h2 id="log">8. Detailed Log</h2>
+        {load_heating_curve_section()}
+
+        <h2 id="log">9. Detailed Log</h2>
 
         <details>
             <summary>Full EDA Output Log</summary>
             <pre>{format_log(eda_log)}</pre>
+        </details>
+
+        <details>
+            <summary>Heating Curve Analysis Log</summary>
+            <pre>{format_log(heating_curve_log)}</pre>
         </details>
 
     </div>
@@ -578,7 +628,13 @@ def main():
     if not success:
         print("\nWARNING: EDA script encountered errors")
 
-    # Step 3: Generate HTML report
+    # Step 3: Run heating curve analysis
+    hc_success, heating_curve_log = run_heating_curve_analysis()
+
+    if not hc_success:
+        print("\nWARNING: Heating curve analysis encountered errors")
+
+    # Step 4: Generate HTML report
     print("\n" + "="*60)
     print("Generating HTML Report")
     print("="*60)
@@ -586,7 +642,7 @@ def main():
     figures = collect_figure_info()
     stats = extract_stats_from_log(eda_log)
 
-    html_report = generate_html_report(figures, stats, eda_log)
+    html_report = generate_html_report(figures, stats, eda_log, heating_curve_log)
     report_path = OUTPUT_DIR / "eda_report.html"
     report_path.write_text(html_report)
     print(f"Report saved to: {report_path}")
@@ -600,7 +656,7 @@ def main():
     print(f"Report: {report_path}")
     print(f"Figures: {sum(1 for f in figures if f['exists'])}/{len(figures)} generated")
 
-    return 0 if success else 1
+    return 0 if (success and hc_success) else 1
 
 
 if __name__ == "__main__":

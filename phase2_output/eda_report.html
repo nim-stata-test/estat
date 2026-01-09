@@ -102,7 +102,7 @@
 <body>
     <div class="container">
         <h1>ESTAT Phase 2: Exploratory Data Analysis Report</h1>
-        <p class="meta">Generated: 2026-01-08 12:32:02</p>
+        <p class="meta">Generated: 2026-01-09 18:24:44</p>
 
         <div class="toc">
             <strong>Contents</strong>
@@ -330,6 +330,7 @@
                 <img src="fig11_summary_statistics.png" alt="Monthly breakdown, HDD analysis, consumption distribution, yearly totals">
                 <div class="figure-caption">Monthly breakdown, HDD analysis, consumption distribution, yearly totals
 
+        
         <h2 id="heating-curve">8. Heating Curve Analysis</h2>
 
         <div class="card">
@@ -383,9 +384,125 @@
                     <td>15.0 hours</td>
                     <td>7</td>
                 </tr>
+
             </table>
             <p><em>Note: Times are in local timezone (Europe/Zurich). Comfort mode uses the higher setpoint;
             eco mode (outside comfort hours) uses the lower setpoint.</em></p>
+        </div>
+
+        <div class="card">
+            <h4>Setpoint Regimes (Time-Varying Setpoints)</h4>
+            <p>The comfort and eco temperature setpoints change over time. These changes affect the target flow temperature
+            independently of the daily schedule. Notable: eco=30°C effectively disables eco mode (24h comfort).</p>
+            <table>
+                <tr><th>Start Date</th><th>Comfort (°C)</th><th>Eco (°C)</th><th>RMSE (°C)</th><th>Notes</th></tr>
+                <tr>
+                    <td>2025-10-28 17:25</td>
+                    <td>20.5</td>
+                    <td>nan</td>
+                    <td>1.02</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>2025-10-28 17:25</td>
+                    <td>20.5</td>
+                    <td>18.7</td>
+                    <td>1.02</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>2025-10-29 07:39</td>
+                    <td>20.5</td>
+                    <td>18.5</td>
+                    <td>0.43</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>2025-10-29 10:35</td>
+                    <td>20.5</td>
+                    <td>18.3</td>
+                    <td>0.69</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>2025-11-03 00:07</td>
+                    <td>20.3</td>
+                    <td>18.3</td>
+                    <td>0.55</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>2025-11-04 15:09</td>
+                    <td>20.2</td>
+                    <td>18.3</td>
+                    <td>0.49</td>
+                    <td>Standard</td>
+                </tr>
+                <tr>
+                    <td>2025-11-04 15:09</td>
+                    <td>20.2</td>
+                    <td>18.2</td>
+                    <td>0.49</td>
+                    <td>Standard</td>
+                </tr>
+                <tr>
+                    <td>2025-11-25 23:55</td>
+                    <td>20.2</td>
+                    <td>18.0</td>
+                    <td>0.49</td>
+                    <td>Standard</td>
+                </tr>
+                <tr>
+                    <td>2025-12-04 15:48</td>
+                    <td>20.2</td>
+                    <td>30.0</td>
+                    <td>5.08</td>
+                    <td>Eco disabled (24h comfort)</td>
+                </tr>
+                <tr>
+                    <td>2025-12-07 09:59</td>
+                    <td>20.2</td>
+                    <td>18.0</td>
+                    <td>0.36</td>
+                    <td>Standard</td>
+                </tr>
+                <tr>
+                    <td>2025-12-14 10:23</td>
+                    <td>20.5</td>
+                    <td>18.0</td>
+                    <td>0.60</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>2025-12-25 14:25</td>
+                    <td>20.7</td>
+                    <td>18.0</td>
+                    <td>0.78</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>2025-12-27 10:29</td>
+                    <td>21.0</td>
+                    <td>18.0</td>
+                    <td>0.67</td>
+                    <td>Higher comfort</td>
+                </tr>
+                <tr>
+                    <td>2025-12-30 22:22</td>
+                    <td>20.7</td>
+                    <td>18.0</td>
+                    <td>1.11</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>2025-12-31 10:27</td>
+                    <td>21.0</td>
+                    <td>18.0</td>
+                    <td>0.75</td>
+                    <td>Higher comfort</td>
+                </tr>
+
+            </table>
         </div>
 
         <div class="card">
@@ -394,7 +511,7 @@
                 <tr><td>R-squared</td><td><strong>0.9434</strong> (explains 94.3% of variance)</td></tr>
                 <tr><td>RMSE (overall)</td><td>1.03°C</td></tr>
                 <tr><td>RMSE (comfort mode)</td><td>0.35°C</td></tr>
-                <tr><td>RMSE (eco mode)</td><td>1.54°C</td></tr>
+                <tr><td>RMSE (eco mode)</td><td>0.77°C</td></tr>
             </table>
 
             <h4>Parameter Effects</h4>
@@ -420,9 +537,17 @@
 
         <div class="figure">
             <img src="fig12_heating_curve_schedule.png" alt="Heating curve analysis with schedule detection">
-            <div class="figure-caption">Heating curve analysis: schedule transitions (top-left), target vs outdoor temperature by mode (top-right),
+            <div class="figure-caption">Fig 12: Heating curve analysis (all data): setpoint regimes (top-left), target vs outdoor temperature colored by setpoint (top-right),
             model residuals by hour (bottom-left), and model summary (bottom-right)</div>
         </div>
+
+        <div class="figure">
+            <img src="fig12a_heating_curve_censored.png" alt="Heating curve analysis excluding anomalous periods">
+            <div class="figure-caption">Fig 12a: Heating curve analysis (censored): excluding anomalous periods where eco >= comfort.
+            Shows residual distribution (top-left), target vs outdoor (top-right), predicted vs actual (bottom-left), and summary stats (bottom-right).
+            R² = 0.9807, RMSE = 0.57°C for normal operation.</div>
+        </div>
+
 
         <h2 id="log">9. Detailed Log</h2>
 
@@ -508,7 +633,96 @@ Loading processed data...
     Worst season: Winter (19%)
 
 ============================================================
-Phase 2 EDA complete. Output saved to: /Users/stata/workspace/estat/eda_output/
+Phase 2 EDA complete. Output saved to: /Users/stata/workspace/estat/phase2_output/
+============================================================
+</pre>
+        </details>
+
+        <details>
+            <summary>Heating Curve Analysis Log</summary>
+            <pre>============================================================
+HEATING CURVE ANALYSIS
+============================================================
+Loading heating sensor data...
+  Loaded 1,787,396 rows, 96 sensors
+  Date range: 2025-10-28 16:25:39.040786+00:00 to 2026-01-04 14:29:11.603468+00:00
+
+Detecting setpoint regimes...
+  Found 15 setpoint regimes:
+    2025-10-28 17:25: comfort=20.5°C, eco=nan°C
+    2025-10-28 17:25: comfort=20.5°C, eco=18.7°C
+    2025-10-29 07:39: comfort=20.5°C, eco=18.5°C
+    2025-10-29 10:35: comfort=20.5°C, eco=18.3°C
+    2025-11-03 00:07: comfort=20.3°C, eco=18.3°C
+    2025-11-04 15:09: comfort=20.2°C, eco=18.3°C
+    2025-11-04 15:09: comfort=20.2°C, eco=18.2°C
+    2025-11-25 23:55: comfort=20.2°C, eco=18.0°C
+    2025-12-04 15:48: comfort=20.2°C, eco=30.0°C
+    2025-12-07 09:59: comfort=20.2°C, eco=18.0°C
+    2025-12-14 10:23: comfort=20.5°C, eco=18.0°C
+    2025-12-25 14:25: comfort=20.7°C, eco=18.0°C
+    2025-12-27 10:29: comfort=21.0°C, eco=18.0°C
+    2025-12-30 22:22: comfort=20.7°C, eco=18.0°C
+    2025-12-31 10:27: comfort=21.0°C, eco=18.0°C
+
+Pivoting data for transition detection...
+
+Detecting schedule transitions...
+  Found 125 transitions
+    Morning (ECO→COMFORT): 65
+    Evening (COMFORT→ECO): 60
+
+Estimating schedule regimes...
+  Found 2 schedule regimes:
+    2025-10-30 to 2025-12-26: Comfort 06:30 - 20:00 (46 days)
+    2025-12-27 to 2026-01-03: Comfort 06:30 - 21:30 (7 days)
+
+  Saved: heating_curve_schedules.csv
+  Saved: heating_curve_setpoints.csv
+
+Building heating curve model...
+  Note: 657 rows (2.9%) have eco &gt;= comfort (anomalous)
+  Analysis dataset: 22,684 rows
+  Comfort mode: 13,261 (58.5%)
+  Eco mode: 9,423 (41.5%)
+  Estimated T_ref (comfort): 21.32°C
+  Estimated T_ref (eco): 19.18°C
+
+  Model Performance (normal periods, n=22,027):
+    R-squared: 0.9807
+    RMSE: 0.57°C
+    RMSE (comfort): 0.35°C
+    RMSE (eco): 0.77°C
+
+  Anomalous periods (eco &gt;= comfort, n=657):
+    RMSE: 5.07°C (expected - using actual setpoint)
+
+  Overall (all data):
+    R-squared: 0.9434
+    RMSE: 1.03°C
+
+  Performance by setpoint regime:
+    2025-10-28: comfort=20.5°C, eco=18.7°C, RMSE=1.02°C (n=245)
+    2025-10-29: comfort=20.5°C, eco=18.5°C, RMSE=0.43°C (n=36)
+    2025-10-29: comfort=20.5°C, eco=18.3°C, RMSE=0.69°C (n=1,639)
+    2025-11-03: comfort=20.3°C, eco=18.3°C, RMSE=0.55°C (n=597)
+    2025-11-04: comfort=20.2°C, eco=18.2°C, RMSE=0.49°C (n=7,380)
+    2025-11-25: comfort=20.2°C, eco=18.0°C, RMSE=0.49°C (n=2,930)
+    2025-12-04: comfort=20.2°C, eco=30.0°C, RMSE=5.08°C (n=656)
+    2025-12-07: comfort=20.2°C, eco=18.0°C, RMSE=0.36°C (n=2,392)
+    2025-12-14: comfort=20.5°C, eco=18.0°C, RMSE=0.60°C (n=3,714)
+    2025-12-25: comfort=20.7°C, eco=18.0°C, RMSE=0.78°C (n=540)
+    2025-12-27: comfort=21.0°C, eco=18.0°C, RMSE=0.67°C (n=1,156)
+    2025-12-30: comfort=20.7°C, eco=18.0°C, RMSE=1.11°C (n=140)
+    2025-12-31: comfort=21.0°C, eco=18.0°C, RMSE=0.75°C (n=1,257)
+
+Creating visualization...
+  Saved: fig12_heating_curve_schedule.png
+  Saved: fig12a_heating_curve_censored.png
+  Saved: heating_curve_report_section.html
+
+============================================================
+Heating curve analysis complete.
 ============================================================
 </pre>
         </details>
