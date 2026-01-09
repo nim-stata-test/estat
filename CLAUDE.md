@@ -236,18 +236,27 @@ After running `python src/phase4/run_optimization.py`, outputs are saved to `pha
 - `phase5_predictions.json` - Testable predictions with confidence intervals
 - `phase5_implementation_checklist.md` - Protocol for randomized study
 
+**Heating Curve Model (from Phase 2):**
+```
+T_flow = T_setpoint + curve_rise × (T_ref - T_outdoor)
+```
+Where:
+- T_ref = 21.32°C (comfort mode) or 19.18°C (eco mode)
+- curve_rise typically 0.85-1.08
+
 **Three Optimization Strategies:**
 
-| Strategy | Schedule | Curve Rise | Expected Self-Sufficiency |
-|----------|----------|------------|---------------------------|
-| Baseline | 06:30-20:00 | 1.08 | 58% (current) |
-| Energy-Optimized | 10:00-18:00 | 0.98 | 68% (+10pp) |
-| Aggressive Solar | 10:00-17:00 | 0.95 | 85% (+27pp) |
+| Strategy | Schedule | Curve Rise | COP | vs Baseline |
+|----------|----------|------------|-----|-------------|
+| Baseline | 06:30-20:00 | 1.08 | 4.12 | — |
+| Energy-Optimized | 10:00-18:00 | 0.98 | 4.42 | +0.30 |
+| Aggressive Solar | 10:00-17:00 | 0.95 | 4.49 | +0.37 |
 
 **Key optimization levers:**
 - Shift comfort mode to PV peak hours (10:00-17:00)
-- Lower curve_rise for better COP (+0.1 COP per -1°C flow temp)
+- Lower curve_rise for better COP (~0.1 COP improvement per 1°C flow temp reduction)
 - Wider comfort band (17-23°C for aggressive strategy)
+- Dynamic curve_rise reduction when grid-dependent (0.85-0.90)
 
 ## Documentation
 
