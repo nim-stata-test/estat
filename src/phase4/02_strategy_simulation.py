@@ -6,7 +6,8 @@ Simulates the three optimization strategies on historical data to validate
 expected improvements before Phase 5 intervention study.
 
 Uses Phase 3 models:
-- Thermal model for temperature prediction
+- Thermal model with weighted indoor temperature (davis_inside 40%, office1 30%,
+  atelier/studio/simlab 10% each)
 - COP model for energy efficiency
 - Energy system model for grid/solar interaction
 
@@ -30,7 +31,7 @@ PHASE3_DIR = PROJECT_ROOT / 'phase3_output'
 OUTPUT_DIR = PROJECT_ROOT / 'phase4_output'
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-# Model parameters (from Phase 3)
+# Model parameters (from Phase 3 - updated with weighted sensor model)
 COP_PARAMS = {
     'intercept': 6.52,
     'outdoor_coef': 0.1319,
@@ -38,9 +39,18 @@ COP_PARAMS = {
 }
 
 THERMAL_PARAMS = {
-    'heating_coef': 0.013,  # K/(15min)/K
-    'loss_coef': 0.014,     # K/(15min)/K
-    'time_constant_h': 25.0,
+    'heating_coef': 0.0132,  # K/(15min)/K (weighted average)
+    'loss_coef': 0.0141,     # K/(15min)/K (weighted average)
+    'time_constant_h': 19.3,  # Weighted average from target sensors
+}
+
+# Target sensors and weights for thermal model
+SENSOR_WEIGHTS = {
+    'davis_inside_temperature': 0.40,
+    'office1_temperature': 0.30,
+    'atelier_temperature': 0.10,
+    'studio_temperature': 0.10,
+    'simlab_temperature': 0.10,
 }
 
 # Heating curve reference temperatures (from Phase 2 analysis)
@@ -88,16 +98,22 @@ def prepare_simulation_data(df: pd.DataFrame) -> pd.DataFrame:
         print("  Warning: outdoor temperature not found")
         return pd.DataFrame()
 
-    # Room temperature (use office1 as reference)
-    room_cols = [c for c in df.columns if 'office1' in c.lower() and 'temperature' in c.lower()]
-    if room_cols:
-        sim_data['T_room'] = df[room_cols[0]]
-    else:
-        # Fallback
-        room_cols = [c for c in df.columns if '_temperature' in c.lower()
-                    and 'stiebel' not in c.lower() and 'davis' not in c.lower()]
-        if room_cols:
-            sim_data['T_room'] = df[room_cols[0]]
+    # Room temperature - compute weighted average from target sensors
+    # Weights: davis_inside (40%), office1 (30%), atelier/studio/simlab (10% each)
+    weighted_sum = pd.Series(0.0, index=df.index)
+    weight_sum = pd.Series(0.0, index=df.index)
+
+    for sensor, weight in SENSOR_WEIGHTS.items():
+        if sensor in df.columns:
+            valid_mask = df[sensor].notna()
+            weighted_sum[valid_mask] += df.loc[valid_mask, sensor] * weight
+            weight_sum[valid_mask] += weight
+
+    # Normalize by actual weight sum (handles missing sensors)
+    sim_data['T_room'] = weighted_sum / weight_sum
+    sim_data.loc[weight_sum == 0, 'T_room'] = np.nan
+
+    print(f"  Weighted T_room: {sim_data['T_room'].notna().sum():,} valid points")
 
     # Flow temperature
     flow_col = 'stiebel_eltron_isg_actual_temperature_hk_2'

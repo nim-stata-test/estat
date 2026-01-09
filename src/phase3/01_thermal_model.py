@@ -37,6 +37,24 @@ PROCESSED_DIR = PROJECT_ROOT / 'phase1_output'
 OUTPUT_DIR = PROJECT_ROOT / 'phase3_output'
 OUTPUT_DIR.mkdir(exist_ok=True)
 
+# Target sensors for thermal model (weighted combination)
+TARGET_SENSORS = [
+    'davis_inside_temperature',  # 40%
+    'office1_temperature',       # 30%
+    'atelier_temperature',       # 10%
+    'studio_temperature',        # 10%
+    'simlab_temperature',        # 10%
+]
+
+# Weights for weighted objective
+SENSOR_WEIGHTS = {
+    'davis_inside_temperature': 0.40,
+    'office1_temperature': 0.30,
+    'atelier_temperature': 0.10,
+    'studio_temperature': 0.10,
+    'simlab_temperature': 0.10,
+}
+
 # Reference room for primary analysis (most data, occupied space)
 PRIMARY_ROOM = 'office1_temperature'
 
@@ -93,14 +111,13 @@ def prepare_thermal_data(df: pd.DataFrame, heating_raw: pd.DataFrame) -> pd.Data
         print(f"  Warning: {outdoor_col} not found")
         return pd.DataFrame()
 
-    # Room temperatures - find all available
-    room_temp_cols = [c for c in df.columns if '_temperature' in c.lower()
-                     and 'davis' not in c.lower()
-                     and 'stiebel' not in c.lower()
-                     and 'motion' not in c.lower()]
+    # Room temperatures - only include target sensors
+    room_temp_cols = [c for c in TARGET_SENSORS if c in df.columns]
 
     for col in room_temp_cols:
         thermal_data[col] = df[col]
+
+    print(f"  Target sensors found: {room_temp_cols}")
 
     # Heating status and power
     if 'stiebel_eltron_isg_is_heating' in df.columns:
@@ -139,6 +156,40 @@ def prepare_thermal_data(df: pd.DataFrame, heating_raw: pd.DataFrame) -> pd.Data
     print(f"  Valid outdoor temp: {thermal_data['T_out'].notna().sum():,} / {len(thermal_data):,}")
 
     return thermal_data
+
+
+def compute_weighted_temperature(thermal_data: pd.DataFrame) -> pd.Series:
+    """
+    Compute weighted average indoor temperature from target sensors.
+
+    Weights:
+      - davis_inside_temperature: 40%
+      - office1_temperature: 30%
+      - atelier_temperature: 10%
+      - studio_temperature: 10%
+      - simlab_temperature: 10%
+    """
+    print("\nComputing weighted indoor temperature...")
+
+    weighted_sum = pd.Series(0.0, index=thermal_data.index)
+    weight_sum = pd.Series(0.0, index=thermal_data.index)
+
+    for sensor, weight in SENSOR_WEIGHTS.items():
+        if sensor in thermal_data.columns:
+            valid_mask = thermal_data[sensor].notna()
+            weighted_sum[valid_mask] += thermal_data.loc[valid_mask, sensor] * weight
+            weight_sum[valid_mask] += weight
+            valid_count = valid_mask.sum()
+            print(f"  {sensor}: {valid_count:,} valid points (weight={weight:.0%})")
+
+    # Normalize by actual weight sum (handles missing sensors)
+    T_weighted = weighted_sum / weight_sum
+    T_weighted[weight_sum == 0] = np.nan
+
+    print(f"  Weighted temperature: {T_weighted.notna().sum():,} valid points")
+    print(f"  Mean: {T_weighted.mean():.2f}°C, Std: {T_weighted.std():.2f}°C")
+
+    return T_weighted
 
 
 def estimate_heat_loss_with_heating(thermal_data: pd.DataFrame, room_col: str) -> dict:
@@ -561,18 +612,19 @@ def plot_thermal_analysis(thermal_data: pd.DataFrame, room_results: dict,
 
 
 def analyze_all_rooms(thermal_data: pd.DataFrame) -> pd.DataFrame:
-    """Analyze thermal characteristics for all rooms with sufficient data."""
+    """Analyze thermal characteristics for target sensors only."""
     print("\n" + "="*60)
-    print("Analyzing thermal characteristics for all rooms")
+    print("Analyzing thermal characteristics for target sensors")
     print("="*60)
 
-    room_cols = [c for c in thermal_data.columns if '_temperature' in c.lower()
-                 and 'T_' not in c]  # Exclude T_out, T_flow, T_hk2, etc.
+    # Only analyze target sensors that exist in the data
+    room_cols = [c for c in TARGET_SENSORS if c in thermal_data.columns]
 
     results = []
 
     for room_col in room_cols:
         valid_count = thermal_data[room_col].notna().sum()
+        weight = SENSOR_WEIGHTS.get(room_col, 0)
         if valid_count < 500:  # Need at least ~3 days of data
             print(f"\nSkipping {room_col}: only {valid_count} valid points")
             continue
@@ -583,6 +635,7 @@ def analyze_all_rooms(thermal_data: pd.DataFrame) -> pd.DataFrame:
         if thermal_result:
             results.append({
                 'room': room_col.replace('_temperature', ''),
+                'weight': weight,
                 'data_points': valid_count,
                 'time_constant_h': thermal_result.get('time_constant_hours'),
                 'heating_coef': thermal_result.get('heating_coef'),
@@ -594,29 +647,57 @@ def analyze_all_rooms(thermal_data: pd.DataFrame) -> pd.DataFrame:
 
     if results:
         df_results = pd.DataFrame(results)
-        df_results = df_results.sort_values('data_points', ascending=False)
+        # Sort by weight (highest first)
+        df_results = df_results.sort_values('weight', ascending=False)
         return df_results
 
     return pd.DataFrame()
 
 
-def generate_report(room_results: pd.DataFrame, primary_model: dict,
+def analyze_weighted_temperature(thermal_data: pd.DataFrame, T_weighted: pd.Series) -> dict:
+    """
+    Analyze thermal characteristics using the weighted indoor temperature.
+
+    This provides a single combined model using the weighted objective.
+    """
+    print("\n" + "="*60)
+    print("Analyzing weighted indoor temperature model")
+    print("="*60)
+
+    # Add weighted temperature to thermal data
+    thermal_data_with_weighted = thermal_data.copy()
+    thermal_data_with_weighted['T_weighted'] = T_weighted
+
+    # Use estimate_heat_loss_with_heating with weighted temperature
+    result = estimate_heat_loss_with_heating(thermal_data_with_weighted, 'T_weighted')
+
+    if result:
+        result['room'] = 'weighted_indoor'
+
+    return result
+
+
+def generate_report(room_results: pd.DataFrame, weighted_model: dict,
                    simulation_rmse: float) -> str:
     """Generate HTML report section for thermal model."""
 
-    # Summary statistics
-    if not room_results.empty:
-        avg_time_constant = room_results['time_constant_h'].mean()
-        avg_r2 = room_results['r2'].mean()
-        best_room = room_results.loc[room_results['r2'].idxmax(), 'room']
-        avg_heating_coef = room_results['heating_coef'].mean()
-        avg_loss_coef = room_results['loss_coef'].mean()
+    # Weighted model results (primary)
+    if weighted_model:
+        weighted_time_constant = weighted_model.get('time_constant_hours', 'N/A')
+        weighted_r2 = weighted_model.get('r2', 'N/A')
+        weighted_heating_coef = weighted_model.get('heating_coef', 0)
+        weighted_loss_coef = weighted_model.get('loss_coef', 0)
+        weighted_rmse = weighted_model.get('rmse', 'N/A')
     else:
-        avg_time_constant = primary_model.get('time_constant_hours', 'N/A') if primary_model else 'N/A'
-        avg_r2 = primary_model.get('r2', 'N/A') if primary_model else 'N/A'
-        best_room = primary_model.get('room', 'N/A') if primary_model else 'N/A'
-        avg_heating_coef = primary_model.get('heating_coef', 0) if primary_model else 0
-        avg_loss_coef = primary_model.get('loss_coef', 0) if primary_model else 0
+        weighted_time_constant = 'N/A'
+        weighted_r2 = 'N/A'
+        weighted_heating_coef = 0
+        weighted_loss_coef = 0
+        weighted_rmse = 'N/A'
+
+    # Build weights description
+    weights_desc = ", ".join([f"{k.replace('_temperature', '')}: {v:.0%}"
+                              for k, v in SENSOR_WEIGHTS.items()])
 
     html = f"""
     <section id="thermal-model">
@@ -626,11 +707,14 @@ def generate_report(room_results: pd.DataFrame, primary_model: dict,
     <p>Estimated building thermal characteristics using heating circuit temperature (T_hk2) as a proxy for heating effort.
     This approach accounts for <strong>continuous heating operation</strong> (the heat pump runs day and night, not just during daytime).</p>
 
+    <p><strong>Weighted Indoor Temperature:</strong> The model uses a weighted combination of target sensors:<br>
+    {weights_desc}</p>
+
     <pre>
     dT_room/dt = a × (T_hk2 - T_room) - b × (T_room - T_out) + c × PV
 
     where:
-        T_room = indoor temperature (°C)
+        T_room = weighted indoor temperature (°C)
         T_out  = outdoor temperature (°C)
         T_hk2  = heating circuit 2 temperature (proxy for heating effort)
         PV     = solar gain proxy (from PV generation)
@@ -643,47 +727,53 @@ def generate_report(room_results: pd.DataFrame, primary_model: dict,
     <p><strong>Key insight:</strong> T_hk2 varies from ~30°C at night (eco mode) to ~36°C in morning (comfort mode),
     providing a continuous measure of heating input.</p>
 
-    <h3>Key Results</h3>
+    <h3>Weighted Model Results (Primary)</h3>
     <table>
         <tr><th>Metric</th><th>Value</th><th>Interpretation</th></tr>
         <tr>
-            <td>Average thermal time constant</td>
-            <td>{avg_time_constant:.1f} hours</td>
+            <td>Thermal time constant</td>
+            <td>{weighted_time_constant:.1f} hours</td>
             <td>Time for temperature to decay to 37% of initial difference</td>
         </tr>
         <tr>
             <td>Heating coefficient (a)</td>
-            <td>{avg_heating_coef:.6f}</td>
-            <td>Room temp rise per K of (T_hk2 - T_room) per 15 min</td>
+            <td>{weighted_heating_coef:.6f}</td>
+            <td>Weighted temp rise per K of (T_hk2 - T_room) per 15 min</td>
         </tr>
         <tr>
             <td>Loss coefficient (b)</td>
-            <td>{avg_loss_coef:.6f}</td>
-            <td>Room temp drop per K of (T_room - T_out) per 15 min</td>
+            <td>{weighted_loss_coef:.6f}</td>
+            <td>Weighted temp drop per K of (T_room - T_out) per 15 min</td>
         </tr>
         <tr>
-            <td>Model R² (average)</td>
-            <td>{avg_r2:.3f}</td>
-            <td>Variance explained by model</td>
+            <td>Model R²</td>
+            <td>{weighted_r2:.3f}</td>
+            <td>Variance explained by weighted model</td>
         </tr>
         <tr>
-            <td>Simulation RMSE ({best_room})</td>
-            <td>{simulation_rmse:.2f}°C</td>
+            <td>Model RMSE</td>
+            <td>{weighted_rmse:.4f}°C</td>
             <td>Typical prediction error</td>
+        </tr>
+        <tr>
+            <td>Simulation RMSE</td>
+            <td>{simulation_rmse:.2f}°C</td>
+            <td>Cumulative simulation error</td>
         </tr>
     </table>
 
-    <h3>Room-by-Room Results</h3>
+    <h3>Individual Sensor Results</h3>
     """
 
     if not room_results.empty:
         html += "<table>\n"
-        html += "<tr><th>Room</th><th>Data Points</th><th>Time Constant (h)</th>"
+        html += "<tr><th>Sensor</th><th>Weight</th><th>Data Points</th><th>Time Constant (h)</th>"
         html += "<th>Heating Coef</th><th>Loss Coef</th><th>R²</th></tr>\n"
 
         for _, row in room_results.iterrows():
             html += f"<tr>"
             html += f"<td>{row['room']}</td>"
+            html += f"<td>{row['weight']:.0%}</td>"
             html += f"<td>{row['data_points']:,}</td>"
             html += f"<td>{row['time_constant_h']:.1f}</td>"
             html += f"<td>{row['heating_coef']:.6f}</td>"
@@ -705,15 +795,20 @@ def generate_report(room_results: pd.DataFrame, primary_model: dict,
         <li><strong>Time constant</strong>: Building thermal inertia.
             Longer = more stable temperatures, slower response to heating/cooling.</li>
     </ul>
+    """
 
+    # Add implications with weighted time constant
+    tc = weighted_time_constant if isinstance(weighted_time_constant, (int, float)) else 50
+
+    html += f"""
     <h3>Implications for Optimization</h3>
     <ul>
-        <li><strong>Pre-heating timing</strong>: With ~{avg_time_constant:.0f}h time constant,
+        <li><strong>Pre-heating timing</strong>: With ~{tc:.0f}h time constant,
             rooms need 2-3× this time to fully respond to setpoint changes.</li>
         <li><strong>Solar preheating</strong>: Can reduce heating demand by timing comfort periods
             to coincide with solar availability.</li>
         <li><strong>Night setback recovery</strong>: Recovery from eco to comfort mode takes
-            approximately {avg_time_constant*0.7:.0f}-{avg_time_constant*1.5:.0f} hours depending on
+            approximately {tc*0.7:.0f}-{tc*1.5:.0f} hours depending on
             outdoor temperature.</li>
     </ul>
 
@@ -745,51 +840,40 @@ def main():
         print("ERROR: Could not prepare thermal data")
         return
 
-    # Analyze primary room in detail
-    primary_room = PRIMARY_ROOM
-    if primary_room not in thermal_data.columns:
-        # Find best alternative
-        room_cols = [c for c in thermal_data.columns if '_temperature' in c.lower() and 'T_' not in c]
-        if room_cols:
-            # Pick one with most data
-            counts = {c: thermal_data[c].notna().sum() for c in room_cols}
-            primary_room = max(counts, key=counts.get)
-            print(f"\nUsing {primary_room} as primary room (most data)")
-        else:
-            print("ERROR: No room temperature data available")
-            return
+    # Compute weighted indoor temperature
+    T_weighted = compute_weighted_temperature(thermal_data)
 
-    # Estimate thermal parameters using HK2 as heating input (continuous heating)
-    thermal_result = estimate_heat_loss_with_heating(thermal_data, primary_room)
+    # Analyze weighted temperature model (primary)
+    weighted_result = analyze_weighted_temperature(thermal_data, T_weighted)
 
-    # Also build RC model for simulation
-    rc_result = build_simple_rc_model(thermal_data, primary_room)
+    # Build RC model for simulation using weighted temperature
+    thermal_data_with_weighted = thermal_data.copy()
+    thermal_data_with_weighted['T_weighted'] = T_weighted
 
-    # Simulate temperature
+    rc_result = build_simple_rc_model(thermal_data_with_weighted, 'T_weighted')
+
+    # Simulate temperature using weighted model
     simulation = pd.DataFrame()
     simulation_rmse = float('nan')
     if rc_result:
-        simulation = simulate_temperature(thermal_data, primary_room, rc_result)
+        simulation = simulate_temperature(thermal_data_with_weighted, 'T_weighted', rc_result)
         if not simulation.empty:
             simulation_rmse = np.sqrt(mean_squared_error(
                 simulation['actual'], simulation['simulated']))
 
-    # Analyze all rooms
+    # Analyze individual target sensors
     room_results = analyze_all_rooms(thermal_data)
 
-    # Use thermal_result for primary room if available, else rc_result
-    primary_result = thermal_result if thermal_result else rc_result
-
-    # Create visualizations
-    plot_thermal_analysis(thermal_data, primary_result, simulation)
+    # Create visualizations using weighted temperature
+    plot_thermal_analysis(thermal_data_with_weighted, weighted_result if weighted_result else rc_result, simulation)
 
     # Save results
     if not room_results.empty:
         room_results.to_csv(OUTPUT_DIR / 'thermal_model_results.csv', index=False)
         print(f"\nSaved: thermal_model_results.csv")
 
-    # Generate report section
-    report_html = generate_report(room_results, primary_result, simulation_rmse)
+    # Generate report section with weighted model
+    report_html = generate_report(room_results, weighted_result, simulation_rmse)
     with open(OUTPUT_DIR / 'thermal_model_report_section.html', 'w') as f:
         f.write(report_html)
     print("Saved: thermal_model_report_section.html")
@@ -799,12 +883,13 @@ def main():
     print("THERMAL MODEL SUMMARY")
     print("="*60)
 
-    if primary_result:
-        tc = primary_result.get('time_constant_hours', 100)
-        r2 = primary_result.get('r2', 0)
-        heating_coef = primary_result.get('heating_coef', 0)
-        loss_coef = primary_result.get('loss_coef', 0)
-        print(f"\nPrimary Room: {primary_room}")
+    if weighted_result:
+        tc = weighted_result.get('time_constant_hours', 100)
+        r2 = weighted_result.get('r2', 0)
+        heating_coef = weighted_result.get('heating_coef', 0)
+        loss_coef = weighted_result.get('loss_coef', 0)
+        print(f"\nWeighted Indoor Temperature Model:")
+        print(f"  Weights: davis_inside=40%, office1=30%, atelier/studio/simlab=10% each")
         print(f"  Time constant: {tc:.1f} hours")
         print(f"  Heating coef (T_hk2 - T_room): {heating_coef:.6f}")
         print(f"  Loss coef (T_room - T_out): {loss_coef:.6f}")
@@ -813,14 +898,10 @@ def main():
             print(f"  Simulation RMSE: {simulation_rmse:.2f}°C")
 
     if not room_results.empty:
-        # Filter out outliers for average
-        valid_tc = room_results['time_constant_h']
-        valid_tc = valid_tc[valid_tc < 100]
-        avg_tc = valid_tc.mean() if len(valid_tc) > 0 else room_results['time_constant_h'].median()
-
-        print(f"\nRooms analyzed: {len(room_results)}")
-        print(f"Average time constant: {avg_tc:.1f} hours")
-        print(f"Average R²: {room_results['r2'].mean():.3f}")
+        print(f"\nIndividual sensors analyzed: {len(room_results)}")
+        for _, row in room_results.iterrows():
+            print(f"  {row['room']} (weight={row['weight']:.0%}): "
+                  f"tau={row['time_constant_h']:.1f}h, R²={row['r2']:.3f}")
 
 
 if __name__ == '__main__':

@@ -211,8 +211,16 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `phase3_ou
 - `thermal_model_results.csv` - Per-room thermal parameters
 - `heat_pump_daily_stats.csv` - Daily COP and energy statistics
 
+**Thermal Model Sensors (weighted indoor temperature):**
+- davis_inside_temperature: 40%
+- office1_temperature: 30%
+- atelier_temperature: 10%
+- studio_temperature: 10%
+- simlab_temperature: 10%
+
 **Key Model Results:**
-- Building time constant: ~54-60 hours
+- Building time constant: ~14-33 hours (varies by sensor)
+- davis_inside: tau=14.1h, office1: tau=17.5h, atelier: tau=29.5h
 - COP model (R²=0.95): `COP = 6.52 + 0.13×T_outdoor - 0.10×T_flow`
 - Current self-sufficiency: 58%, potential with optimization: 85%
 
@@ -248,9 +256,9 @@ Where:
 
 | Strategy | Schedule | Curve Rise | COP | vs Baseline |
 |----------|----------|------------|-----|-------------|
-| Baseline | 06:30-20:00 | 1.08 | 4.12 | — |
-| Energy-Optimized | 10:00-18:00 | 0.98 | 4.42 | +0.30 |
-| Aggressive Solar | 10:00-17:00 | 0.95 | 4.49 | +0.37 |
+| Baseline | 06:30-20:00 | 1.08 | 4.09 | — |
+| Energy-Optimized | 10:00-18:00 | 0.98 | 4.39 | +0.18 |
+| Aggressive Solar | 10:00-17:00 | 0.95 | 4.46 | +0.25 |
 
 **Key optimization levers:**
 - Shift comfort mode to PV peak hours (10:00-17:00)

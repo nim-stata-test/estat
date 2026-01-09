@@ -2,33 +2,33 @@
   "baseline": {
     "strategy_name": "Baseline",
     "grid_per_hdd": {
-      "value": 0.88,
+      "value": 1.84,
       "unit": "kWh/HDD",
-      "baseline": 0.88,
+      "baseline": 1.84,
       "reduction_pct": 0.0,
       "measurement": "Sum of external_supply_kwh / Sum of HDD per block"
     },
     "self_sufficiency": {
-      "target": 40.3,
-      "range_min": 35.3,
-      "range_max": 45.3,
+      "target": 40.1,
+      "range_min": 35.1,
+      "range_max": 45.1,
       "unit": "percent",
       "measurement": "(1 - grid_import/total_consumption) \u00d7 100"
     },
     "cop": {
-      "target": 4.12,
-      "range_min": 3.82,
-      "range_max": 4.42,
+      "target": 4.09,
+      "range_min": 3.79,
+      "range_max": 4.39,
       "measurement": "produced_heating / consumed_heating (daily)"
     },
     "comfort_compliance": {
-      "target_pct": 57.8,
+      "target_pct": 76.7,
       "minimum_pct": 95.0,
       "measurement": "Percent of readings within comfort band"
     },
     "success_criteria": [
-      "Self-sufficiency \u2265 37.3%",
-      "COP \u2265 3.92",
+      "Self-sufficiency \u2265 37.1%",
+      "COP \u2265 3.89",
       "Comfort compliance \u2265 95%",
       "No manual overrides required"
     ]
@@ -36,33 +36,33 @@
   "energy_optimized": {
     "strategy_name": "Energy-Optimized",
     "grid_per_hdd": {
-      "value": 0.88,
+      "value": 1.84,
       "unit": "kWh/HDD",
-      "baseline": 0.88,
+      "baseline": 1.84,
       "reduction_pct": 0.0,
       "measurement": "Sum of external_supply_kwh / Sum of HDD per block"
     },
     "self_sufficiency": {
-      "target": 40.3,
-      "range_min": 35.3,
-      "range_max": 45.3,
+      "target": 40.1,
+      "range_min": 35.1,
+      "range_max": 45.1,
       "unit": "percent",
       "measurement": "(1 - grid_import/total_consumption) \u00d7 100"
     },
     "cop": {
-      "target": 4.42,
-      "range_min": 4.12,
-      "range_max": 4.72,
+      "target": 4.39,
+      "range_min": 4.09,
+      "range_max": 4.69,
       "measurement": "produced_heating / consumed_heating (daily)"
     },
     "comfort_compliance": {
-      "target_pct": 57.8,
+      "target_pct": 76.7,
       "minimum_pct": 95.0,
       "measurement": "Percent of readings within comfort band"
     },
     "success_criteria": [
-      "Self-sufficiency \u2265 37.3%",
-      "COP \u2265 4.22",
+      "Self-sufficiency \u2265 37.1%",
+      "COP \u2265 4.19",
       "Comfort compliance \u2265 95%",
       "No manual overrides required"
     ]
@@ -70,33 +70,33 @@
   "aggressive_solar": {
     "strategy_name": "Aggressive Solar",
     "grid_per_hdd": {
-      "value": 0.88,
+      "value": 1.84,
       "unit": "kWh/HDD",
-      "baseline": 0.88,
+      "baseline": 1.84,
       "reduction_pct": 0.0,
       "measurement": "Sum of external_supply_kwh / Sum of HDD per block"
     },
     "self_sufficiency": {
-      "target": 40.3,
-      "range_min": 35.3,
-      "range_max": 45.3,
+      "target": 40.1,
+      "range_min": 35.1,
+      "range_max": 45.1,
       "unit": "percent",
       "measurement": "(1 - grid_import/total_consumption) \u00d7 100"
     },
     "cop": {
-      "target": 4.49,
-      "range_min": 4.19,
-      "range_max": 4.79,
+      "target": 4.46,
+      "range_min": 4.16,
+      "range_max": 4.76,
       "measurement": "produced_heating / consumed_heating (daily)"
     },
     "comfort_compliance": {
-      "target_pct": 91.1,
+      "target_pct": 97.6,
       "minimum_pct": 95.0,
       "measurement": "Percent of readings within comfort band"
     },
     "success_criteria": [
-      "Self-sufficiency \u2265 37.3%",
-      "COP \u2265 4.29",
+      "Self-sufficiency \u2265 37.1%",
+      "COP \u2265 4.26",
       "Comfort compliance \u2265 95%",
       "No manual overrides required"
     ]

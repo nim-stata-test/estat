@@ -6,7 +6,8 @@
     <p>Three heating strategies were developed using Phase 3 model parameters:</p>
     <ul>
         <li><strong>COP Model</strong>: COP = 6.52 + 0.13×T_outdoor - 0.10×T_flow (R²=0.95)</li>
-        <li><strong>Building Time Constant</strong>: ~25 hours average</li>
+        <li><strong>Building Time Constant</strong>: ~19 hours (weighted average from target sensors)</li>
+        <li><strong>Target Sensors</strong>: davis_inside (40%), office1 (30%), atelier/studio/simlab (10% each)</li>
         <li><strong>Peak PV Hours</strong>: 10:00-16:00</li>
         <li><strong>Current Self-Sufficiency</strong>: 58.1%</li>
     </ul>
@@ -105,7 +106,7 @@
 <li>Deep evening/night setback to 17°C</li>
 <li>Aggressive curve_rise reduction (0.95 normal, 0.85 on grid)</li>
 <li>Maximum buffer charging (45°C) during solar hours</li>
-<li>End comfort at 17:00 - rely on ~25h thermal time constant</li>
+<li>End comfort at 17:00 - rely on ~19h thermal time constant</li>
 
         </ul>
 
@@ -136,12 +137,12 @@
     <h3>Schedule Optimization Rationale</h3>
     <p>Shifting comfort mode from 06:30-20:00 to 10:00-17:00/18:00:</p>
     <ul>
-        <li><strong>Morning (06:30-10:00)</strong>: Building maintains 17-18°C using ~25h thermal mass.
+        <li><strong>Morning (06:30-10:00)</strong>: Building maintains 17-18°C using ~19h thermal mass.
             PV not yet available, so early heating uses grid/battery.</li>
         <li><strong>Midday (10:00-16:00)</strong>: Maximum heating during PV peak. Pre-heat to 20-21°C,
             storing energy in building thermal mass.</li>
         <li><strong>Evening (17:00/18:00-22:00)</strong>: Coast down on stored heat.
-            25h time constant means ~2-3°C drop over 4-5 hours.</li>
+            19h time constant means ~2-3°C drop over 4-5 hours.</li>
     </ul>
 
     <figure>

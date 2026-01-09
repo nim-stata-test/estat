@@ -8,7 +8,8 @@ Defines three heating optimization strategies based on Phase 3 model parameters:
 3. Aggressive Solar: Push to 85% self-sufficiency with wider comfort band
 
 Key model parameters used:
-- Building time constant: 17-31h (avg ~25h)
+- Building time constant: 14-33h (weighted avg ~19h)
+- Thermal model sensors: davis_inside (40%), office1 (30%), atelier/studio/simlab (10% each)
 - COP model: COP = 6.52 + 0.13*T_outdoor - 0.10*T_flow
 - Peak PV hours: 10:00-16:00
 - Current self-sufficiency: 58.1%
@@ -29,18 +30,33 @@ PHASE3_DIR = PROJECT_ROOT / 'phase3_output'
 OUTPUT_DIR = PROJECT_ROOT / 'phase4_output'
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-# Model parameters from Phase 3
+# Model parameters from Phase 3 (updated with weighted sensor model)
+# Thermal model uses weighted indoor temperature:
+#   davis_inside: 40%, office1: 30%, atelier/studio/simlab: 10% each
 MODEL_PARAMS = {
     'cop_intercept': 6.52,
     'cop_outdoor_coef': 0.1319,
     'cop_flow_coef': -0.1007,
-    'building_time_constant_h': 25.0,  # Average from thermal model
-    'heating_coef': 0.013,  # K/(15min)/K
-    'loss_coef': 0.014,  # K/(15min)/K
+    # Weighted average time constant from individual sensors:
+    # 0.40×14.1 + 0.30×17.5 + 0.10×29.5 + 0.10×32.8 + 0.10×21.6 = 19.3h
+    'building_time_constant_h': 19.3,
+    # Weighted heating coef (response to T_hk2 - T_room)
+    'heating_coef': 0.0132,  # K/(15min)/K
+    # Weighted loss coef (heat loss to outdoor)
+    'loss_coef': 0.0141,  # K/(15min)/K
     'battery_efficiency': 0.837,
     'current_self_sufficiency': 0.581,
     'target_self_sufficiency': 0.853,
     'peak_pv_hours': list(range(10, 17)),  # 10:00-16:00
+}
+
+# Target sensors and weights for thermal model
+SENSOR_WEIGHTS = {
+    'davis_inside_temperature': 0.40,
+    'office1_temperature': 0.30,
+    'atelier_temperature': 0.10,
+    'studio_temperature': 0.10,
+    'simlab_temperature': 0.10,
 }
 
 # Heating curve reference temperatures from Phase 2 analysis
@@ -146,7 +162,7 @@ def define_strategies() -> dict:
             'Deep evening/night setback to 17°C',
             'Aggressive curve_rise reduction (0.95 normal, 0.85 on grid)',
             'Maximum buffer charging (45°C) during solar hours',
-            'End comfort at 17:00 - rely on ~25h thermal time constant',
+            'End comfort at 17:00 - rely on ~19h thermal time constant',
         ],
         'expected_improvement': {
             'self_sufficiency': 0.27,  # +27pp (to reach 85% target)
@@ -416,7 +432,8 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
     <p>Three heating strategies were developed using Phase 3 model parameters:</p>
     <ul>
         <li><strong>COP Model</strong>: COP = 6.52 + 0.13×T_outdoor - 0.10×T_flow (R²=0.95)</li>
-        <li><strong>Building Time Constant</strong>: ~25 hours average</li>
+        <li><strong>Building Time Constant</strong>: ~19 hours (weighted average from target sensors)</li>
+        <li><strong>Target Sensors</strong>: davis_inside (40%), office1 (30%), atelier/studio/simlab (10% each)</li>
         <li><strong>Peak PV Hours</strong>: 10:00-16:00</li>
         <li><strong>Current Self-Sufficiency</strong>: 58.1%</li>
     </ul>
@@ -489,12 +506,12 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
     <h3>Schedule Optimization Rationale</h3>
     <p>Shifting comfort mode from 06:30-20:00 to 10:00-17:00/18:00:</p>
     <ul>
-        <li><strong>Morning (06:30-10:00)</strong>: Building maintains 17-18°C using ~25h thermal mass.
+        <li><strong>Morning (06:30-10:00)</strong>: Building maintains 17-18°C using ~19h thermal mass.
             PV not yet available, so early heating uses grid/battery.</li>
         <li><strong>Midday (10:00-16:00)</strong>: Maximum heating during PV peak. Pre-heat to 20-21°C,
             storing energy in building thermal mass.</li>
         <li><strong>Evening (17:00/18:00-22:00)</strong>: Coast down on stored heat.
-            25h time constant means ~2-3°C drop over 4-5 hours.</li>
+            19h time constant means ~2-3°C drop over 4-5 hours.</li>
     </ul>
 
     <figure>

@@ -92,7 +92,7 @@
       "Deep evening/night setback to 17\u00b0C",
       "Aggressive curve_rise reduction (0.95 normal, 0.85 on grid)",
       "Maximum buffer charging (45\u00b0C) during solar hours",
-      "End comfort at 17:00 - rely on ~25h thermal time constant"
+      "End comfort at 17:00 - rely on ~19h thermal time constant"
     ],
     "expected_improvement": {
       "self_sufficiency": 0.27,
