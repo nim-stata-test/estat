@@ -107,11 +107,14 @@ src/
 │   ├── 02_heat_pump_model.py         # COP relationships, buffer tank
 │   ├── 03_energy_system_model.py     # PV patterns, battery, self-sufficiency
 │   └── 04_tariff_cost_model.py       # Electricity cost analysis + forecasting
-└── phase4/              # Optimization Strategy Development
-    ├── run_optimization.py           # Wrapper: runs all steps + HTML report
-    ├── 01_rule_based_strategies.py   # Strategy definitions and rules
-    ├── 02_strategy_simulation.py     # Validate strategies on historical data
-    └── 03_parameter_sets.py          # Generate Phase 5 parameter sets
+├── phase4/              # Optimization Strategy Development
+│   ├── run_optimization.py           # Wrapper: runs all steps + HTML report
+│   ├── 01_rule_based_strategies.py   # Strategy definitions and rules
+│   ├── 02_strategy_simulation.py     # Validate strategies on historical data
+│   └── 03_parameter_sets.py          # Generate Phase 5 parameter sets
+└── phase5/              # Intervention Study
+    ├── estimate_study_parameters.py  # Data-driven washout/block estimation
+    └── generate_schedule.py          # Randomization schedule generator
 ```
 
 ## Output Directory Structure
@@ -121,7 +124,8 @@ output/
 ├── phase1/    # Preprocessing outputs (parquet files, reports)
 ├── phase2/    # EDA outputs (figures, HTML reports)
 ├── phase3/    # System modeling outputs (figures, model results)
-└── phase4/    # Optimization outputs (strategies, predictions)
+├── phase4/    # Optimization outputs (strategies, predictions)
+└── phase5/    # Intervention study outputs (schedules, logs, analysis)
 ```
 
 ## Processed Data
@@ -347,10 +351,64 @@ Where:
 - Dynamic curve_rise reduction when grid-dependent (0.85-0.90)
 - Tariff arbitrage: shift heating to low-tariff periods (21:00-06:00, weekends)
 
+## Phase 5: Intervention Study
+
+Randomized crossover study to test heating strategies in the field.
+
+**Commands:**
+```bash
+# Estimate optimal study parameters (washout, block length)
+python src/phase5/estimate_study_parameters.py
+
+# Generate randomization schedule
+python src/phase5/generate_schedule.py --start 2027-11-01 --weeks 20 --seed 42
+```
+
+**Study Design (data-driven):**
+- Duration: 20 weeks (November 2027 - March 2028)
+- Block length: 5 days (3-day washout + 2-day measurement)
+- Conditions: 4 strategies (A=Baseline, B=Energy-Opt, C=Aggressive, D=Cost-Opt)
+- Total blocks: 28 (7 per strategy)
+- Statistical power: 93% to detect +0.30 COP change
+
+**Controllable Parameters:**
+
+| Parameter | How to Change | Location |
+|-----------|---------------|----------|
+| Comfort start/end | Heat pump scheduler | Heat pump interface |
+| Setpoint comfort/eco | Climate entity | Home Assistant |
+| Curve rise (Steilheit) | Heating curve menu | Heat pump interface |
+| Buffer tank target | Buffer menu | Heat pump interface |
+
+**Strategy Parameter Summary:**
+
+| Parameter | A (Baseline) | B (Energy) | C (Aggressive) | D (Cost) |
+|-----------|--------------|------------|----------------|----------|
+| Comfort start | 06:30 | 10:00 | 10:00 | 11:00 |
+| Comfort end | 20:00 | 18:00 | 17:00 | 21:00 |
+| Setpoint comfort | 20.2°C | 20.0°C | 21.0°C | 20.0°C |
+| Setpoint eco | 18.0°C | 17.5°C | 17.0°C | 17.0°C |
+| Curve rise | 1.08 | 0.98 | 0.95 | 0.95 |
+| Buffer target | 36°C | 40°C | 45°C | 38°C |
+
+**Outputs:**
+```
+output/phase5/
+├── block_schedule.csv      # Randomized block schedule
+├── block_schedule.json     # Machine-readable schedule
+├── daily_logs/             # Daily checklist entries
+├── block_summaries/        # Block summary entries
+└── analysis/               # Statistical outputs
+```
+
+**Documentation:**
+- `docs/phase5_experimental_design.md` - Full experimental protocol
+
 ## Documentation
 
 - `PRD.md` - Research design plan for heating strategy optimization
 - `docs/phase3_models.md` - Detailed documentation of Phase 3 models (assumptions, equations, interpretation)
+- `docs/phase5_experimental_design.md` - Phase 5 intervention study protocol
 
 ## Research Design
 
