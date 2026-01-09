@@ -4,9 +4,12 @@ Phase 4, Step 1: Rule-Based Optimization Strategies
 
 Defines four heating optimization strategies based on Phase 3 model parameters:
 1. Baseline: Current settings (control)
-2. Energy-Optimized: Maximize solar self-consumption, minimize grid
-3. Aggressive Solar: Push to 85% self-sufficiency with wider comfort band
-4. Cost-Optimized: Minimize electricity costs using time-of-use tariffs
+2. Energy-Optimized: Maintain comfort, maximize solar self-consumption
+3. Aggressive Solar: Maintain comfort (wider band), push to 85% self-sufficiency
+4. Cost-Optimized: Maintain comfort, minimize electricity costs via tariff arbitrage
+
+Primary objective: Maintain comfortable temperature in key rooms
+Secondary objective: Minimize energy expenditure
 
 Key model parameters used:
 - Building time constant: 14-33h (weighted avg ~19h)
@@ -107,11 +110,11 @@ def define_strategies() -> dict:
         }
     }
 
-    # Strategy 2: Energy-Optimized (minimize grid)
+    # Strategy 2: Energy-Optimized (minimize grid while maintaining comfort)
     strategies['energy_optimized'] = {
         'name': 'Energy-Optimized',
-        'description': 'Maximize solar self-consumption for heating',
-        'goal': 'Minimize grid electricity consumption',
+        'description': 'Maximize solar self-consumption while maintaining comfort',
+        'goal': 'Maintain comfort, minimize grid electricity consumption',
         'parameters': {
             'comfort_start': 10.0,  # Delay to 10:00 (PV peak start)
             'comfort_end': 18.0,  # Earlier end to coast through evening
@@ -172,11 +175,11 @@ def define_strategies() -> dict:
         }
     }
 
-    # Strategy 4: Cost-Optimized (minimize electricity costs)
+    # Strategy 4: Cost-Optimized (minimize electricity costs while maintaining comfort)
     strategies['cost_optimized'] = {
         'name': 'Cost-Optimized',
-        'description': 'Minimize electricity costs using time-of-use tariffs',
-        'goal': 'Minimize annual electricity bill (primary objective)',
+        'description': 'Minimize electricity costs while maintaining comfort',
+        'goal': 'Maintain comfort, minimize annual electricity bill',
         'parameters': {
             # Schedule: Avoid expensive high-tariff morning hours (06:00-21:00)
             'comfort_start': 11.0,  # Late start - use solar, avoid morning peak

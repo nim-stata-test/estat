@@ -371,13 +371,19 @@ Three scenarios were modeled to estimate improvement potential:
 
 ### 4.3 Optimization Objective
 
+**Primary**: Maintain comfortable temperature in key rooms
+**Secondary**: Minimize energy expenditure
+
 ```
-Minimize: Grid_Import × Cost_import - Grid_Export × Value_export
+Maximize: Comfort_Compliance (% time T_room in comfort band)
 Subject to:
-  - T_room ∈ [18°C, 23°C] for comfort hours
+  - T_room ∈ [18°C, 23°C] for comfort hours (primary constraint)
   - T_room ∈ [16°C, 25°C] for eco hours
   - Equipment capacity limits
   - Solar priority (prefer PV over grid)
+
+Secondary objective (minimize when comfort is satisfied):
+  Grid_Import × Cost_import - Grid_Export × Value_export
 ```
 
 ### 4.4 Example Optimization Logic
@@ -547,5 +553,6 @@ Battery losses = Charge × (1 - Efficiency) = Charge × 0.163
 
 ### Combined Optimization Target
 ```
-Minimize: Σ [Grid_Import(t) × Price(t)] - [Grid_Export(t) × FeedIn_Tariff(t)]
+Primary: Maximize Comfort_Compliance (% time T_room in comfort band ≥ 95%)
+Secondary: Minimize Σ [Grid_Import(t) × Price(t)] - [Grid_Export(t) × FeedIn_Tariff(t)]
 ```

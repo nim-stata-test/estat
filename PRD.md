@@ -3,8 +3,8 @@
 ## Objective
 
 Optimize heating strategy for a residential building with solar/battery system to:
-1. **Primary**: Minimize energy expenditure
-2. **Secondary**: Maintain comfortable temperature in key rooms
+1. **Primary**: Maintain comfortable temperature in key rooms
+2. **Secondary**: Minimize energy expenditure
 3. **Tertiary**: Optimize costs using electricity tariffs (now modeled)
 
 **Constraint**: Prioritize solar power over grid electricity
@@ -297,11 +297,11 @@ Validated strategies on 64 days of historical data:
 **Note**: Self-sufficiency identical in simulation because it uses historical energy data. Real differences will emerge in Phase 5 intervention study.
 
 ### 4.6 Constraint Handling
+- **Comfort compliance minimum: 95%** (90% for Cost-Optimized) — primary constraint
 - Comfort bounds: 18–22°C standard, 17-23°C for Aggressive Solar
-- Equipment limits: heat pump capacity 136 kWh/day max observed
 - Solar priority: penalize grid consumption in objective function
+- Equipment limits: heat pump capacity 136 kWh/day max observed
 - Battery degradation: account for reduced efficiency (83.7%) post-event
-- Comfort compliance minimum: 95% (90% for Cost-Optimized)
 
 ### 4.7 Phase 5 Preparation ✓ COMPLETED
 - [x] Parameter sets defined: `phase5_parameter_sets.json`
@@ -348,9 +348,9 @@ See `phase5_parameter_sets.json` for exact parameter values.
 ### 5.5 Success Metrics
 | Metric | Definition | Target |
 |--------|------------|--------|
+| Comfort compliance | % time rooms within comfort bounds | ≥95% (≥90% for Cost-Optimized) |
 | Grid consumption | kWh from external supply per heating degree day | Identify best-performing strategy |
 | Electricity cost | Net cost (import - export revenue) per heating degree day | Minimize (esp. Cost-Optimized) |
-| Comfort compliance | % time rooms within comfort bounds | ≥95% (≥90% for Cost-Optimized) |
 | Solar utilization | % of heating energy from solar/battery | Maximize |
 | COP achieved | Heat delivered / electricity consumed | Track by strategy |
 | Tariff alignment | % consumption during low-tariff periods | Track for Cost-Optimized |

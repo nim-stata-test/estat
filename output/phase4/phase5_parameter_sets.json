@@ -52,7 +52,7 @@
   "energy_optimized": {
     "strategy_id": "energy_optimized",
     "name": "Energy-Optimized",
-    "description": "Maximize solar self-consumption for heating",
+    "description": "Maximize solar self-consumption while maintaining comfort",
     "heat_pump_settings": {
       "curve_rise": 0.98,
       "curve_rise_unit": "dimensionless",
@@ -166,7 +166,7 @@
   "cost_optimized": {
     "strategy_id": "cost_optimized",
     "name": "Cost-Optimized",
-    "description": "Minimize electricity costs using time-of-use tariffs",
+    "description": "Minimize electricity costs while maintaining comfort",
     "heat_pump_settings": {
       "curve_rise": 0.95,
       "curve_rise_unit": "dimensionless",

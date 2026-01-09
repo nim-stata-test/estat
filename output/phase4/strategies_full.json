@@ -27,8 +27,8 @@
   },
   "energy_optimized": {
     "name": "Energy-Optimized",
-    "description": "Maximize solar self-consumption for heating",
-    "goal": "Minimize grid electricity consumption",
+    "description": "Maximize solar self-consumption while maintaining comfort",
+    "goal": "Maintain comfort, minimize grid electricity consumption",
     "parameters": {
       "comfort_start": 10.0,
       "comfort_end": 18.0,
@@ -102,8 +102,8 @@
   },
   "cost_optimized": {
     "name": "Cost-Optimized",
-    "description": "Minimize electricity costs using time-of-use tariffs",
-    "goal": "Minimize annual electricity bill (primary objective)",
+    "description": "Minimize electricity costs while maintaining comfort",
+    "goal": "Maintain comfort, minimize annual electricity bill",
     "parameters": {
       "comfort_start": 11.0,
       "comfort_end": 21.0,
