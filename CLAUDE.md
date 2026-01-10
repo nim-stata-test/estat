@@ -109,9 +109,11 @@ src/
 │   └── 04_tariff_cost_model.py       # Electricity cost analysis + forecasting
 ├── phase4/              # Optimization Strategy Development
 │   ├── run_optimization.py           # Wrapper: runs all steps + HTML report
+│   ├── run_pareto.py                 # CLI wrapper for Pareto optimization
 │   ├── 01_rule_based_strategies.py   # Strategy definitions and rules
 │   ├── 02_strategy_simulation.py     # Validate strategies on historical data
-│   └── 03_parameter_sets.py          # Generate Phase 5 parameter sets
+│   ├── 03_parameter_sets.py          # Generate Phase 5 parameter sets
+│   └── 04_pareto_optimization.py     # NSGA-II multi-objective optimization
 └── phase5/              # Intervention Study
     ├── estimate_study_parameters.py  # Data-driven washout/block estimation
     └── generate_schedule.py          # Randomization schedule generator
@@ -376,6 +378,73 @@ Where:
 - Dynamic curve_rise reduction when grid-dependent (0.85-0.90)
 - Tariff arbitrage: shift heating to low-tariff periods (21:00-06:00, weekends)
 
+## Pareto Optimization (Phase 4, Step 4)
+
+Multi-objective optimization using NSGA-II to find Pareto-optimal heating strategies.
+
+**Commands:**
+```bash
+# Run Pareto optimization (default: 10 generations, auto warm-start)
+python src/phase4/04_pareto_optimization.py
+
+# More generations for deeper optimization
+python src/phase4/04_pareto_optimization.py -g 50
+
+# Start fresh (ignore existing archive)
+python src/phase4/04_pareto_optimization.py --fresh -g 200
+
+# Custom settings
+python src/phase4/04_pareto_optimization.py -g 100 -p 150 -n 15 --seed 123
+```
+
+**Default behavior:**
+- Auto-detects `pareto_archive.json` and uses it for warm start
+- Runs 10 generations (quick refinement)
+- Use `--fresh` to start from scratch
+
+**Decision Variables (5):**
+| Variable | Range | Description |
+|----------|-------|-------------|
+| `setpoint_comfort` | [19.0, 22.0] °C | Comfort mode target temperature |
+| `setpoint_eco` | [12.0, 19.0] °C | Eco mode target (12°C = frost protection) |
+| `comfort_start` | [06:00, 12:00] | Start of comfort period |
+| `comfort_end` | [16:00, 22:00] | End of comfort period |
+| `curve_rise` | [0.80, 1.20] | Heating curve slope (Steilheit) |
+
+**Objectives (4, all minimized):**
+1. **Mean temp deficit**: Target (20.5°C) - mean T_weighted during 08:00-22:00
+2. **Min temp deficit**: Threshold (18.5°C) - min T_weighted during 08:00-22:00
+3. **Grid import**: Total kWh purchased from grid
+4. **Net cost**: Grid cost - feed-in revenue (CHF)
+
+**T_weighted Adjustment Model:**
+Uses Phase 2 regression coefficients to adjust historical T_weighted based on parameter changes:
+- Comfort setpoint: +1.22°C per 1°C increase
+- Eco setpoint: -0.09°C per 1°C increase (negligible - allows aggressive setback)
+- Curve rise: +9.73°C per unit increase
+
+**Key Finding (Jan 2026):** Phase 2 multivariate analysis revealed eco setpoint has minimal
+effect on daytime comfort (-0.09°C per 1°C change). This allows aggressive eco setbacks
+(down to 12°C) without compromising comfort during occupied hours.
+
+**Outputs:**
+```
+output/phase4/
+├── pareto_archive.json        # Full archive for warm-starting future runs
+├── pareto_front.csv           # All Pareto-optimal solutions
+├── selected_strategies.csv    # 10 diverse strategies selected
+├── selected_strategies.json   # Machine-readable format
+├── fig19_pareto_front.png     # 2D projections of Pareto front
+├── fig20_strategy_comparison.png # Radar chart comparing strategies
+└── pareto_report_section.html # HTML report section
+```
+
+**Workflow:**
+1. First run: `python src/phase4/04_pareto_optimization.py --fresh -g 200` (full optimization)
+2. Refinement: `python src/phase4/04_pareto_optimization.py` (auto warm-start, 10 generations)
+3. Review 10 selected strategies in `selected_strategies.csv`
+4. Manually select 3 strategies for Phase 5 intervention study
+
 ## Phase 5: Intervention Study
 
 Randomized crossover study to test heating strategies in the field.
@@ -404,15 +473,24 @@ python src/phase5/generate_schedule.py --start 2027-11-01 --weeks 20 --seed 42
 | Setpoint comfort/eco | Climate entity | Home Assistant |
 | Curve rise (Steilheit) | Heating curve menu | Heat pump interface |
 
-**Strategy Parameter Summary:**
+**Strategy Parameter Summary (Pareto-Optimized):**
 
-| Parameter | A (Baseline) | B (Energy) | C (Cost) |
-|-----------|--------------|------------|----------|
-| Comfort start | 06:30 | 10:00 | 11:00 |
-| Comfort end | 20:00 | 18:00 | 21:00 |
-| Setpoint comfort | 20.2°C | 20.0°C | 20.0°C |
-| Setpoint eco | 18.5°C | 18.0°C | 17.5°C |
-| Curve rise | 1.08 | 0.98 | 0.95 |
+Three strategies selected from 21 Pareto-optimal solutions for Phase 5 intervention study:
+
+| Parameter | A (Baseline) | B (Grid-Minimal) | C (Balanced) |
+|-----------|--------------|------------------|--------------|
+| Comfort start | 06:30 | 11:45 | 11:45 |
+| Comfort end | 20:00 | 16:00 | 16:00 |
+| Setpoint comfort | 20.2°C | 22.0°C | 22.0°C |
+| Setpoint eco | 18.5°C | **13.6°C** | **12.5°C** |
+| Curve rise | 1.08 | 0.81 | 0.98 |
+| Grid (kWh) | ~1200 | **1069** | 1104 |
+| Cost (CHF) | ~320 | **279** | 290 |
+
+**Key insight:** Lower eco setpoints (12-14°C) are optimal because:
+- Eco setpoint has minimal effect on daytime comfort (-0.09°C per 1°C change)
+- Shorter comfort window (4h) aligned with solar peak (11:45-16:00) maximizes PV utilization
+- Aggressive eco setback saves energy during non-solar hours
 
 **Comfort Objective (T_weighted):**
 

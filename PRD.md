@@ -36,7 +36,9 @@ Optimize heating strategy for a residential building with solar/battery system t
 
 5. **Tariff arbitrage potential**: High/low tariff spread of 8.1 Rp/kWh. Shifting 20-30% of grid consumption to low-tariff periods could increase annual income by 2.4-3.6%.
 
-6. **Three optimization strategies defined**: Baseline, Energy-Optimized (+0.18 COP), and Cost-Optimized (+0.22 COP, tariff-aware).
+6. **Eco setpoint has minimal daytime impact**: Multivariate regression shows -0.09°C per 1°C eco setpoint change. This allows aggressive eco setbacks (12-14°C) without compromising daytime comfort.
+
+7. **Pareto-optimized strategies selected**: NSGA-II optimization (21 solutions) → Grid-Minimal (-11% grid, eco=13.6°C) and Balanced (-8% grid, eco=12.5°C). All optimal strategies converge to ~4h solar-aligned comfort window (11:00-16:00).
 
 ---
 
@@ -262,19 +264,35 @@ Low tariff: Nights, weekends, holidays
 | Peak PV hours | 10:00-16:00 | Energy system model |
 | Daily PV generation | 56.2 kWh mean | Energy system model |
 
-### 4.3 Three Optimization Strategies ✓ COMPLETED
+### 4.3 Pareto Optimization ✓ COMPLETED (Jan 2026)
 
-| Strategy | Schedule | Curve Rise | Setpoints | COP | vs Baseline |
-|----------|----------|------------|-----------|-----|-------------|
-| **Baseline** | 06:30-20:00 | 1.08 | 20.2°C / 18.5°C | 4.09 | — |
-| **Energy-Optimized** | 10:00-18:00 | 0.98 | 20.0°C / 18.0°C | 4.39 | +0.18 |
-| **Cost-Optimized** | 11:00-21:00 | 0.95/0.85* | 20.0°C / 17.5°C | 4.43 | +0.22 |
+Multi-objective optimization using NSGA-II to find Pareto-optimal strategies.
 
-*Cost-Optimized uses curve_rise 0.85 when grid-dependent
+**Key Finding:** Phase 2 multivariate analysis revealed eco setpoint has minimal effect on
+daytime comfort (-0.09°C per 1°C change). This allowed extending eco setpoint range to
+[12°C, 19°C] instead of [16°C, 19°C], enabling more aggressive energy savings.
 
-**Strategy Goals**:
-- **Energy-Optimized**: Minimize grid electricity consumption, maximize self-sufficiency
-- **Cost-Optimized**: Minimize annual electricity bill via tariff arbitrage
+**Optimization Setup:**
+- Algorithm: NSGA-II (200 generations, 100 population)
+- Decision variables: setpoint_comfort, setpoint_eco, comfort_start, comfort_end, curve_rise
+- Objectives (4): Mean T_weighted deficit, Min T_weighted deficit, Grid import, Net cost
+- Result: **21 Pareto-optimal solutions** (non-dominated front)
+
+**Selected Strategies for Phase 5:**
+
+| Strategy | Schedule | Curve Rise | Setpoints | Grid (kWh) | Cost (CHF) |
+|----------|----------|------------|-----------|------------|------------|
+| **A: Baseline** | 06:30-20:00 | 1.08 | 20.2°C / 18.5°C | ~1200 | ~320 |
+| **B: Grid-Minimal** | 11:45-16:00 | 0.81 | 22.0°C / **13.6°C** | **1069** | **279** |
+| **C: Balanced** | 11:45-16:00 | 0.98 | 22.0°C / **12.5°C** | 1104 | 290 |
+
+**Key Insights from Pareto Front:**
+1. All optimal strategies converge to ~4h comfort window (11:00-16:00) aligned with solar peak
+2. Aggressive eco setbacks (12-14°C) are optimal due to minimal daytime impact
+3. Higher comfort setpoint (22°C) during short window compensates for reduced heating hours
+4. Grid-Minimal achieves 11% reduction vs baseline by combining low curve_rise + aggressive eco
+
+**Outputs**: `pareto_archive.json`, `selected_strategies.csv`, `fig19-20_*.png`
 
 ### 4.4 Rule-Based Heuristics ✓ COMPLETED
 - [x] Pre-heat during solar hours (shift comfort start to 10:00-11:00)
@@ -322,16 +340,16 @@ Validated strategies on 64 days of historical data:
 - **Total blocks**: 28 (~9 per strategy)
 - **Statistical power**: >95% to detect +0.30 COP change
 
-### 5.2 Parameter Sets to Compare
-Three strategies defined in Phase 4:
+### 5.2 Parameter Sets to Compare (Pareto-Optimized)
+Three strategies selected from Pareto optimization:
 
-| Strategy | Schedule | Curve Rise | Key Focus |
-|----------|----------|------------|-----------|
-| **Baseline** | 06:30-20:00 | 1.08 | Control (current settings) |
-| **Energy-Optimized** | 10:00-18:00 | 0.98 | Minimize grid consumption |
-| **Cost-Optimized** | 11:00-21:00 | 0.95/0.85 | Minimize costs via tariff arbitrage |
+| Strategy | Schedule | Curve Rise | Eco Setpoint | Key Focus |
+|----------|----------|------------|--------------|-----------|
+| **A: Baseline** | 06:30-20:00 | 1.08 | 18.5°C | Control (current settings) |
+| **B: Grid-Minimal** | 11:45-16:00 | 0.81 | 13.6°C | Minimize grid consumption |
+| **C: Balanced** | 11:45-16:00 | 0.98 | 12.5°C | Balance comfort and efficiency |
 
-See `phase5_parameter_sets.json` for exact parameter values.
+See `selected_strategies.json` for exact parameter values from Pareto optimization.
 
 ### 5.3 Randomization Protocol
 - [ ] Generate randomized schedule assigning each 3-5 day block to a condition

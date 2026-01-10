@@ -51,6 +51,7 @@ def generate_html_report():
         'strategies_report_section.html',
         'simulation_report_section.html',
         'parameter_sets_report_section.html',
+        'pareto_report_section.html',  # Multi-objective Pareto optimization
     ]
 
     for section_file in section_files:
@@ -169,16 +170,18 @@ def generate_html_report():
 
     <div class="summary-box">
         <h3>Executive Summary</h3>
-        <p>This report presents three heating optimization strategies developed using Phase 3 model parameters.
-        Strategies were validated through simulation on 64 days of historical data and parameter sets are
-        ready for Phase 5 randomized intervention study (Winter 2027-2028).</p>
+        <p>This report presents heating optimization strategies developed using Phase 3 model parameters
+        and refined through multi-objective Pareto optimization (NSGA-II). Strategies were validated
+        through simulation on 64 days of historical data and parameter sets are ready for
+        Phase 5 randomized intervention study (Winter 2027-2028).</p>
 
-        <p><strong>Key Findings:</strong></p>
+        <p><strong>Key Findings from Pareto Optimization:</strong></p>
         <ul>
-            <li>Energy-Optimized strategy expected to improve self-sufficiency by +10pp and COP by +0.5</li>
-            <li>Aggressive Solar strategy targets 85% self-sufficiency (+27pp) with 18-23°C comfort band</li>
-            <li>Schedule shifting from 06:30-20:00 to 10:00-17:00/18:00 aligns heating with PV availability</li>
-            <li>Reducing curve_rise from 1.08 to 0.95-0.98 improves COP through lower flow temperatures</li>
+            <li><strong>Eco setpoint has minimal daytime impact</strong>: -0.09°C per 1°C change allows aggressive setback (12-14°C)</li>
+            <li><strong>Grid-Minimal strategy</strong>: eco=13.6°C, curve_rise=0.81 → 1069 kWh grid (-11% vs baseline)</li>
+            <li><strong>Balanced strategy</strong>: eco=12.5°C, curve_rise=0.98 → 1104 kWh grid (-8% vs baseline)</li>
+            <li><strong>Optimal comfort window</strong>: All Pareto solutions converge to ~4h solar-aligned window (11:00-16:00)</li>
+            <li><strong>21 Pareto-optimal solutions</strong> available for strategy selection</li>
         </ul>
     </div>
 
@@ -255,13 +258,16 @@ def main():
     print(f"Output directory: {OUTPUT_DIR}")
     print("\nKey outputs:")
     print("  - phase4_optimization_report.html (combined report)")
+    print("  - selected_strategies.json (Pareto-optimized strategies)")
+    print("  - pareto_archive.json (full Pareto front for warm-starting)")
     print("  - phase5_parameter_sets.json (intervention parameters)")
     print("  - phase5_predictions.json (testable predictions)")
-    print("  - phase5_implementation_checklist.md (protocol)")
     print("\nFigures:")
     print("  - fig16_strategy_comparison.png")
     print("  - fig17_simulation_results.png")
     print("  - fig18_parameter_space.png")
+    print("  - fig19_pareto_front.png (Pareto optimization)")
+    print("  - fig20_strategy_comparison.png (Pareto strategies)")
 
 
 if __name__ == '__main__':
