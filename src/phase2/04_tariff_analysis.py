@@ -363,7 +363,7 @@ def generate_report_section(schedule: pd.DataFrame, flags: pd.DataFrame) -> str:
         feedin_max = feedin_min = feedin_decline = 0
 
     html = f"""
-    <h2 id="tariffs">9. Electricity Tariffs</h2>
+    <h2 id="tariffs">10. Electricity Tariffs</h2>
 
     <div class="card">
         <h4>Data Source Note</h4>
@@ -434,22 +434,22 @@ def generate_report_section(schedule: pd.DataFrame, flags: pd.DataFrame) -> str:
 
     <h3>Tariff Timeline</h3>
     <div class="figure">
-        <img src="fig13_tariff_timeline.png" alt="Tariff Timeline" style="max-width: 100%;">
-        <p class="caption"><strong>Figure 13:</strong> Purchase and feed-in tariff rates over time (2023-2025).
+        <img src="fig14_tariff_timeline.png" alt="Tariff Timeline" style="max-width: 100%;">
+        <p class="caption"><strong>Figure 14:</strong> Purchase and feed-in tariff rates over time (2023-2025).
         Top panel shows grid import rates, bottom panel shows feed-in rates with HKN (excluding base-only rates).</p>
     </div>
 
     <h3>Tariff Time Windows Distribution</h3>
     <div class="figure">
-        <img src="fig14_tariff_windows.png" alt="Tariff Windows" style="max-width: 100%;">
-        <p class="caption"><strong>Figure 14:</strong> Distribution of high/low tariff periods.
+        <img src="fig15_tariff_windows.png" alt="Tariff Windows" style="max-width: 100%;">
+        <p class="caption"><strong>Figure 15:</strong> Distribution of high/low tariff periods.
         Shows weekly heatmap, hourly probability, monthly distribution, and summary statistics.</p>
     </div>
 
     <h3>Cost Comparison</h3>
     <div class="figure">
-        <img src="fig15_tariff_costs.png" alt="Tariff Costs" style="max-width: 100%;">
-        <p class="caption"><strong>Figure 15:</strong> Tariff rate comparison showing feed-in trend (left)
+        <img src="fig16_tariff_costs.png" alt="Tariff Costs" style="max-width: 100%;">
+        <p class="caption"><strong>Figure 16:</strong> Tariff rate comparison showing feed-in trend (left)
         and rate comparison across different scenarios (right). Self-consumption value = import rate - feed-in rate.</p>
     </div>
     """
@@ -479,19 +479,19 @@ def main():
     # Figure 1: Tariff timeline
     print("  Creating tariff timeline figure...")
     fig1 = create_tariff_timeline_figure(schedule_filtered)
-    fig1.savefig(OUTPUT_DIR / 'fig13_tariff_timeline.png', dpi=150, bbox_inches='tight')
+    fig1.savefig(OUTPUT_DIR / 'fig14_tariff_timeline.png', dpi=150, bbox_inches='tight')
     plt.close(fig1)
 
     # Figure 2: Tariff windows
     print("  Creating tariff windows figure...")
     fig2 = create_tariff_windows_figure(data['flags'])
-    fig2.savefig(OUTPUT_DIR / 'fig14_tariff_windows.png', dpi=150, bbox_inches='tight')
+    fig2.savefig(OUTPUT_DIR / 'fig15_tariff_windows.png', dpi=150, bbox_inches='tight')
     plt.close(fig2)
 
     # Figure 3: Cost implications
     print("  Creating cost implications figure...")
     fig3 = create_cost_implications_figure(schedule_filtered)
-    fig3.savefig(OUTPUT_DIR / 'fig15_tariff_costs.png', dpi=150, bbox_inches='tight')
+    fig3.savefig(OUTPUT_DIR / 'fig16_tariff_costs.png', dpi=150, bbox_inches='tight')
     plt.close(fig3)
 
     # Generate report section
@@ -506,9 +506,9 @@ def main():
     print("Tariff Analysis Complete")
     print("=" * 60)
     print(f"\nOutputs saved to: {OUTPUT_DIR}")
-    print("  - fig13_tariff_timeline.png")
-    print("  - fig14_tariff_windows.png")
-    print("  - fig15_tariff_costs.png")
+    print("  - fig14_tariff_timeline.png")
+    print("  - fig15_tariff_windows.png")
+    print("  - fig16_tariff_costs.png")
     print("  - tariff_report_section.html")
 
     return 0

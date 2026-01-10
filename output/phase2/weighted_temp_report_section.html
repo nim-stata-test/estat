@@ -1,0 +1,173 @@
+
+        <h2 id="weighted-temp">9. Weighted Indoor Temperature Analysis</h2>
+
+        <div class="card">
+            <h4>Overview</h4>
+            <p>The <strong>weighted indoor temperature (T_weighted)</strong> is the primary comfort objective
+            for the Phase 5 intervention study. It combines readings from five indoor temperature sensors
+            to create a representative whole-building temperature metric.</p>
+
+            <h4>Weighted Temperature Formula</h4>
+            <pre style="background: var(--card-bg); color: var(--text); padding: 0.5rem;">T_weighted = 0.40×davis_inside + 0.30×office1 + 0.10×atelier + 0.10×studio + 0.10×simlab</pre>
+
+            <table>
+                <tr><th>Sensor</th><th>Weight</th><th>Rationale</th></tr>
+                <tr><td>davis_inside_temperature</td><td>40%</td><td>Primary living area, central location</td></tr>
+                <tr><td>office1_temperature</td><td>30%</td><td>Secondary occupied workspace</td></tr>
+                <tr><td>atelier_temperature</td><td>10%</td><td>Zone coverage - workshop area</td></tr>
+                <tr><td>studio_temperature</td><td>10%</td><td>Zone coverage - studio space</td></tr>
+                <tr><td>simlab_temperature</td><td>10%</td><td>Zone coverage - laboratory area</td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h4>Analysis Period Summary</h4>
+            <table>
+                <tr><td>Total readings</td><td>6,246</td></tr>
+                <tr><td>Washout periods (48h after parameter changes)</td><td>2,226 (35.6%)</td></tr>
+                <tr><td>Analysis readings (excluding washout)</td><td>4,020 (64.4%)</td></tr>
+            </table>
+
+            <h4>Temperature Statistics (Excluding Washout)</h4>
+            <table>
+                <tr><td>Mean T_weighted</td><td><strong>18.7°C</strong></td></tr>
+                <tr><td>Std deviation</td><td>0.9°C</td></tr>
+                <tr><td>Range</td><td>16.3°C to 21.5°C</td></tr>
+                <tr><td>Comfort compliance (08:00-22:00, 18.5-22°C)</td><td><strong>62.1%</strong></td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h4>Parameter Sensitivity Analysis</h4>
+            <p>How T_weighted responds to changes in controllable parameters (after 48h washout):</p>
+            <table>
+                <tr><th>Parameter</th><th>Effect</th><th>Correlation</th><th>Observations</th></tr>
+                <tr>
+                    <td>Setpoint</td>
+                    <td>+1°C setpoint → +0.05°C T_weighted</td>
+                    <td>r = 0.08</td>
+                    <td>4,020</td>
+                </tr>
+                <tr>
+                    <td>Curve rise (Steilheit)</td>
+                    <td>+0.1 curve_rise → +1.73°C T_weighted</td>
+                    <td>r = 0.52</td>
+                    <td>4,020</td>
+                </tr>
+                <tr>
+                    <td>Outdoor temperature</td>
+                    <td>+1°C outdoor → +0.12°C T_weighted</td>
+                    <td>r = 0.47</td>
+                    <td>4,020</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h4>Washout Period Rationale</h4>
+            <p>A <strong>48-hour (2-day) washout period</strong> is applied after each parameter change to allow
+            the thermal system to reach equilibrium. This is based on:</p>
+            <ul>
+                <li>Building thermal time constant: ~19 hours (weighted average from Phase 3 thermal model)</li>
+                <li>Washout = 2.5× time constant ≈ 48 hours (~87% equilibrium)</li>
+                <li>Conservative approach to ensure clean measurements in Phase 5 intervention study</li>
+            </ul>
+            <p><em>Note: Phase 5 study design uses 3-day (72h) washout for additional safety margin.</em></p>
+        </div>
+
+        <div class="card">
+            <h4>Parameter Regimes Detected</h4>
+            <table>
+                <tr><th>Start Date</th><th>Comfort (°C)</th><th>Eco (°C)</th><th>Curve Rise</th><th>Mean T_weighted (°C)</th><th>N Readings</th></tr>
+                <tr>
+                    <td>2025-10-29</td>
+                    <td>20.5</td>
+                    <td>18.3</td>
+                    <td>1.14</td>
+                    <td>19.8</td>
+                    <td>233</td>
+                </tr>
+                <tr>
+                    <td>2025-11-04</td>
+                    <td>20.2</td>
+                    <td>18.2</td>
+                    <td>1.11</td>
+                    <td>19.4</td>
+                    <td>1,168</td>
+                </tr>
+                <tr>
+                    <td>2025-11-19</td>
+                    <td>20.2</td>
+                    <td>18.2</td>
+                    <td>1.07</td>
+                    <td>18.0</td>
+                    <td>431</td>
+                </tr>
+                <tr>
+                    <td>2025-11-25</td>
+                    <td>20.2</td>
+                    <td>18.0</td>
+                    <td>1.08</td>
+                    <td>18.0</td>
+                    <td>605</td>
+                </tr>
+                <tr>
+                    <td>2025-12-04</td>
+                    <td>20.2</td>
+                    <td>30.0</td>
+                    <td>1.08</td>
+                    <td>17.6</td>
+                    <td>66</td>
+                </tr>
+                <tr>
+                    <td>2025-12-07</td>
+                    <td>20.2</td>
+                    <td>18.0</td>
+                    <td>1.08</td>
+                    <td>18.3</td>
+                    <td>448</td>
+                </tr>
+                <tr>
+                    <td>2025-12-14</td>
+                    <td>20.5</td>
+                    <td>18.0</td>
+                    <td>1.08</td>
+                    <td>18.3</td>
+                    <td>848</td>
+                </tr>
+                <tr>
+                    <td>2025-12-27</td>
+                    <td>21.0</td>
+                    <td>18.0</td>
+                    <td>1.10</td>
+                    <td>19.1</td>
+                    <td>133</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h4>Occupied vs Night Hours Comparison</h4>
+            <p><strong>Important:</strong> Comfort compliance is evaluated only during <strong>occupied hours (08:00-22:00)</strong>.
+            Night temperatures (22:00-08:00) are excluded from the comfort objective, allowing energy-saving setback without penalty.</p>
+            <table>
+                <tr><th>Metric</th><th>Occupied (08:00-22:00)</th><th>Night (22:00-08:00)</th></tr>
+                <tr><td>Mean T_weighted</td><td><strong>18.9°C</strong></td><td>18.4°C</td></tr>
+                <tr><td>Minimum T_weighted</td><td>16.3°C</td><td>16.5°C</td></tr>
+                <tr><td>Below 18.5°C</td><td>37.9%</td><td>—</td></tr>
+                <tr><td>Below 18.0°C</td><td>—</td><td>36.9%</td></tr>
+                <tr><td>Comfort compliance (18.5-22°C)</td><td><strong>62.1%</strong></td><td>Not evaluated</td></tr>
+                <tr><td>N readings</td><td>2,399</td><td>1,621</td></tr>
+            </table>
+            <p><em>This explains why the overall mean (18.7°C) appears low - night temperatures bring down the average,
+            but comfort compliance during occupied hours (62.1%) is what matters for the intervention study.</em></p>
+        </div>
+
+        <div class="figure">
+            <img src="fig13_weighted_temp_parameters.png" alt="Weighted temperature parameter analysis">
+            <div class="figure-caption">Fig 13: Weighted indoor temperature analysis (6 panels).
+            <strong>Top row:</strong> Full time series with washout periods (left), T_weighted vs setpoint (right).
+            <strong>Middle row:</strong> T_weighted vs curve rise colored by outdoor temp (left), hourly profiles by regime (right).
+            <strong>Bottom row:</strong> T_weighted during OCCUPIED hours only with comfort bounds (left),
+            T_weighted during NIGHT hours only (right). Red shading indicates 48h washout periods.</div>
+        </div>

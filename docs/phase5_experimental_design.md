@@ -301,7 +301,7 @@ Block quality: [ ] Good  [ ] Usable  [ ] Exclude (reason: ___)
 
 | Outcome | Definition | Unit | Target |
 |---------|------------|------|--------|
-| **Comfort compliance** | % time T_room in bounds (08:00-22:00) | % | ≥95% |
+| **Comfort compliance** | % time T_weighted in bounds (08:00-22:00) | % | ≥95% |
 | **Grid per HDD** | External supply ÷ Heating degree days | kWh/HDD | Minimize |
 | **COP** | Heat produced ÷ Electricity consumed | - | Maximize |
 | **Net cost per HDD** | (Import×rate - Export×feedin) ÷ HDD | CHF/HDD | Minimize |
@@ -322,6 +322,32 @@ Block quality: [ ] Good  [ ] Usable  [ ] Exclude (reason: ___)
 | A (Baseline) | 18.5°C | 22°C | 08:00-22:00 |
 | B (Energy-Opt) | 18.5°C | 22°C | 08:00-22:00 |
 | C (Cost-Opt) | 18.5°C | 22.5°C | 08:00-22:00 |
+
+**Note:** All comfort bounds are evaluated using T_weighted (see Section 8.4).
+
+### 8.4 Weighted Indoor Temperature Definition
+
+Comfort compliance is measured using a weighted combination of five indoor temperature sensors:
+
+```
+T_weighted = 0.40×davis_inside + 0.30×office1 + 0.10×atelier + 0.10×studio + 0.10×simlab
+```
+
+| Sensor | Weight | Rationale |
+|--------|--------|-----------|
+| `davis_inside_temperature` | 40% | Primary living area, central location |
+| `office1_temperature` | 30% | Secondary occupied workspace |
+| `atelier_temperature` | 10% | Zone coverage - workshop area |
+| `studio_temperature` | 10% | Zone coverage - studio space |
+| `simlab_temperature` | 10% | Zone coverage - laboratory area |
+
+**Rationale for weighting:**
+- Higher weights for frequently occupied spaces (davis_inside, office1)
+- Lower weights for peripheral zones to capture whole-building response
+- Weights sum to 1.0 for interpretable temperature values
+- Same weights used in Phase 3 thermal modeling for consistency
+
+**Missing sensor handling:** If a sensor is temporarily unavailable, its weight is redistributed proportionally among available sensors.
 
 ---
 

@@ -176,6 +176,37 @@ def run_heating_curve_analysis() -> tuple[bool, str]:
         return False, f"ERROR: {e}"
 
 
+def run_weighted_temp_analysis() -> tuple[bool, str]:
+    """Run the weighted temperature analysis script."""
+    print("\n" + "="*60)
+    print("Running Weighted Temperature Analysis")
+    print("="*60)
+
+    script_path = SRC_DIR / "05_weighted_temperature_analysis.py"
+
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script_path)],
+            capture_output=True,
+            text=True,
+            cwd=str(PROJECT_ROOT),
+            timeout=300
+        )
+
+        output = result.stdout
+        if result.stderr:
+            output += "\n\nSTDERR:\n" + result.stderr
+
+        print(output)
+
+        return result.returncode == 0, output
+
+    except subprocess.TimeoutExpired:
+        return False, "ERROR: Weighted temperature script timed out"
+    except Exception as e:
+        return False, f"ERROR: {e}"
+
+
 def run_tariff_analysis() -> tuple[bool, str]:
     """Run the tariff analysis script."""
     print("\n" + "="*60)
@@ -225,9 +256,10 @@ def collect_figure_info() -> list[dict]:
         "fig11_summary_statistics.png": "Monthly breakdown, HDD analysis, consumption distribution, yearly totals",
         "fig12_heating_curve_schedule.png": "Heating curve analysis: setpoint regimes, target vs outdoor temperature, model residuals",
         "fig12a_heating_curve_censored.png": "Heating curve analysis (censored): excluding anomalous eco >= comfort periods",
-        "fig13_tariff_timeline.png": "Electricity tariff timeline: purchase and feed-in rates over time (2023-2025)",
-        "fig14_tariff_windows.png": "Tariff time windows: high/low tariff distribution by hour and day",
-        "fig15_tariff_costs.png": "Tariff cost implications: rate trends and comparison scenarios",
+        "fig13_weighted_temp_parameters.png": "Weighted temperature analysis: parameter response with 48h washout exclusion",
+        "fig14_tariff_timeline.png": "Electricity tariff timeline: purchase and feed-in rates over time (2023-2025)",
+        "fig15_tariff_windows.png": "Tariff time windows: high/low tariff distribution by hour and day",
+        "fig16_tariff_costs.png": "Tariff cost implications: rate trends and comparison scenarios",
     }
 
     for fig_file, description in figure_descriptions.items():
@@ -294,6 +326,14 @@ def load_heating_curve_section() -> str:
     return ""
 
 
+def load_weighted_temp_section() -> str:
+    """Load the weighted temperature analysis HTML section if available."""
+    section_path = OUTPUT_DIR / "weighted_temp_report_section.html"
+    if section_path.exists():
+        return section_path.read_text()
+    return ""
+
+
 def load_tariff_section() -> str:
     """Load the tariff analysis HTML section if available."""
     section_path = OUTPUT_DIR / "tariff_report_section.html"
@@ -303,7 +343,8 @@ def load_tariff_section() -> str:
 
 
 def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
-                         heating_curve_log: str = "", tariff_log: str = "") -> str:
+                         heating_curve_log: str = "", weighted_temp_log: str = "",
+                         tariff_log: str = "") -> str:
     """Generate comprehensive HTML EDA report."""
 
     # Helper to format stats with fallback for missing values
@@ -460,8 +501,9 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
                 <li><a href="#solar">6. Solar-Heating Correlation</a></li>
                 <li><a href="#summary">7. Summary Statistics</a></li>
                 <li><a href="#heating-curve">8. Heating Curve Analysis</a></li>
-                <li><a href="#tariffs">9. Electricity Tariffs</a></li>
-                <li><a href="#log">10. Detailed Log</a></li>
+                <li><a href="#weighted-temp">9. Weighted Temperature Analysis</a></li>
+                <li><a href="#tariffs">10. Electricity Tariffs</a></li>
+                <li><a href="#log">11. Detailed Log</a></li>
             </ul>
         </div>
 
@@ -628,9 +670,11 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
 
         {load_heating_curve_section()}
 
+        {load_weighted_temp_section()}
+
         {load_tariff_section()}
 
-        <h2 id="log">10. Detailed Log</h2>
+        <h2 id="log">11. Detailed Log</h2>
 
         <details>
             <summary>Full EDA Output Log</summary>
@@ -640,6 +684,11 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
         <details>
             <summary>Heating Curve Analysis Log</summary>
             <pre>{format_log(heating_curve_log)}</pre>
+        </details>
+
+        <details>
+            <summary>Weighted Temperature Analysis Log</summary>
+            <pre>{format_log(weighted_temp_log)}</pre>
         </details>
 
         <details>
@@ -684,13 +733,19 @@ def main():
     if not hc_success:
         print("\nWARNING: Heating curve analysis encountered errors")
 
-    # Step 4: Run tariff analysis
+    # Step 4: Run weighted temperature analysis
+    wt_success, weighted_temp_log = run_weighted_temp_analysis()
+
+    if not wt_success:
+        print("\nWARNING: Weighted temperature analysis encountered errors")
+
+    # Step 5: Run tariff analysis
     tariff_success, tariff_log = run_tariff_analysis()
 
     if not tariff_success:
         print("\nWARNING: Tariff analysis encountered errors")
 
-    # Step 5: Generate HTML report
+    # Step 6: Generate HTML report
     print("\n" + "="*60)
     print("Generating HTML Report")
     print("="*60)
@@ -698,7 +753,7 @@ def main():
     figures = collect_figure_info()
     stats = extract_stats_from_log(eda_log)
 
-    html_report = generate_html_report(figures, stats, eda_log, heating_curve_log, tariff_log)
+    html_report = generate_html_report(figures, stats, eda_log, heating_curve_log, weighted_temp_log, tariff_log)
     report_path = OUTPUT_DIR / "eda_report.html"
     report_path.write_text(html_report)
     print(f"Report saved to: {report_path}")
@@ -712,7 +767,7 @@ def main():
     print(f"Report: {report_path}")
     print(f"Figures: {sum(1 for f in figures if f['exists'])}/{len(figures)} generated")
 
-    return 0 if (success and hc_success and tariff_success) else 1
+    return 0 if (success and hc_success and wt_success and tariff_success) else 1
 
 
 if __name__ == "__main__":

@@ -205,12 +205,13 @@ python src/phase1/04_preprocess_tariffs.py
 
 After running `python src/phase2/run_eda.py`, outputs are saved to `output/phase2/`:
 
-**Figures (fig01-fig15):**
+**Figures (fig01-fig16):**
 - Energy patterns (time series, monthly, hourly heatmaps, seasonal)
 - Heating system (COP analysis, temperature differentials, indoor/outdoor)
 - Solar-heating correlation (hourly patterns, battery usage, forced grid)
 - Summary statistics (monthly breakdown, HDD analysis, yearly totals)
 - Heating curve analysis (schedule detection, model fit, residuals)
+- Weighted temperature analysis (parameter response, sensitivity, washout periods)
 - Electricity tariffs (timeline, time windows, cost implications)
 
 **HTML Report:**
@@ -269,6 +270,32 @@ T_target = T_setpoint + curve_rise × (T_ref - T_outdoor)
 - 2025-10-28 to 2025-12-04: comfort ~20.2-20.5°C, eco ~18.0-18.7°C
 - 2025-12-04 to 2025-12-07: eco=30°C (anomalous - effectively 24h comfort)
 - 2025-12-14+: comfort rising to 21°C
+
+## Weighted Temperature Analysis
+
+Analysis of how the weighted indoor temperature (comfort objective) responds to
+controllable heating parameters. Run as part of main EDA or separately:
+
+```bash
+python src/phase2/05_weighted_temperature_analysis.py
+```
+
+**Outputs:**
+- `output/phase2/fig13_weighted_temp_parameters.png` - 4-panel visualization
+- `output/phase2/weighted_temp_regimes.csv` - Parameter regime summary
+- `output/phase2/weighted_temp_sensitivity.csv` - Parameter effects
+- `output/phase2/weighted_temp_report_section.html` - HTML section for report
+
+**Weighted Temperature Formula:**
+```
+T_weighted = 0.40×davis_inside + 0.30×office1 + 0.10×atelier + 0.10×studio + 0.10×simlab
+```
+
+**Key Features:**
+- 48-hour (2-day) washout exclusion after each parameter regime change
+- Sensitivity analysis: ΔT_weighted per unit parameter change
+- Visualizes temperature response to setpoint and curve_rise changes
+- Same weights used in Phase 3 thermal modeling and Phase 5 comfort objective
 
 ## Phase 3: System Modeling Outputs
 
@@ -386,6 +413,18 @@ python src/phase5/generate_schedule.py --start 2027-11-01 --weeks 20 --seed 42
 | Setpoint comfort | 20.2°C | 20.0°C | 20.0°C |
 | Setpoint eco | 18.5°C | 18.0°C | 17.5°C |
 | Curve rise | 1.08 | 0.98 | 0.95 |
+
+**Comfort Objective (T_weighted):**
+
+Comfort compliance is evaluated using a weighted indoor temperature:
+```
+T_weighted = 0.40×davis_inside + 0.30×office1 + 0.10×atelier + 0.10×studio + 0.10×simlab
+```
+
+- Evaluated during occupied hours only (08:00-22:00)
+- Target: ≥95% of readings within comfort bounds (18.5°C - 22°C)
+- Same weights used in Phase 3 thermal modeling (see `src/phase3/01_thermal_model.py`)
+- See `docs/phase5_experimental_design.md` Section 8.4 for full definition
 
 **Outputs:**
 ```
