@@ -38,29 +38,63 @@
         </div>
 
         <div class="card">
-            <h4>Parameter Sensitivity Analysis</h4>
-            <p>How T_weighted responds to changes in controllable parameters (after 48h washout):</p>
+            <h4>Multivariate Regression Model</h4>
+            <p>A multivariate model predicts T_weighted (during occupied hours) from all controllable parameters simultaneously,
+            using daily aggregates to capture parameter effects while controlling for confounding variables.</p>
+
+            <p><strong>Model Performance:</strong> R² = 0.482, Adjusted R² = 0.424, RMSE = 0.56°C, n = 51 days</p>
             <table>
-                <tr><th>Parameter</th><th>Effect</th><th>Correlation</th><th>Observations</th></tr>
+                <tr><th>Parameter</th><th>Coefficient</th><th>Std Error</th><th>t-stat</th><th>p-value</th><th>Interpretation</th></tr>
                 <tr>
-                    <td>Setpoint</td>
-                    <td>+1°C setpoint → +0.05°C T_weighted</td>
-                    <td>r = 0.08</td>
-                    <td>4,020</td>
+                    <td>Intercept</td>
+                    <td><strong>-15.311</strong></td>
+                    <td>9.402</td>
+                    <td>-1.63</td>
+                    <td>0.1104 </td>
+                    <td>Baseline: -15.3°C</td>
                 </tr>
                 <tr>
-                    <td>Curve rise (Steilheit)</td>
-                    <td>+0.1 curve_rise → +1.73°C T_weighted</td>
-                    <td>r = 0.52</td>
-                    <td>4,020</td>
+                    <td>Comfort Setpoint</td>
+                    <td><strong>1.218</strong></td>
+                    <td>0.382</td>
+                    <td>3.18</td>
+                    <td>0.0026 **</td>
+                    <td>+1°C setpoint → +1.22°C T_weighted</td>
                 </tr>
                 <tr>
-                    <td>Outdoor temperature</td>
-                    <td>+1°C outdoor → +0.12°C T_weighted</td>
-                    <td>r = 0.47</td>
-                    <td>4,020</td>
+                    <td>Eco Setpoint</td>
+                    <td><strong>-0.090</strong></td>
+                    <td>0.040</td>
+                    <td>-2.24</td>
+                    <td>0.0304 *</td>
+                    <td>+1°C setpoint → -0.09°C T_weighted</td>
+                </tr>
+                <tr>
+                    <td>Curve Rise</td>
+                    <td><strong>9.732</strong></td>
+                    <td>3.462</td>
+                    <td>2.81</td>
+                    <td>0.0073 **</td>
+                    <td>+0.1 curve → +0.97°C T_weighted</td>
+                </tr>
+                <tr>
+                    <td>Comfort Hours</td>
+                    <td><strong>-0.020</strong></td>
+                    <td>0.029</td>
+                    <td>-0.67</td>
+                    <td>0.5075 </td>
+                    <td>+1h comfort → -0.02°C T_weighted</td>
+                </tr>
+                <tr>
+                    <td>Outdoor Temp</td>
+                    <td><strong>0.090</strong></td>
+                    <td>0.031</td>
+                    <td>2.90</td>
+                    <td>0.0058 **</td>
+                    <td>+1°C outdoor → +0.09°C T_weighted</td>
                 </tr>
             </table>
+            <p><em>Significance: *** p&lt;0.001, ** p&lt;0.01, * p&lt;0.05</em></p>
         </div>
 
         <div class="card">
@@ -166,8 +200,11 @@
         <div class="figure">
             <img src="fig13_weighted_temp_parameters.png" alt="Weighted temperature parameter analysis">
             <div class="figure-caption">Fig 13: Weighted indoor temperature analysis (6 panels).
-            <strong>Top row:</strong> Full time series with washout periods (left), T_weighted vs setpoint (right).
-            <strong>Middle row:</strong> T_weighted vs curve rise colored by outdoor temp (left), hourly profiles by regime (right).
-            <strong>Bottom row:</strong> T_weighted during OCCUPIED hours only with comfort bounds (left),
-            T_weighted during NIGHT hours only (right). Red shading indicates 48h washout periods.</div>
+            <strong>Top row:</strong> Full time series with washout periods and regime changes (left),
+            multivariate model coefficients with 95% CI (right).
+            <strong>Middle row:</strong> Model validation - predicted vs actual T_weighted (left),
+            partial effects showing setpoint impact on T_weighted (right).
+            <strong>Bottom row:</strong> T_weighted during OCCUPIED hours (08:00-22:00) with comfort bounds (left),
+            T_weighted during NIGHT hours (22:00-08:00) for reference (right).
+            Orange dashed lines indicate parameter changes, red shading indicates 48h washout periods.</div>
         </div>

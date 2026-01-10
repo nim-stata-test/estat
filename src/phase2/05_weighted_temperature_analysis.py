@@ -361,87 +361,216 @@ def compute_regime_statistics(df: pd.DataFrame, regimes: pd.DataFrame) -> pd.Dat
     return stats_df
 
 
-def compute_sensitivity(df: pd.DataFrame) -> dict:
+def build_multivariate_model(df: pd.DataFrame) -> dict:
     """
-    Compute parameter sensitivity (effect of each parameter on T_weighted).
+    Build multivariate regression model predicting T_weighted from controllable parameters.
 
+    Model: T_weighted ~ comfort_setpoint + eco_setpoint + curve_rise + comfort_hours + outdoor_temp
+
+    Uses daily aggregates to capture all parameters in a single observation.
     Excludes washout periods from analysis.
+
+    Returns dict with model coefficients, standard errors, R², and predictions.
     """
-    print("\nComputing parameter sensitivity...")
+    print("\nBuilding multivariate regression model...")
 
     # Filter to non-washout data
     analysis_df = df[~df['is_washout']].copy()
 
     if len(analysis_df) < 100:
-        print("  WARNING: Not enough data for sensitivity analysis")
+        print("  WARNING: Not enough data for model")
         return {}
 
+    # Aggregate to daily level
+    analysis_df['date'] = analysis_df.index.date
+
+    # Calculate daily metrics
+    daily_data = []
+    for date, day_df in analysis_df.groupby('date'):
+        if len(day_df) < 4:  # Need at least 4 readings
+            continue
+
+        # Calculate comfort hours (when is_comfort == True)
+        comfort_hours = day_df['is_comfort'].sum() * 0.25  # 15-min intervals to hours
+
+        # Get parameter values (should be constant within day after washout)
+        comfort_setpoint = day_df['comfort_temperature_target_hk1'].median()
+        eco_setpoint = day_df['eco_temperature_target_hk1'].median()
+        curve_rise = day_df['heating_curve_rise_hk1'].median()
+
+        # Outdoor and indoor temperatures
+        outdoor_mean = day_df['outdoor_temperature'].mean() if 'outdoor_temperature' in day_df.columns else np.nan
+        t_weighted_mean = day_df['T_weighted'].mean()
+
+        # Occupied hours only (08:00-22:00)
+        occupied_mask = (day_df['hour'] >= 8) & (day_df['hour'] < 22)
+        t_weighted_occupied = day_df.loc[occupied_mask, 'T_weighted'].mean() if occupied_mask.any() else np.nan
+
+        daily_data.append({
+            'date': date,
+            'comfort_setpoint': comfort_setpoint,
+            'eco_setpoint': eco_setpoint,
+            'curve_rise': curve_rise,
+            'comfort_hours': comfort_hours,
+            'outdoor_mean': outdoor_mean,
+            'T_weighted_mean': t_weighted_mean,
+            'T_weighted_occupied': t_weighted_occupied,
+            'n_readings': len(day_df)
+        })
+
+    daily_df = pd.DataFrame(daily_data)
+    daily_df = daily_df.dropna()
+
+    print(f"  Daily aggregates: {len(daily_df)} days")
+
+    if len(daily_df) < 10:
+        print("  WARNING: Not enough daily data for robust model")
+        return {'daily_df': daily_df}
+
+    # Build design matrix for multiple regression
+    # T_weighted = b0 + b1*comfort + b2*eco + b3*curve_rise + b4*comfort_hours + b5*outdoor
+    X_cols = ['comfort_setpoint', 'eco_setpoint', 'curve_rise', 'comfort_hours', 'outdoor_mean']
+    y_col = 'T_weighted_occupied'  # Model occupied hours temperature
+
+    # Check which columns have variance
+    valid_cols = []
+    for col in X_cols:
+        if col in daily_df.columns and daily_df[col].std() > 0.001:
+            valid_cols.append(col)
+        else:
+            print(f"  Skipping {col}: no variance")
+
+    if len(valid_cols) < 2:
+        print("  WARNING: Not enough variable parameters for multivariate model")
+        return {'daily_df': daily_df}
+
+    X = daily_df[valid_cols].values
+    y = daily_df[y_col].values
+
+    # Add intercept
+    X_with_intercept = np.column_stack([np.ones(len(X)), X])
+
+    # OLS regression: beta = (X'X)^-1 X'y
+    try:
+        XtX = X_with_intercept.T @ X_with_intercept
+        XtX_inv = np.linalg.inv(XtX)
+        beta = XtX_inv @ X_with_intercept.T @ y
+
+        # Predictions and residuals
+        y_pred = X_with_intercept @ beta
+        residuals = y - y_pred
+        n = len(y)
+        p = len(beta)
+
+        # R-squared
+        ss_res = np.sum(residuals ** 2)
+        ss_tot = np.sum((y - y.mean()) ** 2)
+        r_squared = 1 - ss_res / ss_tot if ss_tot > 0 else 0
+
+        # Adjusted R-squared
+        r_squared_adj = 1 - (1 - r_squared) * (n - 1) / (n - p) if n > p else r_squared
+
+        # Standard errors
+        mse = ss_res / (n - p) if n > p else ss_res / n
+        se = np.sqrt(np.diag(XtX_inv) * mse)
+
+        # T-statistics and p-values (approximate)
+        t_stats = beta / se
+        # Using normal approximation for p-values
+        from scipy import stats
+        p_values = 2 * (1 - stats.t.cdf(np.abs(t_stats), df=n-p))
+
+        # Build results dict
+        coef_names = ['intercept'] + valid_cols
+        coefficients = {}
+        for i, name in enumerate(coef_names):
+            coefficients[name] = {
+                'estimate': beta[i],
+                'std_error': se[i],
+                't_stat': t_stats[i],
+                'p_value': p_values[i]
+            }
+
+        results = {
+            'coefficients': coefficients,
+            'r_squared': r_squared,
+            'r_squared_adj': r_squared_adj,
+            'rmse': np.sqrt(mse),
+            'n_obs': n,
+            'n_params': p,
+            'daily_df': daily_df,
+            'y_pred': y_pred,
+            'y_actual': y,
+            'residuals': residuals,
+            'feature_names': valid_cols
+        }
+
+        print(f"\n  Model Results (R² = {r_squared:.3f}, Adj R² = {r_squared_adj:.3f}, RMSE = {np.sqrt(mse):.2f}°C):")
+        print(f"  {'Parameter':<20} {'Coef':>8} {'SE':>8} {'t':>8} {'p':>8}")
+        print(f"  {'-'*52}")
+        for name in coef_names:
+            c = coefficients[name]
+            sig = '***' if c['p_value'] < 0.001 else '**' if c['p_value'] < 0.01 else '*' if c['p_value'] < 0.05 else ''
+            print(f"  {name:<20} {c['estimate']:>8.3f} {c['std_error']:>8.3f} {c['t_stat']:>8.2f} {c['p_value']:>7.4f} {sig}")
+
+        # Interpretation
+        print(f"\n  Interpretation (controlling for other variables):")
+        for name in valid_cols:
+            c = coefficients[name]
+            if name == 'comfort_setpoint':
+                print(f"    +1°C comfort setpoint → {c['estimate']:+.2f}°C T_weighted")
+            elif name == 'eco_setpoint':
+                print(f"    +1°C eco setpoint → {c['estimate']:+.2f}°C T_weighted")
+            elif name == 'curve_rise':
+                print(f"    +0.1 curve rise → {0.1*c['estimate']:+.2f}°C T_weighted")
+            elif name == 'comfort_hours':
+                print(f"    +1h comfort duration → {c['estimate']:+.2f}°C T_weighted")
+            elif name == 'outdoor_mean':
+                print(f"    +1°C outdoor temp → {c['estimate']:+.2f}°C T_weighted")
+
+        return results
+
+    except np.linalg.LinAlgError as e:
+        print(f"  ERROR: Model fitting failed: {e}")
+        return {'daily_df': daily_df}
+
+
+def compute_sensitivity(df: pd.DataFrame) -> dict:
+    """
+    Compute parameter sensitivity using simple correlations (legacy function).
+    Kept for backwards compatibility with HTML report generation.
+    """
+    print("\nComputing simple correlations (for reference)...")
+
+    analysis_df = df[~df['is_washout']].copy()
     results = {}
 
-    # Effect of setpoint on T_weighted
-    if 'setpoint' in analysis_df.columns and analysis_df['setpoint'].notna().sum() > 50:
-        # Simple regression: T_weighted = a + b * setpoint
-        x = analysis_df['setpoint'].dropna()
-        y = analysis_df.loc[x.index, 'T_weighted']
+    if len(analysis_df) < 100:
+        return results
 
-        if len(x) > 50:
-            corr = x.corr(y)
-            # Linear regression
-            cov_xy = ((x - x.mean()) * (y - y.mean())).mean()
-            var_x = x.var()
-            slope = cov_xy / var_x if var_x > 0 else 0
-
-            results['setpoint'] = {
-                'correlation': corr,
-                'slope': slope,
-                'description': f'+1°C setpoint → {slope:+.2f}°C T_weighted',
-                'n_obs': len(x)
-            }
-            print(f"  Setpoint effect: {results['setpoint']['description']} (r={corr:.2f}, n={len(x):,})")
-
-    # Effect of curve_rise on T_weighted (indirect, via flow temperature)
-    if 'heating_curve_rise_hk1' in analysis_df.columns:
-        x = analysis_df['heating_curve_rise_hk1'].dropna()
-        y = analysis_df.loc[x.index, 'T_weighted']
-
-        if len(x) > 50:
-            corr = x.corr(y)
-            cov_xy = ((x - x.mean()) * (y - y.mean())).mean()
-            var_x = x.var()
-            slope = cov_xy / var_x if var_x > 0 else 0
-
-            results['curve_rise'] = {
-                'correlation': corr,
-                'slope': slope,
-                'description': f'+0.1 curve_rise → {0.1*slope:+.2f}°C T_weighted',
-                'n_obs': len(x)
-            }
-            print(f"  Curve rise effect: {results['curve_rise']['description']} (r={corr:.2f}, n={len(x):,})")
-
-    # Effect of outdoor temperature
-    if 'outdoor_temperature' in analysis_df.columns:
-        x = analysis_df['outdoor_temperature'].dropna()
-        y = analysis_df.loc[x.index, 'T_weighted']
-
-        if len(x) > 50:
-            corr = x.corr(y)
-            cov_xy = ((x - x.mean()) * (y - y.mean())).mean()
-            var_x = x.var()
-            slope = cov_xy / var_x if var_x > 0 else 0
-
-            results['outdoor'] = {
-                'correlation': corr,
-                'slope': slope,
-                'description': f'+1°C outdoor → {slope:+.2f}°C T_weighted',
-                'n_obs': len(x)
-            }
-            print(f"  Outdoor effect: {results['outdoor']['description']} (r={corr:.2f}, n={len(x):,})")
+    # Simple correlations
+    for param, col in [('setpoint', 'setpoint'),
+                       ('curve_rise', 'heating_curve_rise_hk1'),
+                       ('outdoor', 'outdoor_temperature')]:
+        if col in analysis_df.columns:
+            x = analysis_df[col].dropna()
+            y = analysis_df.loc[x.index, 'T_weighted']
+            if len(x) > 50:
+                corr = x.corr(y)
+                cov_xy = ((x - x.mean()) * (y - y.mean())).mean()
+                var_x = x.var()
+                slope = cov_xy / var_x if var_x > 0 else 0
+                results[param] = {
+                    'correlation': corr,
+                    'slope': slope,
+                    'n_obs': len(x)
+                }
 
     return results
 
 
 def create_visualization(df: pd.DataFrame, regimes: pd.DataFrame,
-                         regime_stats: pd.DataFrame, sensitivity: dict):
+                         regime_stats: pd.DataFrame, model_results: dict):
     """Create 6-panel visualization of weighted temperature analysis."""
     print("\nCreating visualization...")
 
@@ -493,119 +622,180 @@ def create_visualization(df: pd.DataFrame, regimes: pd.DataFrame,
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
 
-    # Panel 2: T_weighted vs setpoint (excluding washout)
+    # Panel 2: Model coefficients with confidence intervals
     ax = axes[0, 1]
 
-    analysis_df = df_local[~df_local['is_washout']].copy()
+    if 'coefficients' in model_results and len(model_results['coefficients']) > 1:
+        coefs = model_results['coefficients']
+        feature_names = model_results.get('feature_names', [])
 
-    if 'setpoint' in analysis_df.columns and analysis_df['setpoint'].notna().sum() > 0:
-        # Color by comfort/eco mode
-        comfort_mask = analysis_df['is_comfort']
+        # Exclude intercept, show only feature coefficients
+        names = []
+        estimates = []
+        errors = []
+        colors_coef = []
 
-        ax.scatter(analysis_df.loc[comfort_mask, 'setpoint'],
-                   analysis_df.loc[comfort_mask, 'T_weighted'],
-                   c='orange', s=5, alpha=0.3, label='Comfort mode')
-        ax.scatter(analysis_df.loc[~comfort_mask, 'setpoint'],
-                   analysis_df.loc[~comfort_mask, 'T_weighted'],
-                   c='blue', s=5, alpha=0.3, label='Eco mode')
+        # Nice labels for parameters
+        label_map = {
+            'comfort_setpoint': 'Comfort\nSetpoint',
+            'eco_setpoint': 'Eco\nSetpoint',
+            'curve_rise': 'Curve\nRise',
+            'comfort_hours': 'Comfort\nHours',
+            'outdoor_mean': 'Outdoor\nTemp'
+        }
 
-        # Add regression line if we have sensitivity data
-        if 'setpoint' in sensitivity:
-            x_range = np.array([analysis_df['setpoint'].min(), analysis_df['setpoint'].max()])
-            y_mean = analysis_df['T_weighted'].mean()
-            x_mean = analysis_df['setpoint'].mean()
-            slope = sensitivity['setpoint']['slope']
-            y_range = y_mean + slope * (x_range - x_mean)
-            ax.plot(x_range, y_range, 'r-', linewidth=2,
-                    label=f'Slope: {slope:.2f}°C/°C setpoint')
+        for name in feature_names:
+            if name in coefs:
+                c = coefs[name]
+                names.append(label_map.get(name, name))
+                estimates.append(c['estimate'])
+                errors.append(1.96 * c['std_error'])  # 95% CI
+                # Color based on significance
+                if c['p_value'] < 0.05:
+                    colors_coef.append('darkblue' if c['estimate'] > 0 else 'darkred')
+                else:
+                    colors_coef.append('gray')
 
-        ax.set_xlabel('Setpoint Temperature (°C)')
-        ax.set_ylabel('Weighted Temperature (°C)')
-        ax.set_title('T_weighted vs Setpoint\n(Excluding 48h washout periods)')
-        ax.legend(loc='upper left', fontsize=8)
-        ax.grid(True, alpha=0.3)
+        if names:
+            y_pos = np.arange(len(names))
+            ax.barh(y_pos, estimates, xerr=errors, color=colors_coef, alpha=0.7,
+                    capsize=5, error_kw={'linewidth': 2})
+            ax.axvline(x=0, color='black', linestyle='-', linewidth=1)
+            ax.set_yticks(y_pos)
+            ax.set_yticklabels(names)
+            ax.set_xlabel('Coefficient (°C per unit)')
 
-    # Panel 3: T_weighted vs curve_rise (excluding washout)
+            r2 = model_results.get('r_squared', 0)
+            rmse = model_results.get('rmse', 0)
+            n = model_results.get('n_obs', 0)
+            ax.set_title(f'Model Coefficients (Daily Aggregates)\n'
+                        f'R² = {r2:.2f}, RMSE = {rmse:.2f}°C, n = {n} days')
+            ax.grid(True, alpha=0.3, axis='x')
+
+            # Add annotation
+            ax.text(0.02, 0.98, 'Blue/Red = significant (p<0.05)\nGray = not significant',
+                   transform=ax.transAxes, fontsize=8, va='top',
+                   bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+    else:
+        ax.text(0.5, 0.5, 'Model not available\n(insufficient data)',
+               transform=ax.transAxes, ha='center', va='center', fontsize=12)
+        ax.set_title('Model Coefficients')
+
+    # Panel 3: Predicted vs Actual (model validation)
     ax = axes[1, 0]
 
-    if 'heating_curve_rise_hk1' in analysis_df.columns:
-        # Sample for plotting if too many points
-        if len(analysis_df) > 5000:
-            plot_df = analysis_df.sample(5000)
-        else:
-            plot_df = analysis_df
+    if 'y_pred' in model_results and 'y_actual' in model_results:
+        y_pred = model_results['y_pred']
+        y_actual = model_results['y_actual']
+        daily_df = model_results.get('daily_df', pd.DataFrame())
 
-        scatter = ax.scatter(plot_df['heating_curve_rise_hk1'],
-                            plot_df['T_weighted'],
-                            c=plot_df['outdoor_temperature'] if 'outdoor_temperature' in plot_df.columns else 'steelblue',
-                            cmap='coolwarm', s=5, alpha=0.5)
+        ax.scatter(y_actual, y_pred, c='steelblue', s=50, alpha=0.7, edgecolors='white')
 
-        if 'outdoor_temperature' in plot_df.columns:
-            cbar = plt.colorbar(scatter, ax=ax)
-            cbar.set_label('Outdoor Temp (°C)')
+        # Add 1:1 line
+        lims = [min(y_actual.min(), y_pred.min()) - 0.5,
+                max(y_actual.max(), y_pred.max()) + 0.5]
+        ax.plot(lims, lims, 'k--', linewidth=2, label='1:1 line')
 
-        # Add regression line
-        if 'curve_rise' in sensitivity:
-            x_range = np.array([analysis_df['heating_curve_rise_hk1'].min(),
-                               analysis_df['heating_curve_rise_hk1'].max()])
-            y_mean = analysis_df['T_weighted'].mean()
-            x_mean = analysis_df['heating_curve_rise_hk1'].mean()
-            slope = sensitivity['curve_rise']['slope']
-            y_range = y_mean + slope * (x_range - x_mean)
-            ax.plot(x_range, y_range, 'k-', linewidth=2,
-                    label=f'Slope: {slope:.2f}°C per 1.0 rise')
+        # Add regression line through points
+        z = np.polyfit(y_actual, y_pred, 1)
+        p = np.poly1d(z)
+        ax.plot(lims, p(lims), 'r-', linewidth=2, alpha=0.7, label=f'Fit (slope={z[0]:.2f})')
 
-        ax.set_xlabel('Heating Curve Rise (Steilheit)')
-        ax.set_ylabel('Weighted Temperature (°C)')
-        ax.set_title('T_weighted vs Curve Rise\n(Colored by outdoor temperature)')
-        ax.legend(loc='upper right', fontsize=8)
+        ax.set_xlabel('Actual T_weighted (°C)')
+        ax.set_ylabel('Predicted T_weighted (°C)')
+        ax.set_xlim(lims)
+        ax.set_ylim(lims)
+
+        r2 = model_results.get('r_squared', 0)
+        rmse = model_results.get('rmse', 0)
+        ax.set_title(f'Model Validation: Predicted vs Actual\n'
+                    f'R² = {r2:.2f}, RMSE = {rmse:.2f}°C')
+        ax.legend(loc='upper left', fontsize=8)
         ax.grid(True, alpha=0.3)
+        ax.set_aspect('equal')
+    else:
+        ax.text(0.5, 0.5, 'Model validation not available',
+               transform=ax.transAxes, ha='center', va='center', fontsize=12)
+        ax.set_title('Model Validation')
 
-    # Panel 4: Hourly profile by regime
+    # Panel 4: Partial effects visualization
     ax = axes[1, 1]
 
-    # Group by regime and hour
-    if len(regime_stats) > 0:
-        # Use up to 4 distinct regimes for clarity
-        unique_regimes = regime_stats.drop_duplicates(
-            subset=['comfort_setpoint', 'eco_setpoint', 'curve_rise']
-        ).head(4)
+    if 'daily_df' in model_results and 'coefficients' in model_results:
+        daily_df = model_results['daily_df']
+        coefs = model_results['coefficients']
 
-        colors = plt.cm.tab10(np.linspace(0, 1, len(unique_regimes)))
-
-        for idx, (_, regime_row) in enumerate(unique_regimes.iterrows()):
-            # Find data for this regime configuration
-            regime_mask = (
-                (analysis_df['comfort_temperature_target_hk1'].round(1) == round(regime_row['comfort_setpoint'], 1)) &
-                (analysis_df['eco_temperature_target_hk1'].round(1) == round(regime_row['eco_setpoint'], 1))
+        # Show how predicted T_weighted changes with comfort_setpoint
+        # holding other variables at their means
+        if 'comfort_setpoint' in coefs and len(daily_df) > 0:
+            # Create prediction grid
+            comfort_range = np.linspace(
+                daily_df['comfort_setpoint'].min(),
+                daily_df['comfort_setpoint'].max(),
+                20
             )
 
-            regime_data = analysis_df[regime_mask]
+            # Get means of other variables
+            means = {col: daily_df[col].mean() for col in model_results.get('feature_names', [])}
 
-            if len(regime_data) < 50:
-                continue
+            # Calculate partial effect
+            intercept = coefs.get('intercept', {}).get('estimate', 0)
+            base_pred = intercept
+            for name, mean_val in means.items():
+                if name != 'comfort_setpoint' and name in coefs:
+                    base_pred += coefs[name]['estimate'] * mean_val
 
-            hourly_mean = regime_data.groupby('hour')['T_weighted'].mean()
-            hourly_std = regime_data.groupby('hour')['T_weighted'].std()
+            comfort_coef = coefs.get('comfort_setpoint', {}).get('estimate', 0)
+            comfort_se = coefs.get('comfort_setpoint', {}).get('std_error', 0)
 
-            label = f"Comfort={regime_row['comfort_setpoint']:.1f}°C, Eco={regime_row['eco_setpoint']:.1f}°C"
-            ax.plot(hourly_mean.index, hourly_mean.values,
-                    color=colors[idx], linewidth=2, label=label)
-            ax.fill_between(hourly_mean.index,
-                            hourly_mean - hourly_std,
-                            hourly_mean + hourly_std,
-                            color=colors[idx], alpha=0.2)
+            # Predictions for comfort setpoint
+            y_comfort = base_pred + comfort_coef * comfort_range + comfort_coef * (means.get('comfort_setpoint', 20) - comfort_range) * 0  # Simplified
 
-        # Mark comfort period (06:30-20:00)
-        ax.axvspan(6.5, 20, alpha=0.1, color='orange', label='Comfort hours')
+            # Actually compute properly
+            y_comfort = base_pred + comfort_coef * (comfort_range - means.get('comfort_setpoint', 20)) + \
+                       coefs.get('comfort_setpoint', {}).get('estimate', 0) * means.get('comfort_setpoint', 20)
 
-        ax.set_xlabel('Hour of Day')
-        ax.set_ylabel('Weighted Temperature (°C)')
-        ax.set_title('Hourly Temperature Profile by Setpoint Regime')
-        ax.set_xlim(0, 23)
-        ax.set_xticks(range(0, 24, 3))
-        ax.legend(loc='lower right', fontsize=7)
-        ax.grid(True, alpha=0.3)
+            # Simpler: just show the slope effect
+            y_base = daily_df['T_weighted_occupied'].mean()
+            comfort_mean = daily_df['comfort_setpoint'].mean()
+            y_comfort = y_base + comfort_coef * (comfort_range - comfort_mean)
+            y_upper = y_comfort + 1.96 * comfort_se * np.abs(comfort_range - comfort_mean)
+            y_lower = y_comfort - 1.96 * comfort_se * np.abs(comfort_range - comfort_mean)
+
+            ax.plot(comfort_range, y_comfort, 'b-', linewidth=2, label='Comfort setpoint effect')
+            ax.fill_between(comfort_range, y_lower, y_upper, alpha=0.2, color='blue')
+
+            # Also show eco setpoint effect
+            if 'eco_setpoint' in coefs:
+                eco_range = np.linspace(
+                    daily_df['eco_setpoint'].min(),
+                    daily_df['eco_setpoint'].max(),
+                    20
+                )
+                eco_coef = coefs['eco_setpoint']['estimate']
+                eco_se = coefs['eco_setpoint']['std_error']
+                eco_mean = daily_df['eco_setpoint'].mean()
+
+                y_eco = y_base + eco_coef * (eco_range - eco_mean)
+                y_eco_upper = y_eco + 1.96 * eco_se * np.abs(eco_range - eco_mean)
+                y_eco_lower = y_eco - 1.96 * eco_se * np.abs(eco_range - eco_mean)
+
+                ax.plot(eco_range, y_eco, 'r-', linewidth=2, label='Eco setpoint effect')
+                ax.fill_between(eco_range, y_eco_lower, y_eco_upper, alpha=0.2, color='red')
+
+            ax.axhline(y=y_base, color='gray', linestyle=':', label=f'Mean T_weighted ({y_base:.1f}°C)')
+            ax.axhline(y=18.5, color='green', linestyle='--', alpha=0.5, label='Min comfort')
+
+            ax.set_xlabel('Setpoint Temperature (°C)')
+            ax.set_ylabel('Predicted T_weighted (°C)')
+            ax.set_title('Partial Effects: Setpoint → T_weighted\n'
+                        '(holding other variables at means)')
+            ax.legend(loc='upper left', fontsize=8)
+            ax.grid(True, alpha=0.3)
+    else:
+        ax.text(0.5, 0.5, 'Partial effects not available',
+               transform=ax.transAxes, ha='center', va='center', fontsize=12)
+        ax.set_title('Partial Effects')
 
     # Panel 5: T_weighted during OCCUPIED hours only (08:00-22:00)
     ax = axes[2, 0]
@@ -708,7 +898,8 @@ def create_visualization(df: pd.DataFrame, regimes: pd.DataFrame,
     print(f"  Saved: fig13_weighted_temp_parameters.png")
 
 
-def generate_report_section(regime_stats: pd.DataFrame, sensitivity: dict, df: pd.DataFrame) -> str:
+def generate_report_section(regime_stats: pd.DataFrame, sensitivity: dict, df: pd.DataFrame,
+                            model_results: dict = None) -> str:
     """Generate HTML section for EDA report."""
 
     # Calculate summary statistics
@@ -768,45 +959,80 @@ def generate_report_section(regime_stats: pd.DataFrame, sensitivity: dict, df: p
         </div>
 
         <div class="card">
-            <h4>Parameter Sensitivity Analysis</h4>
-            <p>How T_weighted responds to changes in controllable parameters (after 48h washout):</p>
+            <h4>Multivariate Regression Model</h4>
+            <p>A multivariate model predicts T_weighted (during occupied hours) from all controllable parameters simultaneously,
+            using daily aggregates to capture parameter effects while controlling for confounding variables.</p>
+"""
+
+    # Add model results if available
+    if model_results and 'coefficients' in model_results:
+        r2 = model_results.get('r_squared', 0)
+        r2_adj = model_results.get('r_squared_adj', 0)
+        rmse = model_results.get('rmse', 0)
+        n_obs = model_results.get('n_obs', 0)
+
+        html += f"""
+            <p><strong>Model Performance:</strong> R² = {r2:.3f}, Adjusted R² = {r2_adj:.3f}, RMSE = {rmse:.2f}°C, n = {n_obs} days</p>
             <table>
-                <tr><th>Parameter</th><th>Effect</th><th>Correlation</th><th>Observations</th></tr>
+                <tr><th>Parameter</th><th>Coefficient</th><th>Std Error</th><th>t-stat</th><th>p-value</th><th>Interpretation</th></tr>
 """
+        # Nice labels and interpretations for parameters
+        label_map = {
+            'intercept': 'Intercept',
+            'comfort_setpoint': 'Comfort Setpoint',
+            'eco_setpoint': 'Eco Setpoint',
+            'curve_rise': 'Curve Rise',
+            'comfort_hours': 'Comfort Hours',
+            'outdoor_mean': 'Outdoor Temp'
+        }
+        interp_map = {
+            'comfort_setpoint': '+1°C setpoint → {coef:+.2f}°C T_weighted',
+            'eco_setpoint': '+1°C setpoint → {coef:+.2f}°C T_weighted',
+            'curve_rise': '+0.1 curve → {coef:+.2f}°C T_weighted',
+            'comfort_hours': '+1h comfort → {coef:+.2f}°C T_weighted',
+            'outdoor_mean': '+1°C outdoor → {coef:+.2f}°C T_weighted'
+        }
 
-    # Add sensitivity rows
-    if 'setpoint' in sensitivity:
-        s = sensitivity['setpoint']
-        html += f"""                <tr>
-                    <td>Setpoint</td>
-                    <td>{s['description']}</td>
-                    <td>r = {s['correlation']:.2f}</td>
-                    <td>{s['n_obs']:,}</td>
+        for name, coef_data in model_results['coefficients'].items():
+            label = label_map.get(name, name)
+            est = coef_data['estimate']
+            se = coef_data['std_error']
+            t_stat = coef_data['t_stat']
+            p_val = coef_data['p_value']
+
+            # Significance stars
+            sig = '***' if p_val < 0.001 else '**' if p_val < 0.01 else '*' if p_val < 0.05 else ''
+
+            # Interpretation
+            if name in interp_map:
+                if name == 'curve_rise':
+                    interp = interp_map[name].format(coef=0.1*est)
+                else:
+                    interp = interp_map[name].format(coef=est)
+            elif name == 'intercept':
+                interp = f'Baseline: {est:.1f}°C'
+            else:
+                interp = '—'
+
+            html += f"""                <tr>
+                    <td>{label}</td>
+                    <td><strong>{est:.3f}</strong></td>
+                    <td>{se:.3f}</td>
+                    <td>{t_stat:.2f}</td>
+                    <td>{p_val:.4f} {sig}</td>
+                    <td>{interp}</td>
                 </tr>
 """
 
-    if 'curve_rise' in sensitivity:
-        s = sensitivity['curve_rise']
-        html += f"""                <tr>
-                    <td>Curve rise (Steilheit)</td>
-                    <td>{s['description']}</td>
-                    <td>r = {s['correlation']:.2f}</td>
-                    <td>{s['n_obs']:,}</td>
-                </tr>
+        html += """            </table>
+            <p><em>Significance: *** p&lt;0.001, ** p&lt;0.01, * p&lt;0.05</em></p>
+"""
+    else:
+        html += """
+            <p><em>Model not available (insufficient data or parameter variation).</em></p>
 """
 
-    if 'outdoor' in sensitivity:
-        s = sensitivity['outdoor']
-        html += f"""                <tr>
-                    <td>Outdoor temperature</td>
-                    <td>{s['description']}</td>
-                    <td>r = {s['correlation']:.2f}</td>
-                    <td>{s['n_obs']:,}</td>
-                </tr>
-"""
-
-    html += """            </table>
-        </div>
+    html += """        </div>
 
         <div class="card">
             <h4>Washout Period Rationale</h4>
@@ -887,10 +1113,13 @@ def generate_report_section(regime_stats: pd.DataFrame, sensitivity: dict, df: p
         <div class="figure">
             <img src="fig13_weighted_temp_parameters.png" alt="Weighted temperature parameter analysis">
             <div class="figure-caption">Fig 13: Weighted indoor temperature analysis (6 panels).
-            <strong>Top row:</strong> Full time series with washout periods (left), T_weighted vs setpoint (right).
-            <strong>Middle row:</strong> T_weighted vs curve rise colored by outdoor temp (left), hourly profiles by regime (right).
-            <strong>Bottom row:</strong> T_weighted during OCCUPIED hours only with comfort bounds (left),
-            T_weighted during NIGHT hours only (right). Red shading indicates 48h washout periods.</div>
+            <strong>Top row:</strong> Full time series with washout periods and regime changes (left),
+            multivariate model coefficients with 95% CI (right).
+            <strong>Middle row:</strong> Model validation - predicted vs actual T_weighted (left),
+            partial effects showing setpoint impact on T_weighted (right).
+            <strong>Bottom row:</strong> T_weighted during OCCUPIED hours (08:00-22:00) with comfort bounds (left),
+            T_weighted during NIGHT hours (22:00-08:00) for reference (right).
+            Orange dashed lines indicate parameter changes, red shading indicates 48h washout periods.</div>
         </div>
 """
 
@@ -922,7 +1151,10 @@ def main():
     # Compute regime statistics
     regime_stats = compute_regime_statistics(df, regimes)
 
-    # Compute sensitivity
+    # Build multivariate model
+    model_results = build_multivariate_model(df)
+
+    # Compute simple correlations (for reference/backwards compatibility)
     sensitivity = compute_sensitivity(df)
 
     # Save outputs
@@ -937,18 +1169,26 @@ def main():
     regime_stats_save.to_csv(OUTPUT_DIR / 'weighted_temp_regimes.csv', index=False)
     print(f"  Saved: weighted_temp_regimes.csv")
 
-    # Save sensitivity results
+    # Save sensitivity results (simple correlations)
     sensitivity_df = pd.DataFrame([
         {'parameter': k, **v} for k, v in sensitivity.items()
     ])
     sensitivity_df.to_csv(OUTPUT_DIR / 'weighted_temp_sensitivity.csv', index=False)
     print(f"  Saved: weighted_temp_sensitivity.csv")
 
-    # Create visualization
-    create_visualization(df, regimes, regime_stats, sensitivity)
+    # Save model coefficients if available
+    if 'coefficients' in model_results:
+        model_df = pd.DataFrame([
+            {'parameter': k, **v} for k, v in model_results['coefficients'].items()
+        ])
+        model_df.to_csv(OUTPUT_DIR / 'weighted_temp_model.csv', index=False)
+        print(f"  Saved: weighted_temp_model.csv")
+
+    # Create visualization with model results
+    create_visualization(df, regimes, regime_stats, model_results)
 
     # Generate report section
-    report_html = generate_report_section(regime_stats, sensitivity, df)
+    report_html = generate_report_section(regime_stats, sensitivity, df, model_results)
     with open(OUTPUT_DIR / 'weighted_temp_report_section.html', 'w') as f:
         f.write(report_html)
     print(f"  Saved: weighted_temp_report_section.html")
