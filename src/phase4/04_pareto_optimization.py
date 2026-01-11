@@ -213,10 +213,13 @@ def calculate_cop(T_outdoor: float, T_flow: float) -> float:
 
 def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
     """
-    Simulate heating strategy and return objective values.
+    Simulate heating strategy and return objective values (vectorized for speed).
 
-    Uses historical proxy approach with Phase 2 regression coefficients
-    to adjust T_weighted based on parameter changes.
+    Models energy time-shifting: when comfort schedule changes, heating energy
+    shifts to different hours, affecting:
+    1. Grid import (heating during solar hours uses PV instead of grid)
+    2. Tariff costs (heating during low-tariff hours is cheaper)
+    3. Feed-in revenue (more self-consumption means less feed-in)
 
     Args:
         params: Dict with setpoint_comfort, setpoint_eco, comfort_start, comfort_end, curve_rise
@@ -235,7 +238,6 @@ def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
     comfort_hours = comfort_end - comfort_start
 
     # Calculate T_weighted adjustment using regression coefficients
-    # Delta from baseline parameters
     delta_T = (
         TEMP_REGRESSION['comfort_setpoint'] * (setpoint_comfort - BASELINE['setpoint_comfort']) +
         TEMP_REGRESSION['eco_setpoint'] * (setpoint_eco - BASELINE['setpoint_eco']) +
@@ -243,78 +245,111 @@ def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
         TEMP_REGRESSION['comfort_hours'] * (comfort_hours - (BASELINE['comfort_end'] - BASELINE['comfort_start']))
     )
 
-    # Adjust T_weighted
-    T_weighted_adj = sim_data['T_weighted'] + delta_T
-
-    # Filter to occupied hours (08:00-22:00) for comfort metrics
-    occupied_mask = (sim_data['hour'] >= OCCUPIED_START) & (sim_data['hour'] < OCCUPIED_END)
+    # Adjust T_weighted for comfort objectives
+    T_weighted_adj = sim_data['T_weighted'].values + delta_T
+    occupied_mask = (sim_data['hour'].values >= OCCUPIED_START) & (sim_data['hour'].values < OCCUPIED_END)
     T_weighted_occupied = T_weighted_adj[occupied_mask]
 
-    # Objective 1: Mean temperature deficit (target 20.5°C - actual)
-    target_temp = 20.5  # Target mean temperature
-    mean_deficit = target_temp - T_weighted_occupied.mean()
+    # Objective 1: Mean temperature deficit
+    target_temp = 20.5
+    mean_deficit = target_temp - np.mean(T_weighted_occupied)
 
-    # Objective 2: Min temperature deficit (threshold 18.5°C - min)
+    # Objective 2: Min temperature deficit
     threshold_temp = 18.5
-    min_deficit = threshold_temp - T_weighted_occupied.min()
+    min_deficit = threshold_temp - np.min(T_weighted_occupied)
 
-    # Calculate COP and energy for grid/cost objectives
-    results = []
-    for idx, row in sim_data.iterrows():
-        hour = row['hour']
-        T_outdoor = row['T_outdoor']
+    # --- Vectorized Energy/Cost Simulation ---
 
-        # Determine mode
-        is_comfort = comfort_start <= hour < comfort_end
+    # Constants
+    BASE_LOAD_KWH = 25.0
+    HEATING_COEF = 2.5
+    BASE_LOAD_TIMESTEP = BASE_LOAD_KWH / 96
 
-        # Estimate flow temperature
-        setpoint = setpoint_comfort if is_comfort else setpoint_eco
-        T_flow_strategy = estimate_flow_temp(curve_rise, T_outdoor, setpoint, is_comfort)
+    # Extract arrays for vectorized ops
+    hours = sim_data['hour'].values
+    T_outdoor = sim_data['T_outdoor'].values
+    pv_gen = sim_data['pv_generation'].values
+    purchase_rate = sim_data['purchase_rate_rp_kwh'].values
+    feedin_rate = sim_data['feedin_rate_rp_kwh'].values
+    dates = sim_data['date'].values
 
-        # Calculate COP
-        cop_strategy = calculate_cop(T_outdoor, T_flow_strategy)
-        cop_actual = calculate_cop(T_outdoor, row['T_flow'])
+    # Determine comfort mode for each timestep
+    is_comfort = (hours >= comfort_start) & (hours < comfort_end)
 
-        # Energy ratio (strategy vs actual)
-        energy_ratio = cop_actual / max(cop_strategy, 0.1)  # >1 means more energy needed
+    # Calculate setpoint and T_ref for each timestep
+    setpoint = np.where(is_comfort, setpoint_comfort, setpoint_eco)
+    T_ref = np.where(is_comfort, HEATING_CURVE_PARAMS['t_ref_comfort'], HEATING_CURVE_PARAMS['t_ref_eco'])
 
-        # Estimate grid import change
-        grid_import_adj = row['grid_import'] * energy_ratio
+    # Flow temperature from heating curve
+    T_flow = setpoint + curve_rise * (T_ref - T_outdoor)
+    T_flow = np.clip(T_flow, 20, 55)
 
-        # Cost calculation
-        grid_cost = grid_import_adj * row['purchase_rate_rp_kwh'] / 100
-        pv_export = max(0, row['pv_generation'] - row['direct_solar'])
-        feedin_revenue = pv_export * row['feedin_rate_rp_kwh'] / 100
-        net_cost = grid_cost - feedin_revenue
+    # COP at each operating point
+    cop = COP_PARAMS['intercept'] + COP_PARAMS['outdoor_coef'] * T_outdoor + COP_PARAMS['flow_coef'] * T_flow
+    cop = np.maximum(cop, 1.5)
 
-        results.append({
-            'grid_import': grid_import_adj,
-            'net_cost': net_cost,
-        })
+    # Mode factor: comfort=1.0, eco depends on setback
+    setback_range = setpoint_comfort - 12.0
+    actual_setback = setpoint_comfort - setpoint_eco
+    eco_mode_factor = max(0.1, 1.0 - 0.9 * (actual_setback / setback_range)) if setback_range > 0 else 1.0
+    mode_factor = np.where(is_comfort, 1.0, eco_mode_factor)
 
-    results_df = pd.DataFrame(results)
+    # Heat demand weight
+    heat_demand = np.maximum(0, T_flow - T_outdoor)
+    electrical_demand = (heat_demand / cop) * mode_factor
+
+    # Calculate daily heating energy requirement
+    unique_dates = np.unique(dates)
+    heating_kwh = np.zeros(len(sim_data))
+
+    for date in unique_dates:
+        date_mask = dates == date
+        T_outdoor_mean = np.mean(T_outdoor[date_mask])
+        hdd = max(0, 18 - T_outdoor_mean)
+        daily_heating_kwh = HEATING_COEF * hdd
+
+        if daily_heating_kwh < 0.1:
+            continue
+
+        # Normalize weights for this day
+        day_weights = electrical_demand[date_mask]
+        total_weight = np.sum(day_weights)
+        if total_weight > 0.01:
+            normalized_weights = day_weights / total_weight
+        else:
+            normalized_weights = np.ones(np.sum(date_mask)) / np.sum(date_mask)
+
+        heating_kwh[date_mask] = daily_heating_kwh * normalized_weights
+
+    # Total demand at each timestep
+    total_demand = BASE_LOAD_TIMESTEP + heating_kwh
+
+    # Grid import: demand minus PV (clamped to 0)
+    grid_import = np.maximum(0, total_demand - pv_gen)
+
+    # Feed-in: PV surplus after self-consumption
+    feedin = np.maximum(0, pv_gen - total_demand)
+
+    # Calculate costs
+    grid_cost = np.sum(grid_import * purchase_rate / 100)
+    feedin_revenue = np.sum(feedin * feedin_rate / 100)
 
     # Objective 3: Total grid import (kWh)
-    grid_import_total = results_df['grid_import'].sum()
+    grid_import_total = np.sum(grid_import)
 
-    # Objective 4: Total net cost (CHF)
-    net_cost_total = results_df['net_cost'].sum()
+    # Objective 4: Net cost (CHF) = grid cost - feed-in revenue
+    net_cost_total = grid_cost - feedin_revenue
 
     # Constraints
-    # G1: comfort_end - comfort_start >= 4 (minimum 4h comfort period)
-    # Constraint violated if g > 0, so: g1 = 4 - (comfort_end - comfort_start)
-    g1 = 4.0 - comfort_hours
-
-    # G2: setpoint_eco <= setpoint_comfort - 1 (eco must be setback)
-    # g2 = setpoint_eco - (setpoint_comfort - 1)
-    g2 = setpoint_eco - (setpoint_comfort - 1.0)
+    g1 = 4.0 - comfort_hours  # Minimum 4h comfort period
+    g2 = setpoint_eco - (setpoint_comfort - 1.0)  # Eco must be setback
 
     return {
         'objectives': np.array([mean_deficit, min_deficit, grid_import_total, net_cost_total]),
         'constraints': np.array([g1, g2]),
         'metrics': {
-            'mean_T_weighted': T_weighted_occupied.mean(),
-            'min_T_weighted': T_weighted_occupied.min(),
+            'mean_T_weighted': np.mean(T_weighted_occupied),
+            'min_T_weighted': np.min(T_weighted_occupied),
             'grid_import_kwh': grid_import_total,
             'net_cost_chf': net_cost_total,
             'comfort_hours': comfort_hours,
