@@ -31,17 +31,18 @@ PHASE3_DIR = PROJECT_ROOT / 'output' / 'phase3'
 OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase4'
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-# Model parameters (from Phase 3 - updated with weighted sensor model)
+# Model parameters (from Phase 3)
+# COP model from heat pump analysis (R²=0.95)
 COP_PARAMS = {
     'intercept': 6.52,
     'outdoor_coef': 0.1319,
     'flow_coef': -0.1007,
 }
 
+# Thermal model uses transfer function approach with τ_effort for heating response
+# Weighted τ_effort: 0.4×8 + 0.3×8 + 0.1×8 + 0.1×12 + 0.1×48 = 12.4h
 THERMAL_PARAMS = {
-    'heating_coef': 0.0132,  # K/(15min)/K (weighted average)
-    'loss_coef': 0.0141,     # K/(15min)/K (weighted average)
-    'time_constant_h': 19.3,  # Weighted average from target sensors
+    'tau_effort_h': 12.4,  # Weighted heating response time constant
 }
 
 # Target sensors and weights for thermal model

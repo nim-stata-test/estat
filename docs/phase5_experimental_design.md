@@ -14,11 +14,11 @@ Evaluate three heating control strategies in a real-world setting to determine w
 |--------|-------|
 | **Type** | Randomized crossover intervention study |
 | **Duration** | 20 weeks (November 2027 - March 2028) |
-| **Block length** | 5 days per condition |
-| **Washout period** | 3 days (excluded from analysis) |
+| **Block length** | 4 days per condition |
+| **Washout period** | 2 days (excluded from analysis) |
 | **Measurement period** | 2 days (used for analysis) |
 | **Conditions** | 3 strategies |
-| **Total blocks** | 28 blocks (~9 per strategy) |
+| **Total blocks** | 35 blocks (~11 per strategy) |
 | **Statistical power** | >95% to detect +0.30 COP change |
 | **Randomization** | Latin square with weather stratification |
 
@@ -28,10 +28,12 @@ These parameters were estimated from 69 days of historical data using `src/phase
 
 | Parameter | Value | Basis |
 |-----------|-------|-------|
-| **Thermal time constant** | 19.3 hours | Weighted average across sensors |
-| **Washout period** | 58 hours (3 days) | 3 tau = 95% equilibrium |
+| **Heating response time (τ_effort)** | 12.4 hours | Weighted average from transfer function model |
+| **Washout period** | 37 hours (2 days) | 3×τ_effort = 95% equilibrium, rounded |
 | **COP residual std** | 0.21 | After HDD adjustment (R²=0.93) |
 | **Minimum detectable effect** | +0.25 COP | 80% power threshold |
+
+**Note on τ_effort:** The Phase 3 thermal model uses a transfer function approach with separate time constants for outdoor temperature response (τ_outdoor: 24-120h) and heating effort response (τ_effort: 8-48h). For washout calculation, we use τ_effort because it represents how quickly indoor temperature equilibrates after changing heating parameters.
 
 ### 1.4 Primary Research Questions
 1. Which strategy achieves the best COP while maintaining comfort?

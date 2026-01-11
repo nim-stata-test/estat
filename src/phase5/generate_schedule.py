@@ -31,7 +31,8 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase5'
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Strategy definitions (3 strategies: A=Baseline, B=Energy-Optimized, C=Cost-Optimized)
+# Strategy definitions (3 strategies from Pareto optimization)
+# See docs/phase5_experimental_design.md Sections 3.1-3.3 for rationale
 STRATEGIES = {
     'A': {
         'name': 'Baseline',
@@ -42,26 +43,27 @@ STRATEGIES = {
         'curve_rise': 1.08,
     },
     'B': {
-        'name': 'Energy-Optimized',
-        'comfort_start': '10:00',
-        'comfort_end': '18:00',
-        'setpoint_comfort': 20.0,
-        'setpoint_eco': 18.0,
-        'curve_rise': 0.98,
+        'name': 'Grid-Minimal',
+        'comfort_start': '11:45',
+        'comfort_end': '16:00',
+        'setpoint_comfort': 22.0,
+        'setpoint_eco': 13.6,
+        'curve_rise': 0.81,
     },
     'C': {
-        'name': 'Cost-Optimized',
-        'comfort_start': '11:00',
-        'comfort_end': '21:00',
-        'setpoint_comfort': 20.0,
-        'setpoint_eco': 17.5,
-        'curve_rise': 0.95,
+        'name': 'Balanced',
+        'comfort_start': '11:45',
+        'comfort_end': '16:00',
+        'setpoint_comfort': 22.0,
+        'setpoint_eco': 12.5,
+        'curve_rise': 0.98,
     },
 }
 
-# Block duration in days (from power analysis: 3-day washout + 2-day measurement)
-BLOCK_DAYS = 5
-WASHOUT_DAYS = 3
+# Block duration in days (from τ_effort analysis: 2-day washout + 2-day measurement)
+# τ_effort = 12.4h (weighted avg) → 3×τ = 37h ≈ 1.5 days → rounded to 2 days
+BLOCK_DAYS = 4
+WASHOUT_DAYS = 2
 MEASUREMENT_DAYS = 2
 
 
@@ -398,9 +400,9 @@ def generate_html_report(
                 <li><strong>Seasonal balance:</strong> Each strategy appears in early, mid, and late winter to account
                 for changing outdoor temperatures and solar availability</li>
                 <li><strong>Randomization:</strong> Block order is randomized to prevent systematic bias from time trends</li>
-                <li><strong>Washout periods:</strong> 3-day washout between strategies allows the thermal mass to
-                equilibrate to new settings before measurement</li>
-                <li><strong>Replication:</strong> ~9 blocks per strategy provides increased statistical power to detect
+                <li><strong>Washout periods:</strong> 2-day washout between strategies allows the thermal mass to
+                equilibrate to new settings before measurement (based on τ_effort analysis)</li>
+                <li><strong>Replication:</strong> ~11 blocks per strategy provides increased statistical power to detect
                 meaningful differences</li>
             </ul>
         </div>
@@ -414,8 +416,8 @@ def generate_html_report(
                 <li><strong>Days {WASHOUT_DAYS + 1}-{BLOCK_DAYS} (Measurement):</strong> System operates in steady-state. COP,
                 energy consumption, and comfort metrics are recorded for analysis.</li>
             </ul>
-            <p style="margin-top: 1rem;">The {WASHOUT_DAYS}-day washout was determined from historical data showing the building's
-            thermal time constant is approximately 14-20 hours. Three days provides >99% equilibration.</p>
+            <p style="margin-top: 1rem;">The {WASHOUT_DAYS}-day washout was determined from Phase 3 thermal model analysis showing
+            the weighted τ_effort (heating response time) is ~12 hours. Two days provides >95% equilibration.</p>
         </div>
 
         <div class="card">
@@ -486,8 +488,8 @@ def generate_html_report(
                 <tr>
                     <th>Season</th>
                     <th>A (Baseline)</th>
-                    <th>B (Energy)</th>
-                    <th>C (Cost)</th>
+                    <th>B (Grid-Min)</th>
+                    <th>C (Balanced)</th>
                     <th>Total</th>
                 </tr>'''
 
@@ -525,11 +527,11 @@ def generate_html_report(
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background: var(--strategy-b);"></div>
-                <span>B: Energy-Optimized</span>
+                <span>B: Grid-Minimal</span>
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background: var(--strategy-c);"></div>
-                <span>C: Cost-Optimized</span>
+                <span>C: Balanced</span>
             </div>
         </div>
 
@@ -538,8 +540,8 @@ def generate_html_report(
                 <tr>
                     <th>Parameter</th>
                     <th><span class="strategy-badge strategy-a">A</span> Baseline</th>
-                    <th><span class="strategy-badge strategy-b">B</span> Energy</th>
-                    <th><span class="strategy-badge strategy-c">C</span> Cost</th>
+                    <th><span class="strategy-badge strategy-b">B</span> Grid-Min</th>
+                    <th><span class="strategy-badge strategy-c">C</span> Balanced</th>
                 </tr>
                 <tr>
                     <td>Comfort Start</td>
@@ -673,7 +675,7 @@ def generate_html_report(
         </div>
 
         <div class="checklist">
-            <h4>During Washout (Days 1-3)</h4>
+            <h4>During Washout (Days 1-{WASHOUT_DAYS})</h4>
             <ul>
                 <li>Monitor indoor temperatures stabilizing to new settings</li>
                 <li>Check heat pump is responding to new schedule</li>
@@ -682,7 +684,7 @@ def generate_html_report(
         </div>
 
         <div class="checklist">
-            <h4>During Measurement (Days 4-5)</h4>
+            <h4>During Measurement (Days {WASHOUT_DAYS + 1}-{BLOCK_DAYS})</h4>
             <ul>
                 <li>Verify system is operating in steady-state</li>
                 <li>Check data logging is active (Home Assistant, InfluxDB)</li>
@@ -692,7 +694,7 @@ def generate_html_report(
         </div>
 
         <div class="checklist">
-            <h4>At Block End (Day 5)</h4>
+            <h4>At Block End (Day {BLOCK_DAYS})</h4>
             <ul>
                 <li>Complete block summary entry</li>
                 <li>Export any manual observations</li>
@@ -749,8 +751,8 @@ def generate_html_report(
         </div>
 
         <div class="card" style="border-left: 4px solid var(--danger);">
-            <h4>Scenario 2: Change Delayed by 2+ Days</h4>
-            <p><strong>Situation:</strong> Parameters changed on Day 3 or later.</p>
+            <h4>Scenario 2: Change Delayed by {WASHOUT_DAYS}+ Days</h4>
+            <p><strong>Situation:</strong> Parameters changed on Day {WASHOUT_DAYS + 1} or later.</p>
             <p><strong>Impact:</strong> Washout period is severely compromised or eliminated.</p>
             <p><strong>Action:</strong></p>
             <ul style="margin: 0.5rem 0 0 1.5rem;">
@@ -781,8 +783,8 @@ def generate_html_report(
             <p><strong>Impact:</strong> Block data is misattributed.</p>
             <p><strong>Action:</strong></p>
             <ul style="margin: 0.5rem 0 0 1.5rem;">
-                <li>If discovered during washout (Days 1-3): Correct immediately and note the error</li>
-                <li>If discovered during measurement (Days 4-5): Complete the block with current settings</li>
+                <li>If discovered during washout (Days 1-{WASHOUT_DAYS}): Correct immediately and note the error</li>
+                <li>If discovered during measurement (Days {WASHOUT_DAYS + 1}-{BLOCK_DAYS}): Complete the block with current settings</li>
                 <li>Document which strategy was actually implemented</li>
                 <li>In analysis, attribute data to the <em>actual</em> strategy that was running</li>
             </ul>

@@ -487,10 +487,11 @@ python src/phase5/generate_schedule.py --start 2027-11-01 --weeks 20 --seed 42
 
 **Study Design (data-driven):**
 - Duration: 20 weeks (November 2027 - March 2028)
-- Block length: 5 days (3-day washout + 2-day measurement)
-- Conditions: 3 strategies (A=Baseline, B=Energy-Optimized, C=Cost-Optimized)
-- Total blocks: 28 (~9 per strategy)
+- Block length: 4 days (2-day washout + 2-day measurement)
+- Conditions: 3 strategies (A=Baseline, B=Grid-Minimal, C=Balanced)
+- Total blocks: 35 (~11 per strategy)
 - Statistical power: >95% to detect +0.30 COP change
+- Washout based on τ_effort (heating response time) = 12.4h weighted avg
 
 **Controllable Parameters:**
 

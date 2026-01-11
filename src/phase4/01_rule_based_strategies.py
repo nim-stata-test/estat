@@ -11,7 +11,8 @@ Primary objective: Maintain comfortable temperature in key rooms
 Secondary objective: Minimize energy expenditure
 
 Key model parameters used:
-- Building time constant: 14-33h (weighted avg ~19h)
+- Thermal model: Transfer function with τ_effort (heating response) ~8-48h per room
+- Weighted τ_effort: ~12h (for washout calculation)
 - Thermal model sensors: davis_inside (40%), office1 (30%), atelier/studio/simlab (10% each)
 - COP model: COP = 6.52 + 0.13*T_outdoor - 0.10*T_flow
 - Peak PV hours: 10:00-16:00
@@ -40,20 +41,18 @@ PHASE3_DIR = PROJECT_ROOT / 'output' / 'phase3'
 OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase4'
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-# Model parameters from Phase 3 (updated with weighted sensor model)
-# Thermal model uses weighted indoor temperature:
-#   davis_inside: 40%, office1: 30%, atelier/studio/simlab: 10% each
+# Model parameters from Phase 3
+# COP model from heat pump analysis (R²=0.95)
+# Thermal model uses transfer function approach with τ_effort for heating response
+# Weighted indoor temperature: davis_inside 40%, office1 30%, atelier/studio/simlab 10% each
 MODEL_PARAMS = {
     'cop_intercept': 6.52,
     'cop_outdoor_coef': 0.1319,
     'cop_flow_coef': -0.1007,
-    # Weighted average time constant from individual sensors:
-    # 0.40×14.1 + 0.30×17.5 + 0.10×29.5 + 0.10×32.8 + 0.10×21.6 = 19.3h
-    'building_time_constant_h': 19.3,
-    # Weighted heating coef (response to T_hk2 - T_room)
-    'heating_coef': 0.0132,  # K/(15min)/K
-    # Weighted loss coef (heat loss to outdoor)
-    'loss_coef': 0.0141,  # K/(15min)/K
+    # Weighted τ_effort (heating response time constant) from Phase 3 transfer function model:
+    # 0.4×8 + 0.3×8 + 0.1×8 + 0.1×12 + 0.1×48 = 12.4h
+    # Note: τ_outdoor (outdoor temp response) is longer (24-120h) but less relevant for optimization
+    'tau_effort_weighted_h': 12.4,
     'battery_efficiency': 0.837,
     'current_self_sufficiency': 0.581,
     'target_self_sufficiency': 0.853,

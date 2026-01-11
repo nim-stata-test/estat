@@ -3,12 +3,16 @@
 Phase 5: Estimate Optimal Study Parameters
 
 Uses historical data to estimate:
-1. Washout period - based on building thermal time constant
+1. Washout period - based on building thermal response time (τ_effort)
 2. Block length - based on day-to-day variability and statistical power
 
 Theory:
 - Washout: System reaches ~95% of new equilibrium after 3 time constants
 - Block length: Trade-off between measurement precision and number of blocks
+
+Note: We use τ_effort (heating effort response time) from the Phase 3 thermal model,
+not τ_outdoor (outdoor temperature response time), because washout reflects how
+quickly indoor temperature equilibrates after changing heating parameters.
 """
 
 import numpy as np
@@ -32,19 +36,23 @@ def estimate_washout_period():
     - 1 tau: 63% of change
     - 2 tau: 86% of change
     - 3 tau: 95% of change (recommended washout)
+
+    We use τ_effort (heating effort response) rather than τ_outdoor (outdoor temp
+    response) because washout is about how quickly rooms equilibrate to new
+    heating parameter settings (setpoints, curve_rise, schedule).
     """
     print("=" * 60)
     print("WASHOUT PERIOD ESTIMATION")
     print("=" * 60)
 
-    # Load thermal model results
+    # Load thermal model results (transfer function approach)
     thermal = pd.read_csv(PHASE3_DIR / 'thermal_model_results.csv')
-    print("\nThermal time constants by sensor:")
-    print(thermal[['room', 'weight', 'time_constant_h']].to_string(index=False))
+    print("\nThermal time constants by sensor (τ_effort = heating response):")
+    print(thermal[['room', 'weight', 'tau_effort_h']].to_string(index=False))
 
-    # Calculate weighted average time constant
-    tau_weighted = (thermal['time_constant_h'] * thermal['weight']).sum()
-    print(f"\nWeighted average time constant (tau): {tau_weighted:.1f} hours")
+    # Calculate weighted average time constant using τ_effort
+    tau_weighted = (thermal['tau_effort_h'] * thermal['weight']).sum()
+    print(f"\nWeighted average τ_effort: {tau_weighted:.1f} hours")
 
     # Calculate washout periods for different confidence levels
     print("\nWashout period estimates:")
@@ -244,12 +252,12 @@ def refined_power_analysis(tau_weighted):
     alpha = 0.05
     target_effect = 0.30  # Minimum expected effect (Energy-Optimized)
 
-    # Washout in days (round up to be conservative)
-    washout_days = 3  # Round 2.4 up to 3 for safety
+    # Washout in days (round up from 3×tau for practical scheduling)
+    washout_days = 2  # Based on τ_effort=12.4h → 3×12.4h=37h ≈ 1.5 days, rounded to 2
 
     print(f"\nAssumptions:")
     print(f"  Study duration: {study_weeks} weeks")
-    print(f"  Washout period: {washout_days} days (rounded from {tau_weighted*3/24:.1f})")
+    print(f"  Washout period: {washout_days} days (from 3×τ_effort = {tau_weighted*3:.0f}h ≈ {tau_weighted*3/24:.1f} days)")
     print(f"  Target effect: +{target_effect:.2f} COP (smallest expected)")
     print(f"  Residual std: {residual_std:.3f} (after HDD adjustment)")
 
@@ -319,11 +327,12 @@ def sensitivity_analysis():
     residual_std = residuals.std()
 
     print("\nPower to detect different COP improvements:")
-    print("(5-day blocks, 3-day washout, 2-day measurement, 9 blocks/strategy)")
+    print("(4-day blocks, 2-day washout, 2-day measurement, ~11 blocks/strategy)")
     print(f"\n{'COP change':<12} {'Power':<10} {'Detectable?':<15}")
     print("-" * 40)
 
-    blocks_per_strategy = 9
+    # 20 weeks = 140 days / 4-day blocks / 3 strategies ≈ 11 blocks per strategy
+    blocks_per_strategy = 11
     measure_days = 2
     df = 2 * blocks_per_strategy - 2
     alpha = 0.05
@@ -370,9 +379,10 @@ def main():
     print(f"""
 Based on analysis of {len(pd.read_csv(PHASE3_DIR / 'heat_pump_daily_stats.csv'))} days of historical data:
 
-WASHOUT PERIOD: 3 days (58 hours rounded up)
-  - Building thermal time constant: {tau_weighted:.1f} hours
-  - 3 tau ensures 95% equilibrium reached
+WASHOUT PERIOD: 2 days (from τ_effort-based calculation)
+  - Heating response time constant (τ_effort): {tau_weighted:.1f} hours
+  - 3×τ_effort = {tau_weighted*3:.0f}h ≈ {tau_weighted*3/24:.1f} days → rounded to 2 days
+  - 2 days ensures 95%+ equilibrium reached for most rooms
 
 BLOCK LENGTH: {int(best['block_days'])} days total
   - Washout: {int(best['washout_days'])} days (excluded from analysis)
