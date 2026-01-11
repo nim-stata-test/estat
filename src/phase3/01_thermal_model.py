@@ -326,6 +326,46 @@ def plot_thermal_analysis(results: list, heating_curve: dict, df: pd.DataFrame) 
 
     print("  Saved: fig17_thermal_model.png")
 
+    # Figure 17b: Time series for all rooms
+    if len(results) >= 2:
+        fig2, axes = plt.subplots(3, 2, figsize=(14, 12))
+        axes = axes.flatten()
+
+        # Sort by weight (highest first)
+        sorted_results = sorted(results, key=lambda x: SENSOR_WEIGHTS.get(x['room'], 0), reverse=True)
+
+        for i, r in enumerate(sorted_results[:5]):
+            ax = axes[i]
+            idx = r['index']
+
+            # Last 2 weeks
+            recent = idx >= idx.max() - pd.Timedelta(days=14)
+
+            ax.plot(idx[recent], r['y_actual'][recent], 'b-', alpha=0.7,
+                    linewidth=0.8, label='Actual')
+            ax.plot(idx[recent], r['y_pred'][recent], 'r-', alpha=0.7,
+                    linewidth=0.8, label='Predicted')
+
+            room_name = r['room'].replace('_temperature', '')
+            weight = SENSOR_WEIGHTS.get(r['room'], 0)
+            ax.set_xlabel('Date')
+            ax.set_ylabel('Temperature (°C)')
+            ax.set_title(f'{room_name} ({weight:.0%} weight): R²={r["r2"]:.3f}, RMSE={r["rmse"]:.2f}°C')
+            ax.legend(fontsize=8)
+            ax.grid(True, alpha=0.3)
+            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+
+        # Hide unused subplot
+        if len(sorted_results) < 6:
+            axes[5].set_visible(False)
+
+        plt.suptitle('Room Temperature Models: Actual vs Predicted (Last 2 Weeks)', fontsize=14, y=1.02)
+        plt.tight_layout()
+        plt.savefig(OUTPUT_DIR / 'fig17b_room_timeseries.png', dpi=150, bbox_inches='tight')
+        plt.close()
+
+        print("  Saved: fig17b_room_timeseries.png")
+
 
 def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> str:
     """Generate HTML report section for thermal model."""
@@ -475,6 +515,13 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
         <figcaption><strong>Figure 17:</strong> Thermal model: heating curve (top-left),
         actual vs predicted for each room (top-middle, top-right, bottom-left, bottom-middle),
         time series validation (bottom-right).</figcaption>
+    </figure>
+
+    <figure>
+        <img src="fig17b_room_timeseries.png" alt="Room Temperature Time Series">
+        <figcaption><strong>Figure 17b:</strong> Actual vs predicted temperature for all rooms
+        in the weighted temperature objective (last 2 weeks). Rooms ordered by weight:
+        davis_inside (40%), office1 (30%), atelier (10%), studio (10%), simlab (10%).</figcaption>
     </figure>
     </section>
     """
