@@ -133,7 +133,7 @@
 <body>
     <div class="container">
         <h1>ESTAT Phase 5: Experimental Protocol</h1>
-        <p class="meta">Generated: 2026-01-09 23:37:39 | Seed: 42</p>
+        <p class="meta">Generated: 2026-01-11 23:02:54 | Seed: 42</p>
 
         <div class="toc no-print">
             <strong>Contents</strong>
@@ -172,24 +172,24 @@
                 <li><strong>Seasonal balance:</strong> Each strategy appears in early, mid, and late winter to account
                 for changing outdoor temperatures and solar availability</li>
                 <li><strong>Randomization:</strong> Block order is randomized to prevent systematic bias from time trends</li>
-                <li><strong>Washout periods:</strong> 3-day washout between strategies allows the thermal mass to
-                equilibrate to new settings before measurement</li>
-                <li><strong>Replication:</strong> ~9 blocks per strategy provides increased statistical power to detect
+                <li><strong>Washout periods:</strong> 2-day washout between strategies allows the thermal mass to
+                equilibrate to new settings before measurement (based on τ_effort analysis)</li>
+                <li><strong>Replication:</strong> ~11 blocks per strategy provides increased statistical power to detect
                 meaningful differences</li>
             </ul>
         </div>
 
         <div class="card">
             <h4>Block Structure</h4>
-            <p>Each 5-day block consists of:</p>
+            <p>Each 4-day block consists of:</p>
             <ul style="margin: 1rem 0 0 1.5rem;">
-                <li><strong>Days 1-3 (Washout):</strong> System adjusts to new parameters. Indoor temperatures
+                <li><strong>Days 1-2 (Washout):</strong> System adjusts to new parameters. Indoor temperatures
                 stabilize. Data from this period is excluded from primary analysis.</li>
-                <li><strong>Days 4-5 (Measurement):</strong> System operates in steady-state. COP,
+                <li><strong>Days 3-4 (Measurement):</strong> System operates in steady-state. COP,
                 energy consumption, and comfort metrics are recorded for analysis.</li>
             </ul>
-            <p style="margin-top: 1rem;">The 3-day washout was determined from historical data showing the building's
-            thermal time constant is approximately 14-20 hours. Three days provides >99% equilibration.</p>
+            <p style="margin-top: 1rem;">The 2-day washout was determined from Phase 3 thermal model analysis showing
+            the weighted τ_effort (heating response time) is ~12 hours. Two days provides >95% equilibration.</p>
         </div>
 
         <div class="card">
@@ -227,15 +227,15 @@
 
         <div class="grid">
             <div class="stat-box">
-                <div class="value">28</div>
+                <div class="value">35</div>
                 <div class="label">Total Blocks</div>
             </div>
             <div class="stat-box">
-                <div class="value">5</div>
+                <div class="value">4</div>
                 <div class="label">Days per Block</div>
             </div>
             <div class="stat-box">
-                <div class="value">3</div>
+                <div class="value">2</div>
                 <div class="label">Washout Days</div>
             </div>
             <div class="stat-box">
@@ -260,37 +260,37 @@
                 <tr>
                     <th>Season</th>
                     <th>A (Baseline)</th>
-                    <th>B (Energy)</th>
-                    <th>C (Cost)</th>
+                    <th>B (Grid-Min)</th>
+                    <th>C (Balanced)</th>
                     <th>Total</th>
                 </tr>
                 <tr class="season-early">
                     <td><strong>Early</strong></td>
-                    <td>3</td>
                     <td>4</td>
-                    <td>3</td>
-                    <td><strong>10</strong></td>
+                    <td>4</td>
+                    <td>4</td>
+                    <td><strong>12</strong></td>
                 </tr>
                 <tr class="season-mid">
                     <td><strong>Mid</strong></td>
-                    <td>3</td>
-                    <td>3</td>
-                    <td>3</td>
-                    <td><strong>9</strong></td>
+                    <td>4</td>
+                    <td>4</td>
+                    <td>4</td>
+                    <td><strong>12</strong></td>
                 </tr>
                 <tr class="season-late">
                     <td><strong>Late</strong></td>
+                    <td>4</td>
+                    <td>4</td>
                     <td>3</td>
-                    <td>3</td>
-                    <td>3</td>
-                    <td><strong>9</strong></td>
+                    <td><strong>11</strong></td>
                 </tr>
                 <tr>
                     <td><strong>Total</strong></td>
-                    <td><strong>9</strong></td>
-                    <td><strong>10</strong></td>
-                    <td><strong>9</strong></td>
-                    <td><strong>28</strong></td>
+                    <td><strong>12</strong></td>
+                    <td><strong>12</strong></td>
+                    <td><strong>11</strong></td>
+                    <td><strong>35</strong></td>
                 </tr>
             </table>
         </div>
@@ -304,11 +304,11 @@
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background: var(--strategy-b);"></div>
-                <span>B: Energy-Optimized</span>
+                <span>B: Grid-Minimal</span>
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background: var(--strategy-c);"></div>
-                <span>C: Cost-Optimized</span>
+                <span>C: Balanced</span>
             </div>
         </div>
 
@@ -317,38 +317,38 @@
                 <tr>
                     <th>Parameter</th>
                     <th><span class="strategy-badge strategy-a">A</span> Baseline</th>
-                    <th><span class="strategy-badge strategy-b">B</span> Energy</th>
-                    <th><span class="strategy-badge strategy-c">C</span> Cost</th>
+                    <th><span class="strategy-badge strategy-b">B</span> Grid-Min</th>
+                    <th><span class="strategy-badge strategy-c">C</span> Balanced</th>
                 </tr>
                 <tr>
                     <td>Comfort Start</td>
                     <td>06:30</td>
+                    <td>09:00</td>
                     <td>10:00</td>
-                    <td>11:00</td>
                 </tr>
                 <tr>
                     <td>Comfort End</td>
                     <td>20:00</td>
-                    <td>18:00</td>
-                    <td>21:00</td>
+                    <td>16:00</td>
+                    <td>16:00</td>
                 </tr>
                 <tr>
                     <td>Setpoint Comfort</td>
                     <td>20.2°C</td>
-                    <td>20.0°C</td>
-                    <td>20.0°C</td>
+                    <td>22.0°C</td>
+                    <td>22.0°C</td>
                 </tr>
                 <tr>
                     <td>Setpoint Eco</td>
                     <td>18.5°C</td>
-                    <td>18.0°C</td>
-                    <td>17.5°C</td>
+                    <td>12.0°C</td>
+                    <td>13.1°C</td>
                 </tr>
                 <tr>
                     <td>Curve Rise (Steilheit)</td>
                     <td>1.08</td>
-                    <td>0.98</td>
-                    <td>0.95</td>
+                    <td>0.83</td>
+                    <td>0.83</td>
                 </tr>
             </table>
         </div>
@@ -358,34 +358,41 @@
         <div class="card">
             <p>Each square represents one block. Hover for details.</p>
             <div class="timeline">
-                <div class="timeline-block" style="background: #22c55e;" title="Block 1: Energy-Optimized (2027-11-01 to 2027-11-05)">1</div>
-                <div class="timeline-block" style="background: #6366f1;" title="Block 2: Baseline (2027-11-06 to 2027-11-10)">2</div>
-                <div class="timeline-block" style="background: #ec4899;" title="Block 3: Cost-Optimized (2027-11-11 to 2027-11-15)">3</div>
-                <div class="timeline-block" style="background: #22c55e;" title="Block 4: Energy-Optimized (2027-11-16 to 2027-11-20)">4</div>
-                <div class="timeline-block" style="background: #ec4899;" title="Block 5: Cost-Optimized (2027-11-21 to 2027-11-25)">5</div>
-                <div class="timeline-block" style="background: #6366f1;" title="Block 6: Baseline (2027-11-26 to 2027-11-30)">6</div>
-                <div class="timeline-block" style="background: #22c55e;" title="Block 7: Energy-Optimized (2027-12-01 to 2027-12-05)">7</div>
-                <div class="timeline-block" style="background: #ec4899;" title="Block 8: Cost-Optimized (2027-12-06 to 2027-12-10)">8</div>
-                <div class="timeline-block" style="background: #6366f1;" title="Block 9: Baseline (2027-12-11 to 2027-12-15)">9</div>
-                <div class="timeline-block" style="background: #22c55e;" title="Block 10: Energy-Optimized (2027-12-16 to 2027-12-20)">10</div>
-                <div class="timeline-block" style="background: #6366f1;" title="Block 11: Baseline (2027-12-21 to 2027-12-25)">11</div>
-                <div class="timeline-block" style="background: #ec4899;" title="Block 12: Cost-Optimized (2027-12-26 to 2027-12-30)">12</div>
-                <div class="timeline-block" style="background: #22c55e;" title="Block 13: Energy-Optimized (2027-12-31 to 2028-01-04)">13</div>
-                <div class="timeline-block" style="background: #6366f1;" title="Block 14: Baseline (2028-01-05 to 2028-01-09)">14</div>
-                <div class="timeline-block" style="background: #ec4899;" title="Block 15: Cost-Optimized (2028-01-10 to 2028-01-14)">15</div>
-                <div class="timeline-block" style="background: #6366f1;" title="Block 16: Baseline (2028-01-15 to 2028-01-19)">16</div>
-                <div class="timeline-block" style="background: #22c55e;" title="Block 17: Energy-Optimized (2028-01-20 to 2028-01-24)">17</div>
-                <div class="timeline-block" style="background: #ec4899;" title="Block 18: Cost-Optimized (2028-01-25 to 2028-01-29)">18</div>
-                <div class="timeline-block" style="background: #22c55e;" title="Block 19: Energy-Optimized (2028-01-30 to 2028-02-03)">19</div>
-                <div class="timeline-block" style="background: #ec4899;" title="Block 20: Cost-Optimized (2028-02-04 to 2028-02-08)">20</div>
-                <div class="timeline-block" style="background: #6366f1;" title="Block 21: Baseline (2028-02-09 to 2028-02-13)">21</div>
-                <div class="timeline-block" style="background: #22c55e;" title="Block 22: Energy-Optimized (2028-02-14 to 2028-02-18)">22</div>
-                <div class="timeline-block" style="background: #ec4899;" title="Block 23: Cost-Optimized (2028-02-19 to 2028-02-23)">23</div>
-                <div class="timeline-block" style="background: #6366f1;" title="Block 24: Baseline (2028-02-24 to 2028-02-28)">24</div>
-                <div class="timeline-block" style="background: #22c55e;" title="Block 25: Energy-Optimized (2028-02-29 to 2028-03-04)">25</div>
-                <div class="timeline-block" style="background: #ec4899;" title="Block 26: Cost-Optimized (2028-03-05 to 2028-03-09)">26</div>
-                <div class="timeline-block" style="background: #6366f1;" title="Block 27: Baseline (2028-03-10 to 2028-03-14)">27</div>
-                <div class="timeline-block" style="background: #22c55e;" title="Block 28: Energy-Optimized (2028-03-15 to 2028-03-19)">28</div>
+                <div class="timeline-block" style="background: #22c55e;" title="Block 1: Grid-Minimal (2027-11-01 to 2027-11-04)">1</div>
+                <div class="timeline-block" style="background: #6366f1;" title="Block 2: Baseline (2027-11-05 to 2027-11-08)">2</div>
+                <div class="timeline-block" style="background: #ec4899;" title="Block 3: Balanced (2027-11-09 to 2027-11-12)">3</div>
+                <div class="timeline-block" style="background: #22c55e;" title="Block 4: Grid-Minimal (2027-11-13 to 2027-11-16)">4</div>
+                <div class="timeline-block" style="background: #ec4899;" title="Block 5: Balanced (2027-11-17 to 2027-11-20)">5</div>
+                <div class="timeline-block" style="background: #6366f1;" title="Block 6: Baseline (2027-11-21 to 2027-11-24)">6</div>
+                <div class="timeline-block" style="background: #22c55e;" title="Block 7: Grid-Minimal (2027-11-25 to 2027-11-28)">7</div>
+                <div class="timeline-block" style="background: #ec4899;" title="Block 8: Balanced (2027-11-29 to 2027-12-02)">8</div>
+                <div class="timeline-block" style="background: #6366f1;" title="Block 9: Baseline (2027-12-03 to 2027-12-06)">9</div>
+                <div class="timeline-block" style="background: #22c55e;" title="Block 10: Grid-Minimal (2027-12-07 to 2027-12-10)">10</div>
+                <div class="timeline-block" style="background: #6366f1;" title="Block 11: Baseline (2027-12-11 to 2027-12-14)">11</div>
+                <div class="timeline-block" style="background: #ec4899;" title="Block 12: Balanced (2027-12-15 to 2027-12-18)">12</div>
+                <div class="timeline-block" style="background: #22c55e;" title="Block 13: Grid-Minimal (2027-12-19 to 2027-12-22)">13</div>
+                <div class="timeline-block" style="background: #6366f1;" title="Block 14: Baseline (2027-12-23 to 2027-12-26)">14</div>
+                <div class="timeline-block" style="background: #ec4899;" title="Block 15: Balanced (2027-12-27 to 2027-12-30)">15</div>
+                <div class="timeline-block" style="background: #6366f1;" title="Block 16: Baseline (2027-12-31 to 2028-01-03)">16</div>
+                <div class="timeline-block" style="background: #22c55e;" title="Block 17: Grid-Minimal (2028-01-04 to 2028-01-07)">17</div>
+                <div class="timeline-block" style="background: #ec4899;" title="Block 18: Balanced (2028-01-08 to 2028-01-11)">18</div>
+                <div class="timeline-block" style="background: #22c55e;" title="Block 19: Grid-Minimal (2028-01-12 to 2028-01-15)">19</div>
+                <div class="timeline-block" style="background: #ec4899;" title="Block 20: Balanced (2028-01-16 to 2028-01-19)">20</div>
+                <div class="timeline-block" style="background: #6366f1;" title="Block 21: Baseline (2028-01-20 to 2028-01-23)">21</div>
+                <div class="timeline-block" style="background: #22c55e;" title="Block 22: Grid-Minimal (2028-01-24 to 2028-01-27)">22</div>
+                <div class="timeline-block" style="background: #ec4899;" title="Block 23: Balanced (2028-01-28 to 2028-01-31)">23</div>
+                <div class="timeline-block" style="background: #6366f1;" title="Block 24: Baseline (2028-02-01 to 2028-02-04)">24</div>
+                <div class="timeline-block" style="background: #22c55e;" title="Block 25: Grid-Minimal (2028-02-05 to 2028-02-08)">25</div>
+                <div class="timeline-block" style="background: #ec4899;" title="Block 26: Balanced (2028-02-09 to 2028-02-12)">26</div>
+                <div class="timeline-block" style="background: #6366f1;" title="Block 27: Baseline (2028-02-13 to 2028-02-16)">27</div>
+                <div class="timeline-block" style="background: #22c55e;" title="Block 28: Grid-Minimal (2028-02-17 to 2028-02-20)">28</div>
+                <div class="timeline-block" style="background: #6366f1;" title="Block 29: Baseline (2028-02-21 to 2028-02-24)">29</div>
+                <div class="timeline-block" style="background: #ec4899;" title="Block 30: Balanced (2028-02-25 to 2028-02-28)">30</div>
+                <div class="timeline-block" style="background: #6366f1;" title="Block 31: Baseline (2028-02-29 to 2028-03-03)">31</div>
+                <div class="timeline-block" style="background: #22c55e;" title="Block 32: Grid-Minimal (2028-03-04 to 2028-03-07)">32</div>
+                <div class="timeline-block" style="background: #ec4899;" title="Block 33: Balanced (2028-03-08 to 2028-03-11)">33</div>
+                <div class="timeline-block" style="background: #6366f1;" title="Block 34: Baseline (2028-03-12 to 2028-03-15)">34</div>
+                <div class="timeline-block" style="background: #22c55e;" title="Block 35: Grid-Minimal (2028-03-16 to 2028-03-19)">35</div>
             </div>
             <div class="strategy-legend" style="margin-top: 1rem;">
                 <div class="legend-item">
@@ -417,225 +424,281 @@
                 </tr>
                 <tr class="block-row season-early">
                     <td><strong>1</strong></td>
-                    <td><span class="strategy-badge strategy-b">B</span> Energy-Optimized</td>
-                    <td>2027-11-01 to 2027-11-05</td>
-                    <td class="washout">2027-11-01 to 2027-11-03</td>
-                    <td class="measurement">2027-11-04 to 2027-11-05</td>
+                    <td><span class="strategy-badge strategy-b">B</span> Grid-Minimal</td>
+                    <td>2027-11-01 to 2027-11-04</td>
+                    <td class="washout">2027-11-01 to 2027-11-02</td>
+                    <td class="measurement">2027-11-03 to 2027-11-04</td>
                     <td>Early</td>
                 </tr>
                 <tr class="block-row season-early">
                     <td><strong>2</strong></td>
                     <td><span class="strategy-badge strategy-a">A</span> Baseline</td>
-                    <td>2027-11-06 to 2027-11-10</td>
-                    <td class="washout">2027-11-06 to 2027-11-08</td>
-                    <td class="measurement">2027-11-09 to 2027-11-10</td>
+                    <td>2027-11-05 to 2027-11-08</td>
+                    <td class="washout">2027-11-05 to 2027-11-06</td>
+                    <td class="measurement">2027-11-07 to 2027-11-08</td>
                     <td>Early</td>
                 </tr>
                 <tr class="block-row season-early">
                     <td><strong>3</strong></td>
-                    <td><span class="strategy-badge strategy-c">C</span> Cost-Optimized</td>
-                    <td>2027-11-11 to 2027-11-15</td>
-                    <td class="washout">2027-11-11 to 2027-11-13</td>
-                    <td class="measurement">2027-11-14 to 2027-11-15</td>
+                    <td><span class="strategy-badge strategy-c">C</span> Balanced</td>
+                    <td>2027-11-09 to 2027-11-12</td>
+                    <td class="washout">2027-11-09 to 2027-11-10</td>
+                    <td class="measurement">2027-11-11 to 2027-11-12</td>
                     <td>Early</td>
                 </tr>
                 <tr class="block-row season-early">
                     <td><strong>4</strong></td>
-                    <td><span class="strategy-badge strategy-b">B</span> Energy-Optimized</td>
-                    <td>2027-11-16 to 2027-11-20</td>
-                    <td class="washout">2027-11-16 to 2027-11-18</td>
-                    <td class="measurement">2027-11-19 to 2027-11-20</td>
+                    <td><span class="strategy-badge strategy-b">B</span> Grid-Minimal</td>
+                    <td>2027-11-13 to 2027-11-16</td>
+                    <td class="washout">2027-11-13 to 2027-11-14</td>
+                    <td class="measurement">2027-11-15 to 2027-11-16</td>
                     <td>Early</td>
                 </tr>
                 <tr class="block-row season-early">
                     <td><strong>5</strong></td>
-                    <td><span class="strategy-badge strategy-c">C</span> Cost-Optimized</td>
-                    <td>2027-11-21 to 2027-11-25</td>
-                    <td class="washout">2027-11-21 to 2027-11-23</td>
-                    <td class="measurement">2027-11-24 to 2027-11-25</td>
+                    <td><span class="strategy-badge strategy-c">C</span> Balanced</td>
+                    <td>2027-11-17 to 2027-11-20</td>
+                    <td class="washout">2027-11-17 to 2027-11-18</td>
+                    <td class="measurement">2027-11-19 to 2027-11-20</td>
                     <td>Early</td>
                 </tr>
                 <tr class="block-row season-early">
                     <td><strong>6</strong></td>
                     <td><span class="strategy-badge strategy-a">A</span> Baseline</td>
-                    <td>2027-11-26 to 2027-11-30</td>
-                    <td class="washout">2027-11-26 to 2027-11-28</td>
-                    <td class="measurement">2027-11-29 to 2027-11-30</td>
+                    <td>2027-11-21 to 2027-11-24</td>
+                    <td class="washout">2027-11-21 to 2027-11-22</td>
+                    <td class="measurement">2027-11-23 to 2027-11-24</td>
                     <td>Early</td>
                 </tr>
                 <tr class="block-row season-early">
                     <td><strong>7</strong></td>
-                    <td><span class="strategy-badge strategy-b">B</span> Energy-Optimized</td>
-                    <td>2027-12-01 to 2027-12-05</td>
-                    <td class="washout">2027-12-01 to 2027-12-03</td>
-                    <td class="measurement">2027-12-04 to 2027-12-05</td>
+                    <td><span class="strategy-badge strategy-b">B</span> Grid-Minimal</td>
+                    <td>2027-11-25 to 2027-11-28</td>
+                    <td class="washout">2027-11-25 to 2027-11-26</td>
+                    <td class="measurement">2027-11-27 to 2027-11-28</td>
                     <td>Early</td>
                 </tr>
                 <tr class="block-row season-early">
                     <td><strong>8</strong></td>
-                    <td><span class="strategy-badge strategy-c">C</span> Cost-Optimized</td>
-                    <td>2027-12-06 to 2027-12-10</td>
-                    <td class="washout">2027-12-06 to 2027-12-08</td>
-                    <td class="measurement">2027-12-09 to 2027-12-10</td>
+                    <td><span class="strategy-badge strategy-c">C</span> Balanced</td>
+                    <td>2027-11-29 to 2027-12-02</td>
+                    <td class="washout">2027-11-29 to 2027-11-30</td>
+                    <td class="measurement">2027-12-01 to 2027-12-02</td>
                     <td>Early</td>
                 </tr>
                 <tr class="block-row season-early">
                     <td><strong>9</strong></td>
                     <td><span class="strategy-badge strategy-a">A</span> Baseline</td>
-                    <td>2027-12-11 to 2027-12-15</td>
-                    <td class="washout">2027-12-11 to 2027-12-13</td>
-                    <td class="measurement">2027-12-14 to 2027-12-15</td>
+                    <td>2027-12-03 to 2027-12-06</td>
+                    <td class="washout">2027-12-03 to 2027-12-04</td>
+                    <td class="measurement">2027-12-05 to 2027-12-06</td>
                     <td>Early</td>
                 </tr>
                 <tr class="block-row season-early">
                     <td><strong>10</strong></td>
-                    <td><span class="strategy-badge strategy-b">B</span> Energy-Optimized</td>
-                    <td>2027-12-16 to 2027-12-20</td>
-                    <td class="washout">2027-12-16 to 2027-12-18</td>
-                    <td class="measurement">2027-12-19 to 2027-12-20</td>
+                    <td><span class="strategy-badge strategy-b">B</span> Grid-Minimal</td>
+                    <td>2027-12-07 to 2027-12-10</td>
+                    <td class="washout">2027-12-07 to 2027-12-08</td>
+                    <td class="measurement">2027-12-09 to 2027-12-10</td>
+                    <td>Early</td>
+                </tr>
+                <tr class="block-row season-early">
+                    <td><strong>11</strong></td>
+                    <td><span class="strategy-badge strategy-a">A</span> Baseline</td>
+                    <td>2027-12-11 to 2027-12-14</td>
+                    <td class="washout">2027-12-11 to 2027-12-12</td>
+                    <td class="measurement">2027-12-13 to 2027-12-14</td>
+                    <td>Early</td>
+                </tr>
+                <tr class="block-row season-early">
+                    <td><strong>12</strong></td>
+                    <td><span class="strategy-badge strategy-c">C</span> Balanced</td>
+                    <td>2027-12-15 to 2027-12-18</td>
+                    <td class="washout">2027-12-15 to 2027-12-16</td>
+                    <td class="measurement">2027-12-17 to 2027-12-18</td>
                     <td>Early</td>
                 </tr>
                 <tr class="block-row season-mid">
-                    <td><strong>11</strong></td>
-                    <td><span class="strategy-badge strategy-a">A</span> Baseline</td>
-                    <td>2027-12-21 to 2027-12-25</td>
-                    <td class="washout">2027-12-21 to 2027-12-23</td>
-                    <td class="measurement">2027-12-24 to 2027-12-25</td>
-                    <td>Mid</td>
-                </tr>
-                <tr class="block-row season-mid">
-                    <td><strong>12</strong></td>
-                    <td><span class="strategy-badge strategy-c">C</span> Cost-Optimized</td>
-                    <td>2027-12-26 to 2027-12-30</td>
-                    <td class="washout">2027-12-26 to 2027-12-28</td>
-                    <td class="measurement">2027-12-29 to 2027-12-30</td>
-                    <td>Mid</td>
-                </tr>
-                <tr class="block-row season-mid">
                     <td><strong>13</strong></td>
-                    <td><span class="strategy-badge strategy-b">B</span> Energy-Optimized</td>
-                    <td>2027-12-31 to 2028-01-04</td>
-                    <td class="washout">2027-12-31 to 2028-01-02</td>
-                    <td class="measurement">2028-01-03 to 2028-01-04</td>
+                    <td><span class="strategy-badge strategy-b">B</span> Grid-Minimal</td>
+                    <td>2027-12-19 to 2027-12-22</td>
+                    <td class="washout">2027-12-19 to 2027-12-20</td>
+                    <td class="measurement">2027-12-21 to 2027-12-22</td>
                     <td>Mid</td>
                 </tr>
                 <tr class="block-row season-mid">
                     <td><strong>14</strong></td>
                     <td><span class="strategy-badge strategy-a">A</span> Baseline</td>
-                    <td>2028-01-05 to 2028-01-09</td>
-                    <td class="washout">2028-01-05 to 2028-01-07</td>
-                    <td class="measurement">2028-01-08 to 2028-01-09</td>
+                    <td>2027-12-23 to 2027-12-26</td>
+                    <td class="washout">2027-12-23 to 2027-12-24</td>
+                    <td class="measurement">2027-12-25 to 2027-12-26</td>
                     <td>Mid</td>
                 </tr>
                 <tr class="block-row season-mid">
                     <td><strong>15</strong></td>
-                    <td><span class="strategy-badge strategy-c">C</span> Cost-Optimized</td>
-                    <td>2028-01-10 to 2028-01-14</td>
-                    <td class="washout">2028-01-10 to 2028-01-12</td>
-                    <td class="measurement">2028-01-13 to 2028-01-14</td>
+                    <td><span class="strategy-badge strategy-c">C</span> Balanced</td>
+                    <td>2027-12-27 to 2027-12-30</td>
+                    <td class="washout">2027-12-27 to 2027-12-28</td>
+                    <td class="measurement">2027-12-29 to 2027-12-30</td>
                     <td>Mid</td>
                 </tr>
                 <tr class="block-row season-mid">
                     <td><strong>16</strong></td>
                     <td><span class="strategy-badge strategy-a">A</span> Baseline</td>
-                    <td>2028-01-15 to 2028-01-19</td>
-                    <td class="washout">2028-01-15 to 2028-01-17</td>
-                    <td class="measurement">2028-01-18 to 2028-01-19</td>
+                    <td>2027-12-31 to 2028-01-03</td>
+                    <td class="washout">2027-12-31 to 2028-01-01</td>
+                    <td class="measurement">2028-01-02 to 2028-01-03</td>
                     <td>Mid</td>
                 </tr>
                 <tr class="block-row season-mid">
                     <td><strong>17</strong></td>
-                    <td><span class="strategy-badge strategy-b">B</span> Energy-Optimized</td>
-                    <td>2028-01-20 to 2028-01-24</td>
-                    <td class="washout">2028-01-20 to 2028-01-22</td>
-                    <td class="measurement">2028-01-23 to 2028-01-24</td>
+                    <td><span class="strategy-badge strategy-b">B</span> Grid-Minimal</td>
+                    <td>2028-01-04 to 2028-01-07</td>
+                    <td class="washout">2028-01-04 to 2028-01-05</td>
+                    <td class="measurement">2028-01-06 to 2028-01-07</td>
                     <td>Mid</td>
                 </tr>
                 <tr class="block-row season-mid">
                     <td><strong>18</strong></td>
-                    <td><span class="strategy-badge strategy-c">C</span> Cost-Optimized</td>
-                    <td>2028-01-25 to 2028-01-29</td>
-                    <td class="washout">2028-01-25 to 2028-01-27</td>
-                    <td class="measurement">2028-01-28 to 2028-01-29</td>
+                    <td><span class="strategy-badge strategy-c">C</span> Balanced</td>
+                    <td>2028-01-08 to 2028-01-11</td>
+                    <td class="washout">2028-01-08 to 2028-01-09</td>
+                    <td class="measurement">2028-01-10 to 2028-01-11</td>
                     <td>Mid</td>
                 </tr>
                 <tr class="block-row season-mid">
                     <td><strong>19</strong></td>
-                    <td><span class="strategy-badge strategy-b">B</span> Energy-Optimized</td>
-                    <td>2028-01-30 to 2028-02-03</td>
-                    <td class="washout">2028-01-30 to 2028-02-01</td>
-                    <td class="measurement">2028-02-02 to 2028-02-03</td>
+                    <td><span class="strategy-badge strategy-b">B</span> Grid-Minimal</td>
+                    <td>2028-01-12 to 2028-01-15</td>
+                    <td class="washout">2028-01-12 to 2028-01-13</td>
+                    <td class="measurement">2028-01-14 to 2028-01-15</td>
+                    <td>Mid</td>
+                </tr>
+                <tr class="block-row season-mid">
+                    <td><strong>20</strong></td>
+                    <td><span class="strategy-badge strategy-c">C</span> Balanced</td>
+                    <td>2028-01-16 to 2028-01-19</td>
+                    <td class="washout">2028-01-16 to 2028-01-17</td>
+                    <td class="measurement">2028-01-18 to 2028-01-19</td>
+                    <td>Mid</td>
+                </tr>
+                <tr class="block-row season-mid">
+                    <td><strong>21</strong></td>
+                    <td><span class="strategy-badge strategy-a">A</span> Baseline</td>
+                    <td>2028-01-20 to 2028-01-23</td>
+                    <td class="washout">2028-01-20 to 2028-01-21</td>
+                    <td class="measurement">2028-01-22 to 2028-01-23</td>
+                    <td>Mid</td>
+                </tr>
+                <tr class="block-row season-mid">
+                    <td><strong>22</strong></td>
+                    <td><span class="strategy-badge strategy-b">B</span> Grid-Minimal</td>
+                    <td>2028-01-24 to 2028-01-27</td>
+                    <td class="washout">2028-01-24 to 2028-01-25</td>
+                    <td class="measurement">2028-01-26 to 2028-01-27</td>
+                    <td>Mid</td>
+                </tr>
+                <tr class="block-row season-mid">
+                    <td><strong>23</strong></td>
+                    <td><span class="strategy-badge strategy-c">C</span> Balanced</td>
+                    <td>2028-01-28 to 2028-01-31</td>
+                    <td class="washout">2028-01-28 to 2028-01-29</td>
+                    <td class="measurement">2028-01-30 to 2028-01-31</td>
+                    <td>Mid</td>
+                </tr>
+                <tr class="block-row season-mid">
+                    <td><strong>24</strong></td>
+                    <td><span class="strategy-badge strategy-a">A</span> Baseline</td>
+                    <td>2028-02-01 to 2028-02-04</td>
+                    <td class="washout">2028-02-01 to 2028-02-02</td>
+                    <td class="measurement">2028-02-03 to 2028-02-04</td>
                     <td>Mid</td>
                 </tr>
                 <tr class="block-row season-late">
-                    <td><strong>20</strong></td>
-                    <td><span class="strategy-badge strategy-c">C</span> Cost-Optimized</td>
-                    <td>2028-02-04 to 2028-02-08</td>
-                    <td class="washout">2028-02-04 to 2028-02-06</td>
+                    <td><strong>25</strong></td>
+                    <td><span class="strategy-badge strategy-b">B</span> Grid-Minimal</td>
+                    <td>2028-02-05 to 2028-02-08</td>
+                    <td class="washout">2028-02-05 to 2028-02-06</td>
                     <td class="measurement">2028-02-07 to 2028-02-08</td>
                     <td>Late</td>
                 </tr>
                 <tr class="block-row season-late">
-                    <td><strong>21</strong></td>
-                    <td><span class="strategy-badge strategy-a">A</span> Baseline</td>
-                    <td>2028-02-09 to 2028-02-13</td>
-                    <td class="washout">2028-02-09 to 2028-02-11</td>
-                    <td class="measurement">2028-02-12 to 2028-02-13</td>
-                    <td>Late</td>
-                </tr>
-                <tr class="block-row season-late">
-                    <td><strong>22</strong></td>
-                    <td><span class="strategy-badge strategy-b">B</span> Energy-Optimized</td>
-                    <td>2028-02-14 to 2028-02-18</td>
-                    <td class="washout">2028-02-14 to 2028-02-16</td>
-                    <td class="measurement">2028-02-17 to 2028-02-18</td>
-                    <td>Late</td>
-                </tr>
-                <tr class="block-row season-late">
-                    <td><strong>23</strong></td>
-                    <td><span class="strategy-badge strategy-c">C</span> Cost-Optimized</td>
-                    <td>2028-02-19 to 2028-02-23</td>
-                    <td class="washout">2028-02-19 to 2028-02-21</td>
-                    <td class="measurement">2028-02-22 to 2028-02-23</td>
-                    <td>Late</td>
-                </tr>
-                <tr class="block-row season-late">
-                    <td><strong>24</strong></td>
-                    <td><span class="strategy-badge strategy-a">A</span> Baseline</td>
-                    <td>2028-02-24 to 2028-02-28</td>
-                    <td class="washout">2028-02-24 to 2028-02-26</td>
-                    <td class="measurement">2028-02-27 to 2028-02-28</td>
-                    <td>Late</td>
-                </tr>
-                <tr class="block-row season-late">
-                    <td><strong>25</strong></td>
-                    <td><span class="strategy-badge strategy-b">B</span> Energy-Optimized</td>
-                    <td>2028-02-29 to 2028-03-04</td>
-                    <td class="washout">2028-02-29 to 2028-03-02</td>
-                    <td class="measurement">2028-03-03 to 2028-03-04</td>
-                    <td>Late</td>
-                </tr>
-                <tr class="block-row season-late">
                     <td><strong>26</strong></td>
-                    <td><span class="strategy-badge strategy-c">C</span> Cost-Optimized</td>
-                    <td>2028-03-05 to 2028-03-09</td>
-                    <td class="washout">2028-03-05 to 2028-03-07</td>
-                    <td class="measurement">2028-03-08 to 2028-03-09</td>
+                    <td><span class="strategy-badge strategy-c">C</span> Balanced</td>
+                    <td>2028-02-09 to 2028-02-12</td>
+                    <td class="washout">2028-02-09 to 2028-02-10</td>
+                    <td class="measurement">2028-02-11 to 2028-02-12</td>
                     <td>Late</td>
                 </tr>
                 <tr class="block-row season-late">
                     <td><strong>27</strong></td>
                     <td><span class="strategy-badge strategy-a">A</span> Baseline</td>
-                    <td>2028-03-10 to 2028-03-14</td>
-                    <td class="washout">2028-03-10 to 2028-03-12</td>
-                    <td class="measurement">2028-03-13 to 2028-03-14</td>
+                    <td>2028-02-13 to 2028-02-16</td>
+                    <td class="washout">2028-02-13 to 2028-02-14</td>
+                    <td class="measurement">2028-02-15 to 2028-02-16</td>
                     <td>Late</td>
                 </tr>
                 <tr class="block-row season-late">
                     <td><strong>28</strong></td>
-                    <td><span class="strategy-badge strategy-b">B</span> Energy-Optimized</td>
-                    <td>2028-03-15 to 2028-03-19</td>
-                    <td class="washout">2028-03-15 to 2028-03-17</td>
+                    <td><span class="strategy-badge strategy-b">B</span> Grid-Minimal</td>
+                    <td>2028-02-17 to 2028-02-20</td>
+                    <td class="washout">2028-02-17 to 2028-02-18</td>
+                    <td class="measurement">2028-02-19 to 2028-02-20</td>
+                    <td>Late</td>
+                </tr>
+                <tr class="block-row season-late">
+                    <td><strong>29</strong></td>
+                    <td><span class="strategy-badge strategy-a">A</span> Baseline</td>
+                    <td>2028-02-21 to 2028-02-24</td>
+                    <td class="washout">2028-02-21 to 2028-02-22</td>
+                    <td class="measurement">2028-02-23 to 2028-02-24</td>
+                    <td>Late</td>
+                </tr>
+                <tr class="block-row season-late">
+                    <td><strong>30</strong></td>
+                    <td><span class="strategy-badge strategy-c">C</span> Balanced</td>
+                    <td>2028-02-25 to 2028-02-28</td>
+                    <td class="washout">2028-02-25 to 2028-02-26</td>
+                    <td class="measurement">2028-02-27 to 2028-02-28</td>
+                    <td>Late</td>
+                </tr>
+                <tr class="block-row season-late">
+                    <td><strong>31</strong></td>
+                    <td><span class="strategy-badge strategy-a">A</span> Baseline</td>
+                    <td>2028-02-29 to 2028-03-03</td>
+                    <td class="washout">2028-02-29 to 2028-03-01</td>
+                    <td class="measurement">2028-03-02 to 2028-03-03</td>
+                    <td>Late</td>
+                </tr>
+                <tr class="block-row season-late">
+                    <td><strong>32</strong></td>
+                    <td><span class="strategy-badge strategy-b">B</span> Grid-Minimal</td>
+                    <td>2028-03-04 to 2028-03-07</td>
+                    <td class="washout">2028-03-04 to 2028-03-05</td>
+                    <td class="measurement">2028-03-06 to 2028-03-07</td>
+                    <td>Late</td>
+                </tr>
+                <tr class="block-row season-late">
+                    <td><strong>33</strong></td>
+                    <td><span class="strategy-badge strategy-c">C</span> Balanced</td>
+                    <td>2028-03-08 to 2028-03-11</td>
+                    <td class="washout">2028-03-08 to 2028-03-09</td>
+                    <td class="measurement">2028-03-10 to 2028-03-11</td>
+                    <td>Late</td>
+                </tr>
+                <tr class="block-row season-late">
+                    <td><strong>34</strong></td>
+                    <td><span class="strategy-badge strategy-a">A</span> Baseline</td>
+                    <td>2028-03-12 to 2028-03-15</td>
+                    <td class="washout">2028-03-12 to 2028-03-13</td>
+                    <td class="measurement">2028-03-14 to 2028-03-15</td>
+                    <td>Late</td>
+                </tr>
+                <tr class="block-row season-late">
+                    <td><strong>35</strong></td>
+                    <td><span class="strategy-badge strategy-b">B</span> Grid-Minimal</td>
+                    <td>2028-03-16 to 2028-03-19</td>
+                    <td class="washout">2028-03-16 to 2028-03-17</td>
                     <td class="measurement">2028-03-18 to 2028-03-19</td>
                     <td>Late</td>
                 </tr>
@@ -647,19 +710,19 @@
         <p>At the start of each block, adjust the following parameters on the heat pump:</p>
 
         <div class="card">
-            <h4>Block 1: <span class="strategy-badge strategy-b">B</span> Energy-Optimized</h4>
-            <p><strong>Start Date:</strong> 2027-11-01 | <strong>End Date:</strong> 2027-11-05</p>
+            <h4>Block 1: <span class="strategy-badge strategy-b">B</span> Grid-Minimal</h4>
+            <p><strong>Start Date:</strong> 2027-11-01 | <strong>End Date:</strong> 2027-11-04</p>
             <table class="param-table">
-                <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>18:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>18.0°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.98</strong></td></tr>
+                <tr><td>Schedule: Comfort Start</td><td><strong>09:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>12.0°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
             <h4>Block 2: <span class="strategy-badge strategy-a">A</span> Baseline</h4>
-            <p><strong>Start Date:</strong> 2027-11-06 | <strong>End Date:</strong> 2027-11-10</p>
+            <p><strong>Start Date:</strong> 2027-11-05 | <strong>End Date:</strong> 2027-11-08</p>
             <table class="param-table">
                 <tr><td>Schedule: Comfort Start</td><td><strong>06:30</strong></td></tr>
                 <tr><td>Schedule: Comfort End</td><td><strong>20:00</strong></td></tr>
@@ -669,41 +732,41 @@
             </table>
         </div>
         <div class="card">
-            <h4>Block 3: <span class="strategy-badge strategy-c">C</span> Cost-Optimized</h4>
-            <p><strong>Start Date:</strong> 2027-11-11 | <strong>End Date:</strong> 2027-11-15</p>
-            <table class="param-table">
-                <tr><td>Schedule: Comfort Start</td><td><strong>11:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>21:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>17.5°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.95</strong></td></tr>
-            </table>
-        </div>
-        <div class="card">
-            <h4>Block 4: <span class="strategy-badge strategy-b">B</span> Energy-Optimized</h4>
-            <p><strong>Start Date:</strong> 2027-11-16 | <strong>End Date:</strong> 2027-11-20</p>
+            <h4>Block 3: <span class="strategy-badge strategy-c">C</span> Balanced</h4>
+            <p><strong>Start Date:</strong> 2027-11-09 | <strong>End Date:</strong> 2027-11-12</p>
             <table class="param-table">
                 <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>18:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>18.0°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.98</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>13.1°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
-            <h4>Block 5: <span class="strategy-badge strategy-c">C</span> Cost-Optimized</h4>
-            <p><strong>Start Date:</strong> 2027-11-21 | <strong>End Date:</strong> 2027-11-25</p>
+            <h4>Block 4: <span class="strategy-badge strategy-b">B</span> Grid-Minimal</h4>
+            <p><strong>Start Date:</strong> 2027-11-13 | <strong>End Date:</strong> 2027-11-16</p>
             <table class="param-table">
-                <tr><td>Schedule: Comfort Start</td><td><strong>11:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>21:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>17.5°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.95</strong></td></tr>
+                <tr><td>Schedule: Comfort Start</td><td><strong>09:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>12.0°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
+            </table>
+        </div>
+        <div class="card">
+            <h4>Block 5: <span class="strategy-badge strategy-c">C</span> Balanced</h4>
+            <p><strong>Start Date:</strong> 2027-11-17 | <strong>End Date:</strong> 2027-11-20</p>
+            <table class="param-table">
+                <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>13.1°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
             <h4>Block 6: <span class="strategy-badge strategy-a">A</span> Baseline</h4>
-            <p><strong>Start Date:</strong> 2027-11-26 | <strong>End Date:</strong> 2027-11-30</p>
+            <p><strong>Start Date:</strong> 2027-11-21 | <strong>End Date:</strong> 2027-11-24</p>
             <table class="param-table">
                 <tr><td>Schedule: Comfort Start</td><td><strong>06:30</strong></td></tr>
                 <tr><td>Schedule: Comfort End</td><td><strong>20:00</strong></td></tr>
@@ -713,30 +776,30 @@
             </table>
         </div>
         <div class="card">
-            <h4>Block 7: <span class="strategy-badge strategy-b">B</span> Energy-Optimized</h4>
-            <p><strong>Start Date:</strong> 2027-12-01 | <strong>End Date:</strong> 2027-12-05</p>
+            <h4>Block 7: <span class="strategy-badge strategy-b">B</span> Grid-Minimal</h4>
+            <p><strong>Start Date:</strong> 2027-11-25 | <strong>End Date:</strong> 2027-11-28</p>
             <table class="param-table">
-                <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>18:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>18.0°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.98</strong></td></tr>
+                <tr><td>Schedule: Comfort Start</td><td><strong>09:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>12.0°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
-            <h4>Block 8: <span class="strategy-badge strategy-c">C</span> Cost-Optimized</h4>
-            <p><strong>Start Date:</strong> 2027-12-06 | <strong>End Date:</strong> 2027-12-10</p>
+            <h4>Block 8: <span class="strategy-badge strategy-c">C</span> Balanced</h4>
+            <p><strong>Start Date:</strong> 2027-11-29 | <strong>End Date:</strong> 2027-12-02</p>
             <table class="param-table">
-                <tr><td>Schedule: Comfort Start</td><td><strong>11:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>21:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>17.5°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.95</strong></td></tr>
+                <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>13.1°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
             <h4>Block 9: <span class="strategy-badge strategy-a">A</span> Baseline</h4>
-            <p><strong>Start Date:</strong> 2027-12-11 | <strong>End Date:</strong> 2027-12-15</p>
+            <p><strong>Start Date:</strong> 2027-12-03 | <strong>End Date:</strong> 2027-12-06</p>
             <table class="param-table">
                 <tr><td>Schedule: Comfort Start</td><td><strong>06:30</strong></td></tr>
                 <tr><td>Schedule: Comfort End</td><td><strong>20:00</strong></td></tr>
@@ -746,19 +809,19 @@
             </table>
         </div>
         <div class="card">
-            <h4>Block 10: <span class="strategy-badge strategy-b">B</span> Energy-Optimized</h4>
-            <p><strong>Start Date:</strong> 2027-12-16 | <strong>End Date:</strong> 2027-12-20</p>
+            <h4>Block 10: <span class="strategy-badge strategy-b">B</span> Grid-Minimal</h4>
+            <p><strong>Start Date:</strong> 2027-12-07 | <strong>End Date:</strong> 2027-12-10</p>
             <table class="param-table">
-                <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>18:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>18.0°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.98</strong></td></tr>
+                <tr><td>Schedule: Comfort Start</td><td><strong>09:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>12.0°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
             <h4>Block 11: <span class="strategy-badge strategy-a">A</span> Baseline</h4>
-            <p><strong>Start Date:</strong> 2027-12-21 | <strong>End Date:</strong> 2027-12-25</p>
+            <p><strong>Start Date:</strong> 2027-12-11 | <strong>End Date:</strong> 2027-12-14</p>
             <table class="param-table">
                 <tr><td>Schedule: Comfort Start</td><td><strong>06:30</strong></td></tr>
                 <tr><td>Schedule: Comfort End</td><td><strong>20:00</strong></td></tr>
@@ -768,30 +831,30 @@
             </table>
         </div>
         <div class="card">
-            <h4>Block 12: <span class="strategy-badge strategy-c">C</span> Cost-Optimized</h4>
-            <p><strong>Start Date:</strong> 2027-12-26 | <strong>End Date:</strong> 2027-12-30</p>
+            <h4>Block 12: <span class="strategy-badge strategy-c">C</span> Balanced</h4>
+            <p><strong>Start Date:</strong> 2027-12-15 | <strong>End Date:</strong> 2027-12-18</p>
             <table class="param-table">
-                <tr><td>Schedule: Comfort Start</td><td><strong>11:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>21:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>17.5°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.95</strong></td></tr>
+                <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>13.1°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
-            <h4>Block 13: <span class="strategy-badge strategy-b">B</span> Energy-Optimized</h4>
-            <p><strong>Start Date:</strong> 2027-12-31 | <strong>End Date:</strong> 2028-01-04</p>
+            <h4>Block 13: <span class="strategy-badge strategy-b">B</span> Grid-Minimal</h4>
+            <p><strong>Start Date:</strong> 2027-12-19 | <strong>End Date:</strong> 2027-12-22</p>
             <table class="param-table">
-                <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>18:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>18.0°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.98</strong></td></tr>
+                <tr><td>Schedule: Comfort Start</td><td><strong>09:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>12.0°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
             <h4>Block 14: <span class="strategy-badge strategy-a">A</span> Baseline</h4>
-            <p><strong>Start Date:</strong> 2028-01-05 | <strong>End Date:</strong> 2028-01-09</p>
+            <p><strong>Start Date:</strong> 2027-12-23 | <strong>End Date:</strong> 2027-12-26</p>
             <table class="param-table">
                 <tr><td>Schedule: Comfort Start</td><td><strong>06:30</strong></td></tr>
                 <tr><td>Schedule: Comfort End</td><td><strong>20:00</strong></td></tr>
@@ -801,19 +864,19 @@
             </table>
         </div>
         <div class="card">
-            <h4>Block 15: <span class="strategy-badge strategy-c">C</span> Cost-Optimized</h4>
-            <p><strong>Start Date:</strong> 2028-01-10 | <strong>End Date:</strong> 2028-01-14</p>
+            <h4>Block 15: <span class="strategy-badge strategy-c">C</span> Balanced</h4>
+            <p><strong>Start Date:</strong> 2027-12-27 | <strong>End Date:</strong> 2027-12-30</p>
             <table class="param-table">
-                <tr><td>Schedule: Comfort Start</td><td><strong>11:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>21:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>17.5°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.95</strong></td></tr>
+                <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>13.1°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
             <h4>Block 16: <span class="strategy-badge strategy-a">A</span> Baseline</h4>
-            <p><strong>Start Date:</strong> 2028-01-15 | <strong>End Date:</strong> 2028-01-19</p>
+            <p><strong>Start Date:</strong> 2027-12-31 | <strong>End Date:</strong> 2028-01-03</p>
             <table class="param-table">
                 <tr><td>Schedule: Comfort Start</td><td><strong>06:30</strong></td></tr>
                 <tr><td>Schedule: Comfort End</td><td><strong>20:00</strong></td></tr>
@@ -823,52 +886,52 @@
             </table>
         </div>
         <div class="card">
-            <h4>Block 17: <span class="strategy-badge strategy-b">B</span> Energy-Optimized</h4>
-            <p><strong>Start Date:</strong> 2028-01-20 | <strong>End Date:</strong> 2028-01-24</p>
+            <h4>Block 17: <span class="strategy-badge strategy-b">B</span> Grid-Minimal</h4>
+            <p><strong>Start Date:</strong> 2028-01-04 | <strong>End Date:</strong> 2028-01-07</p>
+            <table class="param-table">
+                <tr><td>Schedule: Comfort Start</td><td><strong>09:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>12.0°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
+            </table>
+        </div>
+        <div class="card">
+            <h4>Block 18: <span class="strategy-badge strategy-c">C</span> Balanced</h4>
+            <p><strong>Start Date:</strong> 2028-01-08 | <strong>End Date:</strong> 2028-01-11</p>
             <table class="param-table">
                 <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>18:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>18.0°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.98</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>13.1°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
-            <h4>Block 18: <span class="strategy-badge strategy-c">C</span> Cost-Optimized</h4>
-            <p><strong>Start Date:</strong> 2028-01-25 | <strong>End Date:</strong> 2028-01-29</p>
+            <h4>Block 19: <span class="strategy-badge strategy-b">B</span> Grid-Minimal</h4>
+            <p><strong>Start Date:</strong> 2028-01-12 | <strong>End Date:</strong> 2028-01-15</p>
             <table class="param-table">
-                <tr><td>Schedule: Comfort Start</td><td><strong>11:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>21:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>17.5°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.95</strong></td></tr>
+                <tr><td>Schedule: Comfort Start</td><td><strong>09:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>12.0°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
-            <h4>Block 19: <span class="strategy-badge strategy-b">B</span> Energy-Optimized</h4>
-            <p><strong>Start Date:</strong> 2028-01-30 | <strong>End Date:</strong> 2028-02-03</p>
+            <h4>Block 20: <span class="strategy-badge strategy-c">C</span> Balanced</h4>
+            <p><strong>Start Date:</strong> 2028-01-16 | <strong>End Date:</strong> 2028-01-19</p>
             <table class="param-table">
                 <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>18:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>18.0°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.98</strong></td></tr>
-            </table>
-        </div>
-        <div class="card">
-            <h4>Block 20: <span class="strategy-badge strategy-c">C</span> Cost-Optimized</h4>
-            <p><strong>Start Date:</strong> 2028-02-04 | <strong>End Date:</strong> 2028-02-08</p>
-            <table class="param-table">
-                <tr><td>Schedule: Comfort Start</td><td><strong>11:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>21:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>17.5°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.95</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>13.1°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
             <h4>Block 21: <span class="strategy-badge strategy-a">A</span> Baseline</h4>
-            <p><strong>Start Date:</strong> 2028-02-09 | <strong>End Date:</strong> 2028-02-13</p>
+            <p><strong>Start Date:</strong> 2028-01-20 | <strong>End Date:</strong> 2028-01-23</p>
             <table class="param-table">
                 <tr><td>Schedule: Comfort Start</td><td><strong>06:30</strong></td></tr>
                 <tr><td>Schedule: Comfort End</td><td><strong>20:00</strong></td></tr>
@@ -878,30 +941,30 @@
             </table>
         </div>
         <div class="card">
-            <h4>Block 22: <span class="strategy-badge strategy-b">B</span> Energy-Optimized</h4>
-            <p><strong>Start Date:</strong> 2028-02-14 | <strong>End Date:</strong> 2028-02-18</p>
+            <h4>Block 22: <span class="strategy-badge strategy-b">B</span> Grid-Minimal</h4>
+            <p><strong>Start Date:</strong> 2028-01-24 | <strong>End Date:</strong> 2028-01-27</p>
             <table class="param-table">
-                <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>18:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>18.0°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.98</strong></td></tr>
+                <tr><td>Schedule: Comfort Start</td><td><strong>09:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>12.0°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
-            <h4>Block 23: <span class="strategy-badge strategy-c">C</span> Cost-Optimized</h4>
-            <p><strong>Start Date:</strong> 2028-02-19 | <strong>End Date:</strong> 2028-02-23</p>
+            <h4>Block 23: <span class="strategy-badge strategy-c">C</span> Balanced</h4>
+            <p><strong>Start Date:</strong> 2028-01-28 | <strong>End Date:</strong> 2028-01-31</p>
             <table class="param-table">
-                <tr><td>Schedule: Comfort Start</td><td><strong>11:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>21:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>17.5°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.95</strong></td></tr>
+                <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>13.1°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
             <h4>Block 24: <span class="strategy-badge strategy-a">A</span> Baseline</h4>
-            <p><strong>Start Date:</strong> 2028-02-24 | <strong>End Date:</strong> 2028-02-28</p>
+            <p><strong>Start Date:</strong> 2028-02-01 | <strong>End Date:</strong> 2028-02-04</p>
             <table class="param-table">
                 <tr><td>Schedule: Comfort Start</td><td><strong>06:30</strong></td></tr>
                 <tr><td>Schedule: Comfort End</td><td><strong>20:00</strong></td></tr>
@@ -911,30 +974,30 @@
             </table>
         </div>
         <div class="card">
-            <h4>Block 25: <span class="strategy-badge strategy-b">B</span> Energy-Optimized</h4>
-            <p><strong>Start Date:</strong> 2028-02-29 | <strong>End Date:</strong> 2028-03-04</p>
+            <h4>Block 25: <span class="strategy-badge strategy-b">B</span> Grid-Minimal</h4>
+            <p><strong>Start Date:</strong> 2028-02-05 | <strong>End Date:</strong> 2028-02-08</p>
             <table class="param-table">
-                <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>18:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>18.0°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.98</strong></td></tr>
+                <tr><td>Schedule: Comfort Start</td><td><strong>09:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>12.0°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
-            <h4>Block 26: <span class="strategy-badge strategy-c">C</span> Cost-Optimized</h4>
-            <p><strong>Start Date:</strong> 2028-03-05 | <strong>End Date:</strong> 2028-03-09</p>
+            <h4>Block 26: <span class="strategy-badge strategy-c">C</span> Balanced</h4>
+            <p><strong>Start Date:</strong> 2028-02-09 | <strong>End Date:</strong> 2028-02-12</p>
             <table class="param-table">
-                <tr><td>Schedule: Comfort Start</td><td><strong>11:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>21:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>17.5°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.95</strong></td></tr>
+                <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>13.1°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
         <div class="card">
             <h4>Block 27: <span class="strategy-badge strategy-a">A</span> Baseline</h4>
-            <p><strong>Start Date:</strong> 2028-03-10 | <strong>End Date:</strong> 2028-03-14</p>
+            <p><strong>Start Date:</strong> 2028-02-13 | <strong>End Date:</strong> 2028-02-16</p>
             <table class="param-table">
                 <tr><td>Schedule: Comfort Start</td><td><strong>06:30</strong></td></tr>
                 <tr><td>Schedule: Comfort End</td><td><strong>20:00</strong></td></tr>
@@ -944,14 +1007,91 @@
             </table>
         </div>
         <div class="card">
-            <h4>Block 28: <span class="strategy-badge strategy-b">B</span> Energy-Optimized</h4>
-            <p><strong>Start Date:</strong> 2028-03-15 | <strong>End Date:</strong> 2028-03-19</p>
+            <h4>Block 28: <span class="strategy-badge strategy-b">B</span> Grid-Minimal</h4>
+            <p><strong>Start Date:</strong> 2028-02-17 | <strong>End Date:</strong> 2028-02-20</p>
+            <table class="param-table">
+                <tr><td>Schedule: Comfort Start</td><td><strong>09:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>12.0°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
+            </table>
+        </div>
+        <div class="card">
+            <h4>Block 29: <span class="strategy-badge strategy-a">A</span> Baseline</h4>
+            <p><strong>Start Date:</strong> 2028-02-21 | <strong>End Date:</strong> 2028-02-24</p>
+            <table class="param-table">
+                <tr><td>Schedule: Comfort Start</td><td><strong>06:30</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>20:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.2°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>18.5°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>1.08</strong></td></tr>
+            </table>
+        </div>
+        <div class="card">
+            <h4>Block 30: <span class="strategy-badge strategy-c">C</span> Balanced</h4>
+            <p><strong>Start Date:</strong> 2028-02-25 | <strong>End Date:</strong> 2028-02-28</p>
             <table class="param-table">
                 <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
-                <tr><td>Schedule: Comfort End</td><td><strong>18:00</strong></td></tr>
-                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.0°C</strong></td></tr>
-                <tr><td>Climate: Setpoint Eco</td><td><strong>18.0°C</strong></td></tr>
-                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.98</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>13.1°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
+            </table>
+        </div>
+        <div class="card">
+            <h4>Block 31: <span class="strategy-badge strategy-a">A</span> Baseline</h4>
+            <p><strong>Start Date:</strong> 2028-02-29 | <strong>End Date:</strong> 2028-03-03</p>
+            <table class="param-table">
+                <tr><td>Schedule: Comfort Start</td><td><strong>06:30</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>20:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.2°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>18.5°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>1.08</strong></td></tr>
+            </table>
+        </div>
+        <div class="card">
+            <h4>Block 32: <span class="strategy-badge strategy-b">B</span> Grid-Minimal</h4>
+            <p><strong>Start Date:</strong> 2028-03-04 | <strong>End Date:</strong> 2028-03-07</p>
+            <table class="param-table">
+                <tr><td>Schedule: Comfort Start</td><td><strong>09:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>12.0°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
+            </table>
+        </div>
+        <div class="card">
+            <h4>Block 33: <span class="strategy-badge strategy-c">C</span> Balanced</h4>
+            <p><strong>Start Date:</strong> 2028-03-08 | <strong>End Date:</strong> 2028-03-11</p>
+            <table class="param-table">
+                <tr><td>Schedule: Comfort Start</td><td><strong>10:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>13.1°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
+            </table>
+        </div>
+        <div class="card">
+            <h4>Block 34: <span class="strategy-badge strategy-a">A</span> Baseline</h4>
+            <p><strong>Start Date:</strong> 2028-03-12 | <strong>End Date:</strong> 2028-03-15</p>
+            <table class="param-table">
+                <tr><td>Schedule: Comfort Start</td><td><strong>06:30</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>20:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>20.2°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>18.5°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>1.08</strong></td></tr>
+            </table>
+        </div>
+        <div class="card">
+            <h4>Block 35: <span class="strategy-badge strategy-b">B</span> Grid-Minimal</h4>
+            <p><strong>Start Date:</strong> 2028-03-16 | <strong>End Date:</strong> 2028-03-19</p>
+            <table class="param-table">
+                <tr><td>Schedule: Comfort Start</td><td><strong>09:00</strong></td></tr>
+                <tr><td>Schedule: Comfort End</td><td><strong>16:00</strong></td></tr>
+                <tr><td>Climate: Setpoint Comfort</td><td><strong>22.0°C</strong></td></tr>
+                <tr><td>Climate: Setpoint Eco</td><td><strong>12.0°C</strong></td></tr>
+                <tr><td>Heating Curve: Rise (Steilheit)</td><td><strong>0.83</strong></td></tr>
             </table>
         </div>
 
@@ -970,7 +1110,7 @@
         </div>
 
         <div class="checklist">
-            <h4>During Washout (Days 1-3)</h4>
+            <h4>During Washout (Days 1-{WASHOUT_DAYS})</h4>
             <ul>
                 <li>Monitor indoor temperatures stabilizing to new settings</li>
                 <li>Check heat pump is responding to new schedule</li>
@@ -979,7 +1119,7 @@
         </div>
 
         <div class="checklist">
-            <h4>During Measurement (Days 4-5)</h4>
+            <h4>During Measurement (Days {WASHOUT_DAYS + 1}-{BLOCK_DAYS})</h4>
             <ul>
                 <li>Verify system is operating in steady-state</li>
                 <li>Check data logging is active (Home Assistant, InfluxDB)</li>
@@ -989,7 +1129,7 @@
         </div>
 
         <div class="checklist">
-            <h4>At Block End (Day 5)</h4>
+            <h4>At Block End (Day {BLOCK_DAYS})</h4>
             <ul>
                 <li>Complete block summary entry</li>
                 <li>Export any manual observations</li>
@@ -1046,8 +1186,8 @@
         </div>
 
         <div class="card" style="border-left: 4px solid var(--danger);">
-            <h4>Scenario 2: Change Delayed by 2+ Days</h4>
-            <p><strong>Situation:</strong> Parameters changed on Day 3 or later.</p>
+            <h4>Scenario 2: Change Delayed by {WASHOUT_DAYS}+ Days</h4>
+            <p><strong>Situation:</strong> Parameters changed on Day {WASHOUT_DAYS + 1} or later.</p>
             <p><strong>Impact:</strong> Washout period is severely compromised or eliminated.</p>
             <p><strong>Action:</strong></p>
             <ul style="margin: 0.5rem 0 0 1.5rem;">
@@ -1078,8 +1218,8 @@
             <p><strong>Impact:</strong> Block data is misattributed.</p>
             <p><strong>Action:</strong></p>
             <ul style="margin: 0.5rem 0 0 1.5rem;">
-                <li>If discovered during washout (Days 1-3): Correct immediately and note the error</li>
-                <li>If discovered during measurement (Days 4-5): Complete the block with current settings</li>
+                <li>If discovered during washout (Days 1-{WASHOUT_DAYS}): Correct immediately and note the error</li>
+                <li>If discovered during measurement (Days {WASHOUT_DAYS + 1}-{BLOCK_DAYS}): Complete the block with current settings</li>
                 <li>Document which strategy was actually implemented</li>
                 <li>In analysis, attribute data to the <em>actual</em> strategy that was running</li>
             </ul>

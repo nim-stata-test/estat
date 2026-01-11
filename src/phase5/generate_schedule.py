@@ -31,7 +31,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase5'
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Strategy definitions (3 strategies from Pareto optimization)
+# Strategy definitions (3 strategies from Pareto optimization - Jan 2026)
 # See docs/phase5_experimental_design.md Sections 3.1-3.3 for rationale
 STRATEGIES = {
     'A': {
@@ -44,19 +44,19 @@ STRATEGIES = {
     },
     'B': {
         'name': 'Grid-Minimal',
-        'comfort_start': '11:45',
+        'comfort_start': '09:00',
         'comfort_end': '16:00',
         'setpoint_comfort': 22.0,
-        'setpoint_eco': 13.6,
-        'curve_rise': 0.81,
+        'setpoint_eco': 12.0,
+        'curve_rise': 0.83,
     },
     'C': {
         'name': 'Balanced',
-        'comfort_start': '11:45',
+        'comfort_start': '10:00',
         'comfort_end': '16:00',
         'setpoint_comfort': 22.0,
-        'setpoint_eco': 12.5,
-        'curve_rise': 0.98,
+        'setpoint_eco': 13.1,
+        'curve_rise': 0.83,
     },
 }
 

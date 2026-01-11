@@ -501,23 +501,25 @@ python src/phase5/generate_schedule.py --start 2027-11-01 --weeks 20 --seed 42
 | Setpoint comfort/eco | Climate entity | Home Assistant |
 | Curve rise (Steilheit) | Heating curve menu | Heat pump interface |
 
-**Strategy Parameter Summary (Pareto-Optimized):**
+**Strategy Parameter Summary (Pareto-Optimized, Jan 2026):**
 
-Three strategies selected from 21 Pareto-optimal solutions for Phase 5 intervention study:
+Three strategies selected from Pareto-optimal solutions for Phase 5 intervention study:
 
 | Parameter | A (Baseline) | B (Grid-Minimal) | C (Balanced) |
 |-----------|--------------|------------------|--------------|
-| Comfort start | 06:30 | 11:45 | 11:45 |
+| Comfort start | 06:30 | 09:00 | 10:00 |
 | Comfort end | 20:00 | 16:00 | 16:00 |
 | Setpoint comfort | 20.2°C | 22.0°C | 22.0°C |
-| Setpoint eco | 18.5°C | **13.6°C** | **12.5°C** |
-| Curve rise | 1.08 | 0.81 | 0.98 |
-| Grid (kWh) | ~1200 | **1069** | 1104 |
-| Cost (CHF) | ~320 | **279** | 290 |
+| Setpoint eco | 18.5°C | **12.0°C** | **13.1°C** |
+| Curve rise | 1.08 | 0.83 | 0.83 |
+| Grid (kWh)* | — | **2235** | 2253 |
+| Cost (CHF)* | — | 704 | **701** |
 
-**Key insight:** Lower eco setpoints (12-14°C) are optimal because:
+*52-day simulation period
+
+**Key insight:** Lower eco setpoints (12-13°C) are optimal because:
 - Eco setpoint has minimal effect on daytime comfort (-0.09°C per 1°C change)
-- Shorter comfort window (4h) aligned with solar peak (11:45-16:00) maximizes PV utilization
+- Shorter comfort window (6-7h) aligned with solar peak (09:00-16:00) maximizes PV utilization
 - Aggressive eco setback saves energy during non-solar hours
 
 **Comfort Objective (T_weighted):**

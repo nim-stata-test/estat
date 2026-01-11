@@ -111,40 +111,38 @@ Current system settings serving as reference.
 ---
 
 ### 3.2 Strategy B: Grid-Minimal (Pareto-Optimized)
-Minimize grid electricity import. Selected from Pareto front.
+Minimize grid electricity import. Selected from Pareto front (Jan 2026 optimization).
 
 | Parameter | Value | Notes |
 |-----------|-------|-------|
-| Comfort start | **11:45** | Aligned with solar peak |
-| Comfort end | **16:00** | 4.25h comfort window |
+| Comfort start | **09:00** | Aligned with solar peak |
+| Comfort end | **16:00** | 7h comfort window |
 | Setpoint comfort | **22.0°C** | Higher comfort during short window |
-| Setpoint eco | **13.6°C** | Aggressive setback (Pareto-optimal) |
-| Curve rise | **0.81** | Lower flow temps, better COP |
+| Setpoint eco | **12.0°C** | Aggressive setback (Pareto-optimal) |
+| Curve rise | **0.83** | Lower flow temps, better COP |
 
-**Expected outcomes**: Grid 1069 kWh (-11%), Cost 279 CHF (-13%)
+**Expected outcomes**: Grid 2235 kWh, Cost 704 CHF (52-day simulation)
 
-**Rationale:** Lowest grid import on Pareto front. The aggressive eco setback (13.6°C)
-has minimal effect on daytime comfort (-0.09°C per 1°C = only -0.4°C vs baseline).
-Short solar-aligned comfort window maximizes PV utilization.
+**Rationale:** Lowest grid import on Pareto front. The aggressive eco setback (12.0°C)
+has minimal effect on daytime comfort. Short solar-aligned comfort window maximizes PV utilization.
 
 ---
 
 ### 3.3 Strategy C: Balanced (Pareto-Optimized)
-Balance comfort and energy efficiency. Selected from Pareto front.
+Balance comfort and energy efficiency. Selected from Pareto front (Jan 2026 optimization).
 
 | Parameter | Value | Notes |
 |-----------|-------|-------|
-| Comfort start | **11:45** | Aligned with solar peak |
-| Comfort end | **16:00** | 4.25h comfort window |
+| Comfort start | **10:00** | Aligned with solar peak |
+| Comfort end | **16:00** | 6h comfort window |
 | Setpoint comfort | **22.0°C** | Higher comfort during short window |
-| Setpoint eco | **12.5°C** | Most aggressive setback (Pareto-optimal) |
-| Curve rise | **0.98** | Moderate flow temps |
+| Setpoint eco | **13.1°C** | Aggressive setback (Pareto-optimal) |
+| Curve rise | **0.83** | Lower flow temps, better COP |
 
-**Expected outcomes**: Grid 1104 kWh (-8%), Cost 290 CHF (-9%), Comfort surplus -0.24°C
+**Expected outcomes**: Grid 2253 kWh, Cost 701 CHF (52-day simulation)
 
-**Rationale:** Best trade-off between comfort and efficiency. Higher curve_rise provides
-slightly warmer temperatures than Grid-Minimal, while eco setpoint at 12.5°C (lowest on front)
-saves energy during non-solar hours.
+**Rationale:** Best trade-off between grid and cost. Same curve_rise as Grid-Minimal
+but slightly later start and higher eco setpoint for marginally lower cost.
 
 ---
 
