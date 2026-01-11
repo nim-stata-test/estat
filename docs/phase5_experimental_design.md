@@ -111,7 +111,7 @@ Current system settings serving as reference.
 ---
 
 ### 3.2 Strategy B: Grid-Minimal (Pareto-Optimized)
-Minimize grid electricity import. Selected from Pareto front (Jan 2026 optimization).
+Minimize grid electricity import. Selected from Pareto front (Jan 2026 optimization, 5% constraint).
 
 | Parameter | Value | Notes |
 |-----------|-------|-------|
@@ -119,30 +119,31 @@ Minimize grid electricity import. Selected from Pareto front (Jan 2026 optimizat
 | Comfort end | **16:00** | 7h comfort window |
 | Setpoint comfort | **22.0°C** | Higher comfort during short window |
 | Setpoint eco | **12.0°C** | Aggressive setback (Pareto-optimal) |
-| Curve rise | **0.83** | Lower flow temps, better COP |
+| Curve rise | **0.89** | Balanced for comfort constraint |
 
-**Expected outcomes**: Grid 2235 kWh, Cost 704 CHF (52-day simulation)
+**Expected outcomes**: Grid 2235 kWh, Cost 704 CHF, Violation 4.5%, Min temp 17.3°C (52-day simulation)
 
-**Rationale:** Lowest grid import on Pareto front. The aggressive eco setback (12.0°C)
-has minimal effect on daytime comfort. Short solar-aligned comfort window maximizes PV utilization.
+**Rationale:** Lowest grid import on Pareto front while meeting 5% violation constraint.
+The aggressive eco setback (12.0°C) has minimal effect on daytime comfort. Higher curve_rise
+(0.89 vs 0.83) ensures adequate heating during cold periods.
 
 ---
 
 ### 3.3 Strategy C: Balanced (Pareto-Optimized)
-Balance comfort and energy efficiency. Selected from Pareto front (Jan 2026 optimization).
+Balance comfort and energy efficiency. Selected from Pareto front (Jan 2026 optimization, 5% constraint).
 
 | Parameter | Value | Notes |
 |-----------|-------|-------|
 | Comfort start | **10:00** | Aligned with solar peak |
 | Comfort end | **16:00** | 6h comfort window |
-| Setpoint comfort | **22.0°C** | Higher comfort during short window |
-| Setpoint eco | **13.1°C** | Aggressive setback (Pareto-optimal) |
-| Curve rise | **0.83** | Lower flow temps, better COP |
+| Setpoint comfort | **21.9°C** | Higher comfort during short window |
+| Setpoint eco | **12.1°C** | Aggressive setback (Pareto-optimal) |
+| Curve rise | **0.90** | Balanced for comfort constraint |
 
-**Expected outcomes**: Grid 2253 kWh, Cost 701 CHF (52-day simulation)
+**Expected outcomes**: Grid 2239 kWh, Cost 703 CHF, Violation 4.7%, Min temp 17.3°C (52-day simulation)
 
-**Rationale:** Best trade-off between grid and cost. Same curve_rise as Grid-Minimal
-but slightly later start and higher eco setpoint for marginally lower cost.
+**Rationale:** Best trade-off between grid and cost while meeting 5% violation constraint.
+Similar parameters to Grid-Minimal with slightly later start for marginally lower cost.
 
 ---
 
@@ -214,19 +215,20 @@ STRATEGY A (Baseline):
   Setpoints: Comfort 20.2°C, Eco 18.5°C
   Curve rise: 1.08
 
-STRATEGY B (Grid-Minimal, Pareto-Optimized):
-  Schedule: 11:45 - 16:00
-  Setpoints: Comfort 22.0°C, Eco 13.6°C
-  Curve rise: 0.81
+STRATEGY B (Grid-Minimal, Pareto-Optimized, 5% constraint):
+  Schedule: 09:00 - 16:00
+  Setpoints: Comfort 22.0°C, Eco 12.0°C
+  Curve rise: 0.89
 
-STRATEGY C (Balanced, Pareto-Optimized):
-  Schedule: 11:45 - 16:00
-  Setpoints: Comfort 22.0°C, Eco 12.5°C
-  Curve rise: 0.98
+STRATEGY C (Balanced, Pareto-Optimized, 5% constraint):
+  Schedule: 10:00 - 16:00
+  Setpoints: Comfort 21.9°C, Eco 12.1°C
+  Curve rise: 0.90
 ```
 
-**Warning:** Strategies B and C use aggressive eco setpoints (12-14°C). While this has minimal
-effect on daytime comfort, monitor morning temperatures carefully during the first few blocks.
+**Note:** Strategies B and C use aggressive eco setpoints (~12°C). Phase 2 analysis confirmed
+this has minimal effect on daytime comfort (-0.09°C per 1°C change). The higher curve_rise
+(0.89-0.90) compared to earlier optimizations (0.83) ensures the 5% violation constraint is met.
 
 ---
 
@@ -236,7 +238,7 @@ effect on daytime comfort, monitor morning temperatures carefully during the fir
 
 Complete each day during the study:
 
-- [ ] **Comfort check**: Verify T_weighted ≥ 18.5°C for ≥80% of 08:00-22:00
+- [ ] **Comfort check**: Verify T_weighted ≥ 18.5°C for ≥95% of 08:00-22:00
 - [ ] **Sensor quality**: Confirm all sensors reporting (no gaps)
 - [ ] **Manual overrides**: Log any user interventions with reason
 - [ ] **Occupancy notes**: Record deviations from normal patterns
@@ -266,7 +268,7 @@ Weather:
 Comfort metrics (08:00-22:00):
   - Avg temp: ___°C
   - Min temp: ___°C at ___:___
-  - Violation %: ___% (target: ≤20%)
+  - Violation %: ___% (target: ≤5%)
 
 Energy:
   - Grid import: ___ kWh
@@ -301,7 +303,7 @@ Weather summary:
 
 Performance metrics:
   - Avg daytime temp: ___°C
-  - Violation %: ___% (target: ≤20%)
+  - Violation %: ___% (target: ≤5%)
   - Grid consumption: ___ kWh
   - Grid per HDD: ___ kWh/HDD
   - Mean COP: ___
@@ -325,7 +327,7 @@ Block quality: [ ] Good  [ ] Usable  [ ] Exclude (reason: ___)
 | Outcome | Definition | Unit | Target |
 |---------|------------|------|--------|
 | **Average Temperature** | Mean T_weighted during 08:00-22:00 | °C | Maximize |
-| **Violation %** | % time T_weighted < 18.5°C during 08:00-22:00 | % | ≤20% (constraint) |
+| **Violation %** | % time T_weighted < 18.5°C during 08:00-22:00 | % | ≤5% (constraint) |
 | **Grid per HDD** | External supply ÷ Heating degree days | kWh/HDD | Minimize |
 | **COP** | Heat produced ÷ Electricity consumed | - | Maximize |
 | **Net cost per HDD** | (Import×rate - Export×feedin) ÷ HDD | CHF/HDD | Minimize |
@@ -342,7 +344,7 @@ Block quality: [ ] Good  [ ] Usable  [ ] Exclude (reason: ___)
 ### 8.3 Comfort Constraint
 
 **Constraint Definition:**
-- T_weighted must not be below 18.5°C for more than 20% of daytime hours (08:00-22:00)
+- T_weighted must not be below 18.5°C for more than **5%** of daytime hours (08:00-22:00)
 - There is **no upper temperature limit** - higher temperatures are always acceptable
 - This constraint applies equally to all strategies
 
@@ -350,7 +352,7 @@ Block quality: [ ] Good  [ ] Usable  [ ] Exclude (reason: ___)
 |----------|---------------|---------------|------------------|
 | All strategies | 18.5°C | None | 08:00-22:00 |
 
-**Rationale:** The optimization framework uses three objectives (maximize average temperature, minimize grid import, minimize net cost) with a soft constraint on low-temperature violations. Solutions exceeding 20% violation are penalized but not excluded.
+**Rationale:** The optimization framework uses three objectives (maximize average temperature, minimize grid import, minimize net cost) with a soft constraint on low-temperature violations. The 5% limit was tightened from 20% after evaluation showed energy-optimized strategies had 15-19% violation and minimum temperatures of 16.7°C with the looser constraint.
 
 **Note:** All comfort metrics are evaluated using T_weighted (see Section 8.4).
 
@@ -543,20 +545,21 @@ Example calculations during **comfort mode** (T_outdoor = 0°C):
 | Strategy | Setpoint | Curve Rise | T_ref | T_flow |
 |----------|----------|------------|-------|--------|
 | Baseline | 20.2°C | 1.08 | 21.3°C | 43.2°C |
-| Grid-Minimal | 22.0°C | 0.81 | 21.3°C | 39.3°C |
-| Balanced | 22.0°C | 0.98 | 21.3°C | 42.9°C |
+| Grid-Minimal | 22.0°C | 0.89 | 21.3°C | 41.0°C |
+| Balanced | 21.9°C | 0.90 | 21.3°C | 41.1°C |
 
 Example calculations during **eco mode** (T_outdoor = 0°C):
 
 | Strategy | Setpoint | Curve Rise | T_ref | T_flow |
 |----------|----------|------------|-------|--------|
 | Baseline | 18.5°C | 1.08 | 19.2°C | 39.2°C |
-| Grid-Minimal | 13.6°C | 0.81 | 19.2°C | 29.2°C |
-| Balanced | 12.5°C | 0.98 | 19.2°C | 31.3°C |
+| Grid-Minimal | 12.0°C | 0.89 | 19.2°C | 29.1°C |
+| Balanced | 12.1°C | 0.90 | 19.2°C | 29.4°C |
 
 **Note:** The Pareto-optimized strategies (B, C) use much lower eco flow temperatures
-(29-31°C vs 39°C baseline), significantly reducing heat pump energy consumption
-during non-solar hours while maintaining comfort during the solar-aligned window.
+(~29°C vs 39°C baseline), significantly reducing heat pump energy consumption
+during non-solar hours. The higher curve_rise (0.89-0.90 vs earlier 0.83) ensures
+adequate comfort during cold periods while meeting the 5% violation constraint.
 
 ### Appendix B: Tariff Schedule Reference
 
@@ -598,7 +601,7 @@ Primary sensors for analysis:
 
 ---
 
-*Document version: 2.0*
+*Document version: 2.1*
 *Created: January 2026*
-*Updated: January 2026 (Pareto-optimized strategies from NSGA-II)*
+*Updated: January 2026 (5% violation constraint, updated curve_rise 0.89-0.90)*
 *Author: ESTAT Project*
