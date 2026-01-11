@@ -32,6 +32,7 @@ import argparse
 try:
     from pymoo.core.problem import Problem
     from pymoo.core.callback import Callback
+    from pymoo.core.repair import Repair
     from pymoo.algorithms.moo.nsga2 import NSGA2
     from pymoo.optimize import minimize
     from pymoo.operators.crossover.sbx import SBX
@@ -133,7 +134,9 @@ class SimulationData:
         """Prepare simulation data with all required columns."""
         sim = pd.DataFrame(index=df.index)
 
-        # Outdoor temperature
+        # Outdoor temperature: Use the heat pump's built-in sensor (mounted near house).
+        # This is intentionally NOT true ambient temperature - it's what the heat pump
+        # uses for heating curve calculations, so the model matches actual HP behavior.
         sim['T_outdoor'] = df['stiebel_eltron_isg_outdoor_temperature']
 
         # Weighted indoor temperature
@@ -361,6 +364,11 @@ def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
 class HeatingOptimizationProblem(Problem):
     """Multi-objective optimization problem for heating parameters."""
 
+    # Parameter grid definitions
+    GRID_SETPOINT = 0.1       # °C grid for setpoint_comfort and setpoint_eco
+    GRID_TIME = 0.25          # 15-minute intervals (0.25 hours)
+    GRID_CURVE_RISE = 0.01    # Curve rise grid
+
     def __init__(self, sim_data: SimulationData):
         """
         Initialize problem with simulation data.
@@ -368,6 +376,11 @@ class HeatingOptimizationProblem(Problem):
         Variables: [setpoint_comfort, setpoint_eco, comfort_start, comfort_end, curve_rise]
         Objectives (3): neg_mean_temp, grid_import, net_cost
         Constraints (2): eco_leq_comfort, violation_pct
+
+        Parameters are constrained to discrete grids:
+        - Setpoints: 0.1°C grid (19.0, 19.1, 19.2, ...)
+        - Times: 15-minute intervals (6.0, 6.25, 6.5, ...)
+        - Curve rise: 0.01 grid (0.80, 0.81, 0.82, ...)
         """
         super().__init__(
             n_var=5,
@@ -378,8 +391,27 @@ class HeatingOptimizationProblem(Problem):
         )
         self.sim_data = sim_data
 
+    @classmethod
+    def snap_to_grid(cls, X: np.ndarray) -> np.ndarray:
+        """Snap parameter values to their respective grids."""
+        X_snapped = X.copy()
+        # Setpoint comfort (index 0): 0.1°C grid
+        X_snapped[:, 0] = np.round(X[:, 0] / cls.GRID_SETPOINT) * cls.GRID_SETPOINT
+        # Setpoint eco (index 1): 0.1°C grid
+        X_snapped[:, 1] = np.round(X[:, 1] / cls.GRID_SETPOINT) * cls.GRID_SETPOINT
+        # Comfort start (index 2): 15-min grid
+        X_snapped[:, 2] = np.round(X[:, 2] / cls.GRID_TIME) * cls.GRID_TIME
+        # Comfort end (index 3): 15-min grid
+        X_snapped[:, 3] = np.round(X[:, 3] / cls.GRID_TIME) * cls.GRID_TIME
+        # Curve rise (index 4): 0.01 grid
+        X_snapped[:, 4] = np.round(X[:, 4] / cls.GRID_CURVE_RISE) * cls.GRID_CURVE_RISE
+        return X_snapped
+
     def _evaluate(self, X, out, *args, **kwargs):
         """Evaluate population of solutions."""
+        # Snap parameters to grid before evaluation
+        X = self.snap_to_grid(X)
+
         n_pop = X.shape[0]
         F = np.zeros((n_pop, 3))  # objectives (3)
         G = np.zeros((n_pop, 2))  # constraints (2)
@@ -398,6 +430,14 @@ class HeatingOptimizationProblem(Problem):
 
         out["F"] = F
         out["G"] = G
+
+
+class GridRepair(Repair):
+    """Repair operator to snap parameters to discrete grid values."""
+
+    def _do(self, problem, X, **kwargs):
+        """Snap all solutions to their respective parameter grids."""
+        return HeatingOptimizationProblem.snap_to_grid(X)
 
 
 class OptimizationHistoryCallback(Callback):
@@ -544,12 +584,13 @@ def run_optimization(sim_data: SimulationData,
     # Create problem
     problem = HeatingOptimizationProblem(sim_data)
 
-    # Create algorithm
+    # Create algorithm with grid repair operator
     algorithm = NSGA2(
         pop_size=pop_size,
         sampling=FloatRandomSampling(),
         crossover=SBX(prob=0.9, eta=15),
         mutation=PM(eta=20),
+        repair=GridRepair(),
         eliminate_duplicates=True
     )
 
@@ -585,6 +626,7 @@ def run_optimization(sim_data: SimulationData,
                     sampling=sampling,
                     crossover=SBX(prob=0.9, eta=15),
                     mutation=PM(eta=20),
+                    repair=GridRepair(),
                     eliminate_duplicates=True
                 )
                 print(f"  Initialized with {len(initial_X)} solutions from archive")

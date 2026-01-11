@@ -72,11 +72,10 @@ ENERGY_SENSORS = [
 ]
 
 # Unit conversions
+# Note: Davis weather station sensors are already in Celsius (verified from raw CSV unit field "C°")
+# No Fahrenheit conversion needed for davis sensors
 FAHRENHEIT_SENSORS = [
-    "davis_outside_temperature",
-    "davis_heat_index",
-    "davis_wind_chill",
-    "davis_dew_point",
+    # Empty - all sensors already in Celsius
 ]
 
 # Cumulative counter sensors that may have spurious spikes

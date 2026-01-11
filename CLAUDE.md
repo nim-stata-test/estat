@@ -323,6 +323,15 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
 - studio_temperature: 10%
 - simlab_temperature: 10%
 
+**Outdoor Temperature Sensor:**
+- Column: `stiebel_eltron_isg_outdoor_temperature`
+- Source: Heat pump's built-in outdoor sensor (mounted near the house)
+- Note: This is NOT true ambient outdoor temperature, but rather what the heat pump
+  uses internally for heating curve calculations. This is intentional - the model
+  should use the same temperature input as the heat pump to accurately predict
+  flow temperatures and COP.
+- Range (Nov-Dec 2025): -2.2 to 15.0°C, mean 7.3°C
+
 **Key Model Results:**
 - Building time constant: ~14-33 hours (varies by sensor)
 - davis_inside: tau=14.1h, office1: tau=17.5h, atelier: tau=29.5h
