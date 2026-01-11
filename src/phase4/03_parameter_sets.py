@@ -104,7 +104,8 @@ def generate_parameter_sets(strategies: dict, comparison: pd.DataFrame) -> dict:
                 'cop_vs_baseline': round(sim_results['cop_vs_baseline'], 2),
                 'self_sufficiency': round(sim_results['self_sufficiency'], 3),
                 'self_sufficiency_vs_baseline_pp': round(sim_results['ss_vs_baseline'] * 100, 1),
-                'comfort_compliance': round(sim_results['comfort_compliance'], 3),
+                # Convert violation_pct to compliance: compliance = 1 - violation_pct
+                'comfort_compliance': round(1.0 - sim_results['violation_pct'], 3),
                 # Cost metrics
                 'daily_net_cost_chf': float(round(sim_results.get('daily_net_cost_chf', 0), 2)),
                 'cost_reduction_pct': float(round(sim_results.get('cost_reduction_pct', 0), 1)),

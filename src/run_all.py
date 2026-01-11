@@ -31,10 +31,19 @@ def load_module(phase: int, step: int):
         raise FileNotFoundError(f"No script found matching {phase_dir}/{pattern}")
 
     script_path = matches[0]
-    spec = importlib.util.spec_from_file_location(f"phase{phase}_step{step}", script_path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+
+    # Save and clear sys.argv to prevent argument conflicts with modules
+    # that have their own argparse (e.g., Pareto optimization)
+    saved_argv = sys.argv.copy()
+    sys.argv = [str(script_path)]
+
+    try:
+        spec = importlib.util.spec_from_file_location(f"phase{phase}_step{step}", script_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        sys.argv = saved_argv
 
 
 def run_phase1_step1():
@@ -82,6 +91,42 @@ def run_phase2_step1():
     module.main()
 
 
+def run_phase2_step2():
+    """Phase 2, Step 2: Battery Degradation Analysis."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 2, Step 2 - Battery Degradation Analysis")
+    print("=" * 70)
+    module = load_module(2, 2)
+    module.main()
+
+
+def run_phase2_step3():
+    """Phase 2, Step 3: Heating Curve Analysis."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 2, Step 3 - Heating Curve Analysis")
+    print("=" * 70)
+    module = load_module(2, 3)
+    module.main()
+
+
+def run_phase2_step4():
+    """Phase 2, Step 4: Tariff Analysis."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 2, Step 4 - Tariff Analysis")
+    print("=" * 70)
+    module = load_module(2, 4)
+    module.main()
+
+
+def run_phase2_step5():
+    """Phase 2, Step 5: Weighted Temperature Analysis."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 2, Step 5 - Weighted Temperature Analysis")
+    print("=" * 70)
+    module = load_module(2, 5)
+    module.main()
+
+
 def run_phase3_step1():
     """Phase 3, Step 1: Thermal Model."""
     print("\n" + "=" * 70)
@@ -106,6 +151,15 @@ def run_phase3_step3():
     print("RUNNING: Phase 3, Step 3 - Energy System Model")
     print("=" * 70)
     module = load_module(3, 3)
+    module.main()
+
+
+def run_phase3_step4():
+    """Phase 3, Step 4: Tariff Cost Model."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 3, Step 4 - Tariff Cost Model")
+    print("=" * 70)
+    module = load_module(3, 4)
     module.main()
 
 
@@ -136,6 +190,31 @@ def run_phase4_step3():
     module.main()
 
 
+def run_phase4_step4():
+    """Phase 4, Step 4: Pareto Optimization."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 4, Step 4 - Pareto Optimization")
+    print("=" * 70)
+    module = load_module(4, 4)
+    # Clear sys.argv before calling main() to avoid argparse conflicts
+    saved_argv = sys.argv.copy()
+    sys.argv = [sys.argv[0]]  # Keep only script name
+    try:
+        # Run with default settings (10 generations, warm-start from archive)
+        module.main()
+    finally:
+        sys.argv = saved_argv
+
+
+def run_phase4_step5():
+    """Phase 4, Step 5: Pareto Animation."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 4, Step 5 - Pareto Animation")
+    print("=" * 70)
+    module = load_module(4, 5)
+    module.main()
+
+
 # Define all phases and steps
 PHASES = {
     1: {
@@ -146,16 +225,23 @@ PHASES = {
     },
     2: {
         1: ("Exploratory Data Analysis", run_phase2_step1),
+        2: ("Battery Degradation", run_phase2_step2),
+        3: ("Heating Curve Analysis", run_phase2_step3),
+        4: ("Tariff Analysis", run_phase2_step4),
+        5: ("Weighted Temperature", run_phase2_step5),
     },
     3: {
         1: ("Thermal Model", run_phase3_step1),
         2: ("Heat Pump Model", run_phase3_step2),
         3: ("Energy System Model", run_phase3_step3),
+        4: ("Tariff Cost Model", run_phase3_step4),
     },
     4: {
         1: ("Rule-Based Strategies", run_phase4_step1),
         2: ("Strategy Simulation", run_phase4_step2),
         3: ("Parameter Sets", run_phase4_step3),
+        4: ("Pareto Optimization", run_phase4_step4),
+        5: ("Pareto Animation", run_phase4_step5),
     },
 }
 
