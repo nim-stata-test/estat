@@ -135,6 +135,35 @@ def generate_html_report():
             padding: 15px;
             margin: 20px 0;
         }}
+        .toc {{
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px 25px;
+            margin: 25px 0;
+        }}
+        .toc h3 {{
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #1a5f7a;
+        }}
+        .toc ul {{
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+        }}
+        .toc > ul > li {{
+            margin: 8px 0;
+        }}
+        .toc a {{
+            color: #2c3e50;
+            text-decoration: none;
+            border-bottom: 1px dotted #ccc;
+        }}
+        .toc a:hover {{
+            color: #1a5f7a;
+            border-bottom-color: #1a5f7a;
+        }}
         .strategy-card, .parameter-card {{
             background-color: #fff;
             border: 1px solid #ddd;
@@ -184,6 +213,17 @@ def generate_html_report():
             <li><strong>21 Pareto-optimal solutions</strong> available for strategy selection</li>
         </ul>
     </div>
+
+    <nav class="toc">
+        <h3>Table of Contents</h3>
+        <ul>
+            <li><a href="#rule-based-strategies">4.1 Rule-Based Optimization Strategies</a></li>
+            <li><a href="#strategy-simulation">4.2 Strategy Simulation</a></li>
+            <li><a href="#parameter-sets">4.3 Parameter Sets for Phase 5</a></li>
+            <li><a href="#pareto-optimization">4.4 Pareto Multi-Objective Optimization</a></li>
+            <li><a href="#next-steps">4.5 Next Steps: Phase 5 Preparation</a></li>
+        </ul>
+    </nav>
 
     {''.join(sections)}
 

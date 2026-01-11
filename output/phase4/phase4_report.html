@@ -68,6 +68,35 @@
             padding: 15px;
             margin: 20px 0;
         }
+        .toc {
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px 25px;
+            margin: 25px 0;
+        }
+        .toc h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #1a5f7a;
+        }
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+            margin: 0;
+        }
+        .toc > ul > li {
+            margin: 8px 0;
+        }
+        .toc a {
+            color: #2c3e50;
+            text-decoration: none;
+            border-bottom: 1px dotted #ccc;
+        }
+        .toc a:hover {
+            color: #1a5f7a;
+            border-bottom-color: #1a5f7a;
+        }
         .strategy-card, .parameter-card {
             background-color: #fff;
             border: 1px solid #ddd;
@@ -99,7 +128,7 @@
 </head>
 <body>
     <h1>Phase 4: Optimization Strategy Development Report</h1>
-    <p><em>Generated: 2026-01-11 22:56</em></p>
+    <p><em>Generated: 2026-01-11 23:09</em></p>
 
     <div class="summary-box">
         <h3>Executive Summary</h3>
@@ -117,6 +146,17 @@
             <li><strong>21 Pareto-optimal solutions</strong> available for strategy selection</li>
         </ul>
     </div>
+
+    <nav class="toc">
+        <h3>Table of Contents</h3>
+        <ul>
+            <li><a href="#rule-based-strategies">4.1 Rule-Based Optimization Strategies</a></li>
+            <li><a href="#strategy-simulation">4.2 Strategy Simulation</a></li>
+            <li><a href="#parameter-sets">4.3 Parameter Sets for Phase 5</a></li>
+            <li><a href="#pareto-optimization">4.4 Pareto Multi-Objective Optimization</a></li>
+            <li><a href="#next-steps">4.5 Next Steps: Phase 5 Preparation</a></li>
+        </ul>
+    </nav>
 
     
     <section id="rule-based-strategies">
@@ -559,9 +599,9 @@
     <ul>
         <li><strong>Algorithm</strong>: NSGA-II (Non-dominated Sorting Genetic Algorithm II)</li>
         <li><strong>Population</strong>: 100 individuals</li>
-        <li><strong>Generations</strong>: 10</li>
-        <li><strong>Evaluations</strong>: 1,000</li>
-        <li><strong>Pareto solutions</strong>: 293</li>
+        <li><strong>Generations</strong>: 100</li>
+        <li><strong>Evaluations</strong>: 10,000</li>
+        <li><strong>Pareto solutions</strong>: 100</li>
     </ul>
 
     <h3>Decision Variables</h3>
@@ -611,13 +651,13 @@
         
         <tr>
             <td><strong>Balanced</strong></td>
-            <td>21.8°C</td>
-            <td>12.6°C</td>
+            <td>22.0°C</td>
+            <td>13.1°C</td>
             <td>10:00-16:00</td>
-            <td>0.85</td>
+            <td>0.83</td>
             <td>19.3</td>
-            <td>2246</td>
-            <td>701.9</td>
+            <td>2253</td>
+            <td>701.4</td>
         </tr>
         
         <tr>
@@ -635,6 +675,39 @@
             <td><strong>Comfort-First</strong></td>
             <td>22.0°C</td>
             <td>12.0°C</td>
+            <td>10:45-16:00</td>
+            <td>1.20</td>
+            <td>23.0</td>
+            <td>2263</td>
+            <td>706.7</td>
+        </tr>
+        
+        <tr>
+            <td><strong>Warm-Balanced</strong></td>
+            <td>22.0°C</td>
+            <td>13.5°C</td>
+            <td>10:00-16:00</td>
+            <td>1.11</td>
+            <td>21.9</td>
+            <td>2263</td>
+            <td>701.6</td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First-2</strong></td>
+            <td>22.0°C</td>
+            <td>12.0°C</td>
+            <td>11:00-16:00</td>
+            <td>1.20</td>
+            <td>23.0</td>
+            <td>2279</td>
+            <td>709.6</td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First-3</strong></td>
+            <td>22.0°C</td>
+            <td>12.0°C</td>
             <td>11:15-16:00</td>
             <td>1.20</td>
             <td>23.0</td>
@@ -643,36 +716,14 @@
         </tr>
         
         <tr>
-            <td><strong>Comfort-First-2</strong></td>
-            <td>22.0°C</td>
-            <td>12.0°C</td>
-            <td>11:30-16:00</td>
-            <td>1.20</td>
-            <td>23.0</td>
-            <td>2318</td>
-            <td>716.9</td>
-        </tr>
-        
-        <tr>
-            <td><strong>Comfort-First-3</strong></td>
-            <td>22.0°C</td>
-            <td>12.0°C</td>
-            <td>11:30-16:00</td>
-            <td>1.20</td>
-            <td>23.0</td>
-            <td>2318</td>
-            <td>716.9</td>
-        </tr>
-        
-        <tr>
             <td><strong>Comfort-First-4</strong></td>
             <td>22.0°C</td>
             <td>12.0°C</td>
-            <td>11:45-16:00</td>
+            <td>11:30-16:00</td>
             <td>1.20</td>
             <td>23.0</td>
-            <td>2342</td>
-            <td>721.6</td>
+            <td>2318</td>
+            <td>716.9</td>
         </tr>
         
         <tr>
@@ -697,17 +748,6 @@
             <td>726.6</td>
         </tr>
         
-        <tr>
-            <td><strong>Comfort-First-7</strong></td>
-            <td>22.0°C</td>
-            <td>12.0°C</td>
-            <td>12:00-16:00</td>
-            <td>1.20</td>
-            <td>23.0</td>
-            <td>2367</td>
-            <td>726.6</td>
-        </tr>
-        
     </table>
 
     <p><em>Select 3 strategies from this table for Phase 5 intervention study.
@@ -716,14 +756,14 @@
 
     <h3>Pareto Front Visualization</h3>
     <figure>
-        <img src="fig19_pareto_front.png" alt="Pareto Front">
-        <figcaption>Pareto front showing trade-offs between objectives.
+        <img src="fig24_pareto_front.png" alt="Pareto Front">
+        <figcaption><strong>Figure 24:</strong> Pareto front showing trade-offs between objectives.
         Blue points are the 10 selected strategies.</figcaption>
     </figure>
 
     <figure>
-        <img src="fig20_strategy_comparison.png" alt="Strategy Comparison">
-        <figcaption>Radar chart comparing parameter values across selected strategies.</figcaption>
+        <img src="fig25_pareto_strategy_comparison.png" alt="Strategy Comparison">
+        <figcaption><strong>Figure 25:</strong> Radar chart comparing parameter values across selected strategies.</figcaption>
     </figure>
     </section>
     
