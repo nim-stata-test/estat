@@ -52,6 +52,7 @@ def generate_html_report():
         'simulation_report_section.html',
         'parameter_sets_report_section.html',
         'pareto_report_section.html',  # Multi-objective Pareto optimization
+        'strategy_evaluation_report.html',  # Comfort violation analysis
     ]
 
     for section_file in section_files:
@@ -221,14 +222,15 @@ def generate_html_report():
             <li><a href="#strategy-simulation">4.2 Strategy Simulation</a></li>
             <li><a href="#parameter-sets">4.3 Parameter Sets for Phase 5</a></li>
             <li><a href="#pareto-optimization">4.4 Pareto Multi-Objective Optimization</a></li>
-            <li><a href="#next-steps">4.5 Next Steps: Phase 5 Preparation</a></li>
+            <li><a href="#strategy-evaluation">4.5 Strategy Evaluation and Comfort Analysis</a></li>
+            <li><a href="#next-steps">4.6 Next Steps: Phase 5 Preparation</a></li>
         </ul>
     </nav>
 
     {''.join(sections)}
 
     <section id="next-steps">
-    <h2>Next Steps: Phase 5 Preparation</h2>
+    <h2>4.6 Next Steps: Phase 5 Preparation</h2>
 
     <h3>Timeline</h3>
     <ul>
@@ -308,6 +310,7 @@ def main():
     print("  - fig23_parameter_space.png")
     print("  - fig24_pareto_front.png (Pareto optimization)")
     print("  - fig25_pareto_strategy_comparison.png (Pareto strategies)")
+    print("  - fig27_strategy_temperature_predictions.png (Comfort evaluation)")
 
 
 if __name__ == '__main__':
