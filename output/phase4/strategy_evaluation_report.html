@@ -1,0 +1,187 @@
+
+    <section id="strategy-evaluation">
+    <h2>4.5 Strategy Evaluation and Comfort Analysis</h2>
+
+    <h3>Comfort Constraint Parameters</h3>
+    <table>
+        <tr><th>Parameter</th><th>Value</th><th>Description</th></tr>
+        <tr>
+            <td><code>COMFORT_THRESHOLD</code></td>
+            <td><strong>18.5°C</strong></td>
+            <td>Minimum acceptable weighted indoor temperature</td>
+        </tr>
+        <tr>
+            <td><code>VIOLATION_LIMIT</code></td>
+            <td><strong>5%</strong></td>
+            <td>Maximum allowed proportion of occupied hours below threshold</td>
+        </tr>
+        <tr>
+            <td><code>OCCUPIED_HOURS</code></td>
+            <td><strong>08:00 - 22:00</strong></td>
+            <td>Hours during which comfort is evaluated</td>
+        </tr>
+    </table>
+
+    <h3>Penalization Mechanism</h3>
+    <p>The Pareto optimization uses a <strong>soft constraint</strong> approach:</p>
+    <ul>
+        <li>Constraint: <code>g = violation_pct - 0.05</code></li>
+        <li>If <code>g ≤ 0</code>: Solution is <em>feasible</em> (violation ≤ 5%)</li>
+        <li>If <code>g > 0</code>: Solution is <em>infeasible</em> but not excluded</li>
+        <li>NSGA-II ranks feasible solutions higher than infeasible ones</li>
+        <li>Among infeasible solutions, smaller constraint violation is preferred</li>
+    </ul>
+
+    <h3>Strategy Evaluation Results</h3>
+    <table>
+        <tr>
+            <th>Strategy</th>
+            <th>Setpoint<br>Comfort</th>
+            <th>Setpoint<br>Eco</th>
+            <th>Schedule</th>
+            <th>Mean<br>Temp</th>
+            <th>Min<br>Temp</th>
+            <th>Violation<br>%</th>
+            <th>Cold<br>Hours</th>
+            <th>Status</th>
+        </tr>
+    
+        <tr>
+            <td><strong>Grid-Minimal</strong></td>
+            <td>22.0°C</td>
+            <td>12.0°C</td>
+            <td>09:00-16:00</td>
+            <td>19.9°C</td>
+            <td>17.3°C</td>
+            <td style="background-color: #ccffcc">4.5%</td>
+            <td>40h</td>
+            <td style="background-color: #ccffcc"><strong>PASS</strong></td>
+        </tr>
+        
+        <tr>
+            <td><strong>Balanced</strong></td>
+            <td>21.9°C</td>
+            <td>12.1°C</td>
+            <td>10:00-16:00</td>
+            <td>19.9°C</td>
+            <td>17.3°C</td>
+            <td style="background-color: #ccffcc">4.7%</td>
+            <td>42h</td>
+            <td style="background-color: #ccffcc"><strong>PASS</strong></td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First</strong></td>
+            <td>22.0°C</td>
+            <td>12.0°C</td>
+            <td>10:00-16:00</td>
+            <td>23.0°C</td>
+            <td>20.4°C</td>
+            <td style="background-color: #ccffcc">0.0%</td>
+            <td>0h</td>
+            <td style="background-color: #ccffcc"><strong>PASS</strong></td>
+        </tr>
+        
+        <tr>
+            <td><strong>Cost-Minimal</strong></td>
+            <td>22.0°C</td>
+            <td>13.4°C</td>
+            <td>10:00-16:00</td>
+            <td>19.9°C</td>
+            <td>17.3°C</td>
+            <td style="background-color: #ccffcc">4.7%</td>
+            <td>42h</td>
+            <td style="background-color: #ccffcc"><strong>PASS</strong></td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First-2</strong></td>
+            <td>22.0°C</td>
+            <td>12.0°C</td>
+            <td>10:00-16:00</td>
+            <td>23.0°C</td>
+            <td>20.4°C</td>
+            <td style="background-color: #ccffcc">0.0%</td>
+            <td>0h</td>
+            <td style="background-color: #ccffcc"><strong>PASS</strong></td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First-3</strong></td>
+            <td>22.0°C</td>
+            <td>12.0°C</td>
+            <td>11:00-16:00</td>
+            <td>23.0°C</td>
+            <td>20.4°C</td>
+            <td style="background-color: #ccffcc">0.0%</td>
+            <td>0h</td>
+            <td style="background-color: #ccffcc"><strong>PASS</strong></td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First-4</strong></td>
+            <td>22.0°C</td>
+            <td>12.0°C</td>
+            <td>11:00-16:00</td>
+            <td>23.0°C</td>
+            <td>20.4°C</td>
+            <td style="background-color: #ccffcc">0.0%</td>
+            <td>0h</td>
+            <td style="background-color: #ccffcc"><strong>PASS</strong></td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First-5</strong></td>
+            <td>22.0°C</td>
+            <td>12.0°C</td>
+            <td>11:00-16:00</td>
+            <td>23.0°C</td>
+            <td>20.4°C</td>
+            <td style="background-color: #ccffcc">0.0%</td>
+            <td>0h</td>
+            <td style="background-color: #ccffcc"><strong>PASS</strong></td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First-6</strong></td>
+            <td>22.0°C</td>
+            <td>12.0°C</td>
+            <td>11:00-16:00</td>
+            <td>23.0°C</td>
+            <td>20.4°C</td>
+            <td style="background-color: #ccffcc">0.0%</td>
+            <td>0h</td>
+            <td style="background-color: #ccffcc"><strong>PASS</strong></td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First-7</strong></td>
+            <td>22.0°C</td>
+            <td>12.0°C</td>
+            <td>12:00-16:00</td>
+            <td>23.0°C</td>
+            <td>20.4°C</td>
+            <td style="background-color: #ccffcc">0.0%</td>
+            <td>0h</td>
+            <td style="background-color: #ccffcc"><strong>PASS</strong></td>
+        </tr>
+        
+    </table>
+
+    <h3>Key Findings</h3>
+    
+    <ul>
+        <li><strong>Constraint satisfaction:</strong> 10/10 strategies pass the 5% limit</li>
+        <li><strong>Violation range:</strong> 0.0% to 4.7%</li>
+    
+    </ul>
+
+    <h3>Winter 2026/2027 Temperature Predictions</h3>
+    <figure>
+        <img src="fig27_strategy_temperature_predictions.png" alt="Strategy Temperature Predictions">
+        <figcaption><strong>Figure 27:</strong> Predicted weighted indoor temperatures for each strategy
+        over winter 2026/2027. Red dashed line indicates the comfort threshold. Strategies with
+        violation percentages exceeding the constraint limit are highlighted.</figcaption>
+    </figure>
+    </section>
+    

@@ -84,6 +84,8 @@ python src/phase3/03_energy_system_model.py        # Phase 3, Step 3
 python src/phase4/01_rule_based_strategies.py      # Phase 4, Step 1
 python src/phase4/02_strategy_simulation.py        # Phase 4, Step 2
 python src/phase4/03_parameter_sets.py             # Phase 4, Step 3
+python src/phase4/04_pareto_optimization.py        # Phase 4, Step 4
+python src/phase4/05_strategy_evaluation.py        # Phase 4, Step 5
 ```
 
 ## Source Code Structure
@@ -115,7 +117,8 @@ src/
 │   ├── 01_rule_based_strategies.py   # Strategy definitions and rules
 │   ├── 02_strategy_simulation.py     # Validate strategies on historical data
 │   ├── 03_parameter_sets.py          # Generate Phase 5 parameter sets
-│   └── 04_pareto_optimization.py     # NSGA-II multi-objective optimization
+│   ├── 04_pareto_optimization.py     # NSGA-II multi-objective optimization
+│   └── 05_strategy_evaluation.py     # Comfort violation analysis + winter predictions
 └── phase5/              # Intervention Study
     ├── estimate_study_parameters.py  # Data-driven washout/block estimation
     └── generate_schedule.py          # Randomization schedule generator
@@ -344,13 +347,14 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
 
 After running `python src/phase4/run_optimization.py`, outputs are saved to `output/phase4/`:
 
-**Figures (fig21-fig26):**
+**Figures (fig21-fig27):**
 - fig21: Strategy comparison (COP by strategy, schedule alignment, expected improvements)
 - fig22: Simulation results (time series, self-sufficiency, hourly COP profiles)
 - fig23: Parameter space (trade-offs, parameter summary table)
 - fig24: Pareto front (2D projections of Pareto-optimal solutions)
 - fig25: Pareto strategy comparison (radar chart comparing strategies)
 - fig26: Pareto evolution (optimization history animation frame)
+- fig27: Strategy temperature predictions (winter 2026/2027, violation analysis)
 
 **Reports:**
 - `phase4_report.html` - Combined optimization report
@@ -362,6 +366,11 @@ After running `python src/phase4/run_optimization.py`, outputs are saved to `out
 - `phase5_parameter_sets.json` - Exact parameter values for intervention study
 - `phase5_predictions.json` - Testable predictions with confidence intervals
 - `phase5_implementation_checklist.md` - Protocol for randomized study
+
+**Strategy Evaluation (Step 5):**
+- `strategy_violation_analysis.csv` - Comfort violation stats per strategy
+- `strategy_evaluation_report.html` - HTML report with violation analysis
+- `fig27_strategy_temperature_predictions.png` - Winter 2026/2027 predictions
 
 **Heating Curve Model (from Phase 2):**
 ```
@@ -431,10 +440,26 @@ python src/phase4/04_pareto_optimization.py -g 100 -p 150 -n 15 --seed 123
 2. **Grid import**: Total kWh purchased from grid
 3. **Net cost**: Grid cost - feed-in revenue (CHF)
 
-**Constraints (soft penalty):**
-- `setpoint_eco <= setpoint_comfort` (eco must not exceed comfort)
-- `violation_pct <= 20%` (T_weighted < 18.5°C for no more than 20% of daytime hours)
-- No upper temperature limit (higher temperatures are always acceptable)
+**Comfort Constraint Parameters:**
+
+| Parameter | Value | Code Constant | Description |
+|-----------|-------|---------------|-------------|
+| `COMFORT_THRESHOLD` | 18.5°C | `04_pareto_optimization.py:260` | Minimum acceptable T_weighted |
+| `VIOLATION_LIMIT` | **5%** | `04_pareto_optimization.py:348` | Max allowed daytime hours below threshold |
+| `OCCUPIED_START` | 08:00 | `04_pareto_optimization.py:98` | Start of comfort evaluation window |
+| `OCCUPIED_END` | 22:00 | `04_pareto_optimization.py:99` | End of comfort evaluation window |
+
+**Constraint Mechanism (soft penalty):**
+The optimizer uses NSGA-II's constraint-handling approach:
+- Constraint function: `g = violation_pct - 0.05`
+- If `g ≤ 0`: Solution is **feasible** (≤5% of daytime below 18.5°C)
+- If `g > 0`: Solution is **infeasible** but NOT excluded
+- Feasible solutions always dominate infeasible ones in ranking
+- Among infeasible solutions, smaller violation is preferred
+- No explicit penalty coefficient; constraint satisfaction is binary for dominance
+
+**Note:** The 5% limit was tightened from 20% in Jan 2026 after evaluation showed
+energy-optimized strategies had 15-19% violation and minimum temps of 16.7°C.
 
 **T_weighted Adjustment Model:**
 Uses Phase 2 regression coefficients to adjust historical T_weighted based on parameter changes:
@@ -469,8 +494,40 @@ The archive includes full optimization history for visualization:
 **Workflow:**
 1. First run: `python src/phase4/04_pareto_optimization.py --fresh -g 200` (full optimization)
 2. Refinement: `python src/phase4/04_pareto_optimization.py` (auto warm-start, 10 generations)
-3. Review 10 selected strategies in `selected_strategies.csv`
-4. Manually select 3 strategies for Phase 5 intervention study
+3. **Evaluate strategies**: `python src/phase4/05_strategy_evaluation.py`
+4. Review violation analysis in `strategy_violation_analysis.csv`
+5. Manually select 3 strategies for Phase 5 intervention study
+
+## Strategy Evaluation (Phase 4, Step 5)
+
+Evaluates selected strategies for comfort violations and generates winter predictions.
+
+```bash
+python src/phase4/05_strategy_evaluation.py
+```
+
+**Evaluation Results (Jan 2026, 5% constraint):**
+
+| Strategy | Violation % | Cold Hours | Min Temp | Mean Temp | Status |
+|----------|-------------|------------|----------|-----------|--------|
+| Grid-Minimal | 4.5% | 40h | 17.3°C | 19.9°C | ✓ Pass |
+| Balanced | 4.7% | 42h | 17.3°C | 19.9°C | ✓ Pass |
+| Cost-Minimal | 4.7% | 42h | 17.3°C | 19.9°C | ✓ Pass |
+| Comfort-First | 0.0% | 0h | 20.4°C | 23.0°C | ✓ Comfortable |
+
+**Key improvements from 5% constraint (vs previous 20%):**
+- Violation reduced: 15-19% → 4.5-4.7%
+- Cold hours reduced: 136-170h → 40-42h
+- Min temps improved: 16.7-16.8°C → 17.3°C
+- Optimizer adapted by increasing curve_rise: 0.83 → 0.89-0.90
+
+**Outputs:**
+```
+output/phase4/
+├── fig27_strategy_temperature_predictions.png  # Winter 2026/2027 predictions
+├── strategy_violation_analysis.csv             # Detailed violation stats
+└── strategy_evaluation_report.html             # HTML report section
+```
 
 ## Phase 5: Intervention Study
 
@@ -501,7 +558,7 @@ python src/phase5/generate_schedule.py --start 2027-11-01 --weeks 20 --seed 42
 | Setpoint comfort/eco | Climate entity | Home Assistant |
 | Curve rise (Steilheit) | Heating curve menu | Heat pump interface |
 
-**Strategy Parameter Summary (Pareto-Optimized, Jan 2026):**
+**Strategy Parameter Summary (Pareto-Optimized, Jan 2026, 5% constraint):**
 
 Three strategies selected from Pareto-optimal solutions for Phase 5 intervention study:
 
@@ -509,18 +566,20 @@ Three strategies selected from Pareto-optimal solutions for Phase 5 intervention
 |-----------|--------------|------------------|--------------|
 | Comfort start | 06:30 | 09:00 | 10:00 |
 | Comfort end | 20:00 | 16:00 | 16:00 |
-| Setpoint comfort | 20.2°C | 22.0°C | 22.0°C |
-| Setpoint eco | 18.5°C | **12.0°C** | **13.1°C** |
-| Curve rise | 1.08 | 0.83 | 0.83 |
-| Grid (kWh)* | — | **2235** | 2253 |
-| Cost (CHF)* | — | 704 | **701** |
+| Setpoint comfort | 20.2°C | 22.0°C | 21.9°C |
+| Setpoint eco | 18.5°C | **12.0°C** | **12.1°C** |
+| Curve rise | 1.08 | **0.89** | **0.90** |
+| Grid (kWh)* | — | **2235** | 2239 |
+| Cost (CHF)* | — | 704 | **703** |
+| Violation % | — | 4.5% | 4.7% |
+| Min temp | — | 17.3°C | 17.3°C |
 
 *52-day simulation period
 
-**Key insight:** Lower eco setpoints (12-13°C) are optimal because:
-- Eco setpoint has minimal effect on daytime comfort (-0.09°C per 1°C change)
-- Shorter comfort window (6-7h) aligned with solar peak (09:00-16:00) maximizes PV utilization
-- Aggressive eco setback saves energy during non-solar hours
+**Key insight:** The 5% constraint forced higher curve_rise (0.89-0.90 vs 0.83):
+- Eco setpoint remains aggressive (12°C) as it has minimal effect on daytime comfort
+- Higher curve_rise ensures adequate heating during cold periods
+- Trade-off: slightly higher grid import, but acceptable comfort levels
 
 **Comfort Objective (T_weighted):**
 

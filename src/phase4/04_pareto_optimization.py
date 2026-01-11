@@ -345,7 +345,7 @@ def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
 
     # Constraints (g <= 0 means satisfied, g > 0 means violation - soft penalty)
     g1 = setpoint_eco - setpoint_comfort  # Eco must be <= comfort
-    g2 = violation_pct - 0.20  # T_weighted < 18.5°C for no more than 20% of daytime hours
+    g2 = violation_pct - 0.05  # T_weighted < 18.5°C for no more than 5% of daytime hours
 
     return {
         'objectives': np.array([neg_mean_temp, grid_import_total, net_cost_total]),
