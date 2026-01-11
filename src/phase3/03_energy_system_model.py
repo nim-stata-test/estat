@@ -35,26 +35,16 @@ def load_data():
     """Load energy balance data for system modeling."""
     print("Loading energy data...")
 
-    # Load 15-minute energy data
+    # Load 15-minute energy data (from data/daily/)
     energy_15min = pd.read_parquet(PROCESSED_DIR / 'energy_balance_15min.parquet')
     energy_15min.index = pd.to_datetime(energy_15min.index)
 
-    # Load daily aggregates
-    energy_daily = pd.read_parquet(PROCESSED_DIR / 'energy_balance_daily.parquet')
-    energy_daily.index = pd.to_datetime(energy_daily.index)
-
-    # Load monthly aggregates
-    energy_monthly = pd.read_parquet(PROCESSED_DIR / 'energy_balance_monthly.parquet')
-    energy_monthly.index = pd.to_datetime(energy_monthly.index)
-
     print(f"  15-min data: {len(energy_15min):,} rows ({energy_15min.index.min().date()} to {energy_15min.index.max().date()})")
-    print(f"  Daily data: {len(energy_daily):,} days")
-    print(f"  Monthly data: {len(energy_monthly):,} months")
 
-    return energy_15min, energy_daily, energy_monthly
+    return energy_15min
 
 
-def analyze_pv_patterns(energy_15min: pd.DataFrame, energy_daily: pd.DataFrame) -> dict:
+def analyze_pv_patterns(energy_15min: pd.DataFrame) -> dict:
     """
     Analyze PV generation patterns for prediction.
 
@@ -199,7 +189,7 @@ def analyze_battery_dynamics(energy_15min: pd.DataFrame) -> dict:
     return results
 
 
-def analyze_grid_interaction(energy_15min: pd.DataFrame, energy_daily: pd.DataFrame) -> dict:
+def analyze_grid_interaction(energy_15min: pd.DataFrame) -> dict:
     """
     Analyze grid import/export patterns.
 
@@ -592,16 +582,16 @@ def main():
     print("="*60)
 
     # Load data
-    energy_15min, energy_daily, energy_monthly = load_data()
+    energy_15min = load_data()
 
     # Analyze PV patterns
-    pv_results = analyze_pv_patterns(energy_15min, energy_daily)
+    pv_results = analyze_pv_patterns(energy_15min)
 
     # Analyze battery dynamics
     battery_results = analyze_battery_dynamics(energy_15min)
 
     # Analyze grid interaction
-    grid_results = analyze_grid_interaction(energy_15min, energy_daily)
+    grid_results = analyze_grid_interaction(energy_15min)
 
     # Model self-sufficiency potential
     ss_potential = model_self_sufficiency_potential(energy_15min, pv_results, battery_results)
