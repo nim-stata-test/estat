@@ -33,10 +33,16 @@
             <td>40.1% (+0.0pp)</td>
         </tr>
         <tr>
-            <td>Comfort Compliance (08:00-22:00)</td>
-            <td>62.4%</td>
-            <td>62.4%</td>
-            <td>62.4%</td>
+            <td>Mean Daytime Temp (08:00-22:00)</td>
+            <td>18.9°C</td>
+            <td>18.9°C</td>
+            <td>18.9°C</td>
+        </tr>
+        <tr>
+            <td>Violation % (&lt;18.5°C, target ≤20%)</td>
+            <td>37.6%</td>
+            <td>37.6%</td>
+            <td>37.6%</td>
         </tr>
         <tr>
             <td>Solar Heating %</td>
@@ -123,8 +129,8 @@
 
     <p><em>Note: Simulation uses actual historical data, so results reflect real weather conditions
     during the 64-day overlap period. Cost calculations use actual high/low tariff rates (Primeo Energie).
-    <strong>Comfort compliance is evaluated only during occupied hours (08:00-22:00)</strong>; night temperatures
-    are excluded from the comfort objective. Full-season validation in Phase 5 will provide more robust estimates.</em></p>
+    <strong>Comfort constraint: T_weighted must not be below 18.5°C for more than 20% of daytime hours (08:00-22:00)</strong>.
+    Night temperatures are excluded from the comfort objective. Full-season validation in Phase 5 will provide more robust estimates.</em></p>
 
     <figure>
         <img src="fig17_simulation_results.png" alt="Simulation Results">

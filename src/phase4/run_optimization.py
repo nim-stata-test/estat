@@ -222,7 +222,7 @@ def generate_html_report():
 </body>
 </html>"""
 
-    report_path = OUTPUT_DIR / 'phase4_optimization_report.html'
+    report_path = OUTPUT_DIR / 'phase4_report.html'
     report_path.write_text(html)
     print(f"  Saved: {report_path.name}")
 
@@ -257,7 +257,7 @@ def main():
     print(f"Scripts completed: {success_count}/{len(scripts)}")
     print(f"Output directory: {OUTPUT_DIR}")
     print("\nKey outputs:")
-    print("  - phase4_optimization_report.html (combined report)")
+    print("  - phase4_report.html (combined report)")
     print("  - selected_strategies.json (Pareto-optimized strategies)")
     print("  - pareto_archive.json (full Pareto front for warm-starting)")
     print("  - phase5_parameter_sets.json (intervention parameters)")

@@ -13,7 +13,7 @@ Steps:
 
 Output:
 - Processed parquet files in output/phase1/
-- HTML report: output/phase1/preprocessing_report.html
+- HTML report: output/phase1/phase1_report.html
 """
 
 import subprocess
@@ -625,7 +625,7 @@ def regenerate_report_only():
 
     # Generate HTML report
     html_report = generate_html_report(step_logs, all_stats)
-    report_path = PROCESSED_DIR / "preprocessing_report.html"
+    report_path = PROCESSED_DIR / "phase1_report.html"
     report_path.write_text(html_report)
     print(f"Report saved to: {report_path}")
 
@@ -691,7 +691,7 @@ def main():
     print("="*60)
 
     html_report = generate_html_report(step_logs, all_stats)
-    report_path = PROCESSED_DIR / "preprocessing_report.html"
+    report_path = PROCESSED_DIR / "phase1_report.html"
     report_path.write_text(html_report)
     print(f"Report saved to: {report_path}")
 

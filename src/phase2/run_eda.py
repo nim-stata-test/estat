@@ -342,6 +342,17 @@ def load_tariff_section() -> str:
     return ""
 
 
+def load_battery_section() -> str:
+    """Load the battery degradation HTML report if available."""
+    section_path = OUTPUT_DIR / "battery_degradation_report.html"
+    if section_path.exists():
+        # Extract just the body content from the standalone report
+        content = section_path.read_text()
+        # Return the full HTML - it will be embedded in a details section
+        return content
+    return ""
+
+
 def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
                          heating_curve_log: str = "", weighted_temp_log: str = "",
                          tariff_log: str = "") -> str:
@@ -503,7 +514,8 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
                 <li><a href="#heating-curve">8. Heating Curve Analysis</a></li>
                 <li><a href="#weighted-temp">9. Weighted Temperature Analysis</a></li>
                 <li><a href="#tariffs">10. Electricity Tariffs</a></li>
-                <li><a href="#log">11. Detailed Log</a></li>
+                <li><a href="#battery">11. Battery Degradation</a></li>
+                <li><a href="#log">12. Detailed Log</a></li>
             </ul>
         </div>
 
@@ -674,7 +686,16 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
 
         {load_tariff_section()}
 
-        <h2 id="log">11. Detailed Log</h2>
+        <h2 id="battery">11. Battery Degradation</h2>
+        <div class="card">
+            <p>Analysis of whether the Feb-Mar 2025 deep-discharge event affected battery efficiency.</p>
+            <details>
+                <summary>View Full Battery Degradation Report</summary>
+                <iframe srcdoc="{load_battery_section().replace('"', '&quot;')}" style="width: 100%; height: 800px; border: none;"></iframe>
+            </details>
+        </div>
+
+        <h2 id="log">12. Detailed Log</h2>
 
         <details>
             <summary>Full EDA Output Log</summary>
@@ -754,7 +775,7 @@ def main():
     stats = extract_stats_from_log(eda_log)
 
     html_report = generate_html_report(figures, stats, eda_log, heating_curve_log, weighted_temp_log, tariff_log)
-    report_path = OUTPUT_DIR / "eda_report.html"
+    report_path = OUTPUT_DIR / "phase2_report.html"
     report_path.write_text(html_report)
     print(f"Report saved to: {report_path}")
 

@@ -270,7 +270,7 @@ Potential with optimization: 85.3%
 </html>
 """
 
-    report_path = OUTPUT_DIR / 'phase3_modeling_report.html'
+    report_path = OUTPUT_DIR / 'phase3_report.html'
     report_path.write_text(html)
     print(f"  Saved: {report_path.name}")
 
@@ -311,7 +311,7 @@ def main():
     print("  - fig14_heat_pump_model.png")
     print("  - fig15_energy_system_model.png")
     print("  - fig16_tariff_cost_model.png")
-    print("  - phase3_modeling_report.html")
+    print("  - phase3_report.html")
 
 
 if __name__ == '__main__':

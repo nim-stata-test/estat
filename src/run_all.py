@@ -268,7 +268,7 @@ def run_step(phase: int, step: int):
         return False
 
 
-def run_phase(phase: int):
+def run_phase(phase: int, rerun_optimization: bool = False):
     """Run all steps in a phase."""
     if phase not in PHASES:
         print(f"Error: Phase {phase} not found")
@@ -278,8 +278,15 @@ def run_phase(phase: int):
     print(f"# PHASE {phase}")
     print(f"{'#' * 70}")
 
+    # Steps to skip unless --rerun_optimization is set
+    skip_steps = {4: [4, 5]} if not rerun_optimization else {}
+
     success = True
     for step in sorted(PHASES[phase].keys()):
+        if phase in skip_steps and step in skip_steps[phase]:
+            name, _ = PHASES[phase][step]
+            print(f"\n[SKIP] Phase {phase}, Step {step} ({name}) - use --rerun_optimization to include")
+            continue
         if not run_step(phase, step):
             success = False
             break  # Stop on first failure
@@ -287,7 +294,7 @@ def run_phase(phase: int):
     return success
 
 
-def run_all():
+def run_all(rerun_optimization: bool = False):
     """Run all phases and steps."""
     print("=" * 70)
     print("ESTAT - Full Pipeline Execution")
@@ -296,7 +303,7 @@ def run_all():
     start = time.time()
 
     for phase in sorted(PHASES.keys()):
-        if not run_phase(phase):
+        if not run_phase(phase, rerun_optimization=rerun_optimization):
             print(f"\nPipeline stopped due to error in Phase {phase}")
             return False
 
@@ -313,14 +320,14 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python src/run_all.py              # Run all phases
+  python src/run_all.py              # Run all phases (skips Pareto optimization)
   python src/run_all.py --phase 1    # Run Phase 1 only (Preprocessing)
   python src/run_all.py --phase 2    # Run Phase 2 only (EDA)
   python src/run_all.py --phase 3    # Run Phase 3 only (System Modeling)
-  python src/run_all.py --phase 4    # Run Phase 4 only (Optimization)
+  python src/run_all.py --phase 4    # Run Phase 4 only (skips Pareto)
+  python src/run_all.py --phase 4 --rerun_optimization  # Phase 4 with Pareto
   python src/run_all.py --step 1.2   # Run Phase 1, Step 2 only
-  python src/run_all.py --step 3.2   # Run Phase 3, Step 2 only (Heat Pump Model)
-  python src/run_all.py --step 4.1   # Run Phase 4, Step 1 only (Strategies)
+  python src/run_all.py --step 4.4   # Run Pareto optimization only
   python src/run_all.py --list       # List all available phases and steps
         """
     )
@@ -328,6 +335,8 @@ Examples:
     parser.add_argument("--phase", type=int, help="Run specific phase (1, 2, ...)")
     parser.add_argument("--step", type=str, help="Run specific step (e.g., '1.2' for Phase 1 Step 2)")
     parser.add_argument("--list", action="store_true", help="List all available phases and steps")
+    parser.add_argument("--rerun_optimization", action="store_true",
+                        help="Include Pareto optimization (steps 4.4, 4.5) which are skipped by default")
 
     args = parser.parse_args()
 
@@ -348,9 +357,9 @@ Examples:
             print(f"Error: Invalid step format '{args.step}'. Use 'phase.step' (e.g., '1.2')")
             sys.exit(1)
     elif args.phase:
-        run_phase(args.phase)
+        run_phase(args.phase, rerun_optimization=args.rerun_optimization)
     else:
-        run_all()
+        run_all(rerun_optimization=args.rerun_optimization)
 
 
 if __name__ == "__main__":

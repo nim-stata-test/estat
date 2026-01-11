@@ -61,12 +61,14 @@ python src/phase3/run_phase3.py
 python src/phase4/run_optimization.py
 
 # Run all phases
-python src/run_all.py              # Run complete pipeline
+python src/run_all.py              # Run complete pipeline (skips Pareto optimization)
 python src/run_all.py --phase 1    # Run Phase 1 only
 python src/run_all.py --phase 2    # Run Phase 2 only
 python src/run_all.py --phase 3    # Run Phase 3 only
-python src/run_all.py --phase 4    # Run Phase 4 only
+python src/run_all.py --phase 4    # Run Phase 4 only (skips Pareto)
+python src/run_all.py --phase 4 --rerun_optimization  # Phase 4 with Pareto
 python src/run_all.py --step 1.2   # Run specific step
+python src/run_all.py --step 4.4   # Run Pareto optimization only
 python src/run_all.py --list       # List all steps
 
 # Run individual scripts
@@ -146,7 +148,7 @@ After preprocessing, data is saved to `output/phase1/`:
 - `integrated_overlap_only.parquet` - Overlap period only (64 days)
 
 **Reports and logs:**
-- `preprocessing_report.html` - Comprehensive preprocessing documentation
+- `phase1_report.html` - Comprehensive preprocessing documentation
 - `corrections_log.csv` - Data cleaning corrections applied
 - `validation_results.csv` - Daily vs monthly validation results
 - `sensor_summary.csv` - Per-sensor statistics
@@ -217,7 +219,7 @@ After running `python src/phase2/run_eda.py`, outputs are saved to `output/phase
 - Electricity tariffs (timeline, time windows, cost implications)
 
 **HTML Report:**
-- `eda_report.html` - Comprehensive EDA documentation with all figures
+- `phase2_report.html` - Comprehensive EDA documentation with all figures
 
 ## Battery Degradation Analysis
 
@@ -310,7 +312,7 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
 - fig16: Tariff cost model (cost breakdown, high/low tariff, forecasting)
 
 **Reports:**
-- `phase3_modeling_report.html` - Combined modeling report
+- `phase3_report.html` - Combined modeling report
 - `thermal_model_results.csv` - Per-room thermal parameters
 - `heat_pump_daily_stats.csv` - Daily COP and energy statistics
 - `cost_model_daily_stats.csv` - Daily cost breakdown (grid, feedin, net)
@@ -348,7 +350,7 @@ After running `python src/phase4/run_optimization.py`, outputs are saved to `out
 - fig18: Parameter space (trade-offs, parameter summary table)
 
 **Reports:**
-- `phase4_optimization_report.html` - Combined optimization report
+- `phase4_report.html` - Combined optimization report
 - `optimization_strategies.csv` - Strategy definitions and rules
 - `strategy_comparison.csv` - Simulated metrics by strategy
 - `simulation_daily_metrics.csv` - Daily simulation results
