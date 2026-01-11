@@ -368,9 +368,10 @@ Where:
 *Cost-Optimized uses curve_rise 0.85 when grid-dependent
 
 **Comfort Evaluation:**
-- Comfort compliance evaluated **only during occupied hours (08:00-22:00)**
+- Comfort constraint evaluated **only during occupied hours (08:00-22:00)**
+- Constraint: T_weighted < 18.5°C for ≤20% of daytime hours (soft penalty)
+- No upper temperature limit - higher is always better
 - Night temperatures (22:00-08:00) are excluded from comfort objectives
-- This allows energy-saving at night without penalty
 
 **Key optimization levers:**
 - Shift comfort mode to PV peak hours (10:00-17:00)
@@ -411,11 +412,15 @@ python src/phase4/04_pareto_optimization.py -g 100 -p 150 -n 15 --seed 123
 | `comfort_end` | [16:00, 22:00] | End of comfort period |
 | `curve_rise` | [0.80, 1.20] | Heating curve slope (Steilheit) |
 
-**Objectives (4, all minimized):**
-1. **Mean temp deficit**: Target (20.5°C) - mean T_weighted during 08:00-22:00
-2. **Min temp deficit**: Threshold (18.5°C) - min T_weighted during 08:00-22:00
-3. **Grid import**: Total kWh purchased from grid
-4. **Net cost**: Grid cost - feed-in revenue (CHF)
+**Objectives (3, all minimized in NSGA-II):**
+1. **Negative mean temperature**: `-mean(T_weighted)` during 08:00-22:00 (minimizing = maximize avg temp)
+2. **Grid import**: Total kWh purchased from grid
+3. **Net cost**: Grid cost - feed-in revenue (CHF)
+
+**Constraints (soft penalty):**
+- `setpoint_eco <= setpoint_comfort` (eco must not exceed comfort)
+- `violation_pct <= 20%` (T_weighted < 18.5°C for no more than 20% of daytime hours)
+- No upper temperature limit (higher temperatures are always acceptable)
 
 **T_weighted Adjustment Model:**
 Uses Phase 2 regression coefficients to adjust historical T_weighted based on parameter changes:
@@ -430,7 +435,7 @@ effect on daytime comfort (-0.09°C per 1°C change). This allows aggressive eco
 **Outputs:**
 ```
 output/phase4/
-├── pareto_archive.json        # Full archive for warm-starting future runs
+├── pareto_archive.json        # Full archive with optimization history
 ├── pareto_front.csv           # All Pareto-optimal solutions
 ├── selected_strategies.csv    # 10 diverse strategies selected
 ├── selected_strategies.json   # Machine-readable format
@@ -438,6 +443,13 @@ output/phase4/
 ├── fig20_strategy_comparison.png # Radar chart comparing strategies
 └── pareto_report_section.html # HTML report section
 ```
+
+**Optimization History (in pareto_archive.json):**
+The archive includes full optimization history for visualization:
+- `optimization_history.generations`: Per-generation snapshots with population composition
+- `optimization_history.all_solutions`: All unique parameter sets evaluated
+- Each solution tracks: `first_gen`, `pareto_generations` (list of generations where it was on the Pareto front)
+- Enables animated visualization of Pareto front evolution
 
 **Workflow:**
 1. First run: `python src/phase4/04_pareto_optimization.py --fresh -g 200` (full optimization)
@@ -494,13 +506,15 @@ Three strategies selected from 21 Pareto-optimal solutions for Phase 5 intervent
 
 **Comfort Objective (T_weighted):**
 
-Comfort compliance is evaluated using a weighted indoor temperature:
+The comfort objective uses a weighted indoor temperature:
 ```
 T_weighted = 0.40×davis_inside + 0.30×office1 + 0.10×atelier + 0.10×studio + 0.10×simlab
 ```
 
-- Evaluated during occupied hours only (08:00-22:00)
-- Target: ≥95% of readings within comfort bounds (18.5°C - 22°C)
+**Optimization framework:**
+- **Three objectives**: Maximize avg temp, minimize grid import, minimize net cost
+- **Soft constraint**: T_weighted < 18.5°C for ≤20% of daytime hours (08:00-22:00)
+- **No upper temperature limit** - higher temperatures are always acceptable
 - Same weights used in Phase 3 thermal modeling (see `src/phase3/01_thermal_model.py`)
 - See `docs/phase5_experimental_design.md` Section 8.4 for full definition
 

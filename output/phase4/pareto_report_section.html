@@ -6,10 +6,10 @@
     <p>Used NSGA-II algorithm to find Pareto-optimal heating configurations:</p>
     <ul>
         <li><strong>Algorithm</strong>: NSGA-II (Non-dominated Sorting Genetic Algorithm II)</li>
-        <li><strong>Population</strong>: 80 individuals</li>
-        <li><strong>Generations</strong>: 50</li>
-        <li><strong>Evaluations</strong>: 4,000</li>
-        <li><strong>Pareto solutions</strong>: 80</li>
+        <li><strong>Population</strong>: 100 individuals</li>
+        <li><strong>Generations</strong>: 100</li>
+        <li><strong>Evaluations</strong>: 10,000</li>
+        <li><strong>Pareto solutions</strong>: 100</li>
     </ul>
 
     <h3>Decision Variables</h3>
@@ -22,13 +22,16 @@
         <tr><td>curve_rise</td><td>[0.80, 1.20]</td><td>Heating curve slope</td></tr>
     </table>
 
-    <h3>Objectives (Minimized)</h3>
+    <h3>Objectives</h3>
     <ol>
-        <li><strong>Mean temp deficit</strong>: Target (20.5°C) - mean T_weighted during 08:00-22:00</li>
-        <li><strong>Min temp deficit</strong>: Threshold (18.5°C) - min T_weighted during 08:00-22:00</li>
-        <li><strong>Grid import</strong>: Total kWh purchased from grid</li>
-        <li><strong>Net cost</strong>: Grid cost - feed-in revenue (CHF)</li>
+        <li><strong>Average Temperature</strong>: Maximize mean T_weighted during 08:00-22:00 (higher is better)</li>
+        <li><strong>Grid import</strong>: Minimize total kWh purchased from grid</li>
+        <li><strong>Net cost</strong>: Minimize grid cost - feed-in revenue (CHF)</li>
     </ol>
+
+    <h3>Constraint (Soft Penalty)</h3>
+    <p><strong>Low-temperature violation</strong>: T_weighted &lt; 18.5°C for no more than 20% of daytime hours (08:00-22:00).
+    Solutions exceeding this threshold are penalized but not excluded.</p>
 
     <h3>Selected Strategies (10 Diverse)</h3>
     <table>
@@ -38,6 +41,7 @@
             <th>Eco<br>Setpoint</th>
             <th>Schedule</th>
             <th>Curve<br>Rise</th>
+            <th>Avg Temp<br>(°C)</th>
             <th>Grid<br>(kWh)</th>
             <th>Cost<br>(CHF)</th>
         </tr>
@@ -46,100 +50,110 @@
             <td><strong>Grid-Minimal</strong></td>
             <td>22.0°C</td>
             <td>12.0°C</td>
-            <td>09:22-16:01</td>
-            <td>0.85</td>
+            <td>09:24-16:00</td>
+            <td>0.82</td>
+            <td>19.3</td>
             <td>2239</td>
-            <td>705.0</td>
-        </tr>
-        
-        <tr>
-            <td><strong>Comfort-First</strong></td>
-            <td>21.9°C</td>
-            <td>12.0°C</td>
-            <td>09:24-16:02</td>
-            <td>1.04</td>
-            <td>2240</td>
-            <td>705.1</td>
-        </tr>
-        
-        <tr>
-            <td><strong>Comfort-First-2</strong></td>
-            <td>22.0°C</td>
-            <td>12.0°C</td>
-            <td>09:21-16:11</td>
-            <td>1.19</td>
-            <td>2241</td>
-            <td>705.2</td>
-        </tr>
-        
-        <tr>
-            <td><strong>Balanced</strong></td>
-            <td>21.6°C</td>
-            <td>12.5°C</td>
-            <td>09:49-16:01</td>
-            <td>0.81</td>
-            <td>2249</td>
-            <td>703.3</td>
-        </tr>
-        
-        <tr>
-            <td><strong>Balanced-2</strong></td>
-            <td>21.5°C</td>
-            <td>12.5°C</td>
-            <td>09:47-16:01</td>
-            <td>0.80</td>
-            <td>2249</td>
-            <td>703.3</td>
-        </tr>
-        
-        <tr>
-            <td><strong>Balanced-3</strong></td>
-            <td>21.9°C</td>
-            <td>13.0°C</td>
-            <td>09:47-16:01</td>
-            <td>0.80</td>
-            <td>2257</td>
-            <td>702.7</td>
+            <td>704.9</td>
         </tr>
         
         <tr>
             <td><strong>Cost-Minimal</strong></td>
             <td>22.0°C</td>
             <td>13.5°C</td>
-            <td>09:59-16:01</td>
-            <td>0.80</td>
-            <td>2265</td>
+            <td>09:58-16:00</td>
+            <td>0.83</td>
+            <td>19.3</td>
+            <td>2266</td>
             <td>702.5</td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First</strong></td>
+            <td>22.0°C</td>
+            <td>12.0°C</td>
+            <td>10:44-16:00</td>
+            <td>1.20</td>
+            <td>23.0</td>
+            <td>2268</td>
+            <td>707.9</td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First-2</strong></td>
+            <td>22.0°C</td>
+            <td>12.0°C</td>
+            <td>10:50-16:00</td>
+            <td>1.20</td>
+            <td>23.0</td>
+            <td>2284</td>
+            <td>710.9</td>
         </tr>
         
         <tr>
             <td><strong>Comfort-First-3</strong></td>
             <td>22.0°C</td>
-            <td>13.4°C</td>
-            <td>09:47-16:00</td>
-            <td>1.19</td>
-            <td>2267</td>
-            <td>703.0</td>
+            <td>12.0°C</td>
+            <td>10:47-16:00</td>
+            <td>1.20</td>
+            <td>23.0</td>
+            <td>2284</td>
+            <td>710.9</td>
         </tr>
         
         <tr>
             <td><strong>Comfort-First-4</strong></td>
             <td>22.0°C</td>
-            <td>13.5°C</td>
-            <td>09:58-16:01</td>
+            <td>12.0°C</td>
+            <td>11:25-16:00</td>
             <td>1.20</td>
-            <td>2268</td>
-            <td>703.0</td>
+            <td>23.0</td>
+            <td>2323</td>
+            <td>718.1</td>
         </tr>
         
         <tr>
             <td><strong>Comfort-First-5</strong></td>
             <td>22.0°C</td>
             <td>12.0°C</td>
-            <td>10:52-16:03</td>
+            <td>11:42-16:02</td>
             <td>1.20</td>
-            <td>2284</td>
-            <td>710.9</td>
+            <td>23.0</td>
+            <td>2346</td>
+            <td>722.7</td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First-6</strong></td>
+            <td>22.0°C</td>
+            <td>12.0°C</td>
+            <td>11:43-16:00</td>
+            <td>1.20</td>
+            <td>23.0</td>
+            <td>2346</td>
+            <td>723.0</td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First-7</strong></td>
+            <td>22.0°C</td>
+            <td>12.0°C</td>
+            <td>11:57-16:00</td>
+            <td>1.20</td>
+            <td>23.0</td>
+            <td>2371</td>
+            <td>727.7</td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First-8</strong></td>
+            <td>22.0°C</td>
+            <td>12.0°C</td>
+            <td>11:59-16:00</td>
+            <td>1.20</td>
+            <td>23.0</td>
+            <td>2372</td>
+            <td>728.0</td>
         </tr>
         
     </table>

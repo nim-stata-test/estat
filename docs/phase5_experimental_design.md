@@ -236,7 +236,7 @@ effect on daytime comfort, monitor morning temperatures carefully during the fir
 
 Complete each day during the study:
 
-- [ ] **Comfort check**: Verify T_room within bounds during 08:00-22:00
+- [ ] **Comfort check**: Verify T_weighted ≥ 18.5°C for ≥80% of 08:00-22:00
 - [ ] **Sensor quality**: Confirm all sensors reporting (no gaps)
 - [ ] **Manual overrides**: Log any user interventions with reason
 - [ ] **Occupancy notes**: Record deviations from normal patterns
@@ -246,9 +246,9 @@ Complete each day during the study:
 
 | Condition | Threshold | Action |
 |-----------|-----------|--------|
-| Room temp too low | T_room < 16°C | Abort strategy, return to Baseline |
+| Room temp too low | T_weighted < 16°C | Abort strategy, return to Baseline |
 | Flow temp too high | T_flow > 45°C | Check curve settings |
-| Comfort violation | < 85% for 24h | Review and document |
+| High violation % | > 30% for 24h | Review and document |
 | Sensor dropout | > 2h gap | Log and verify data |
 
 ### 6.3 Daily Data Log Template
@@ -263,10 +263,10 @@ Weather:
   - HDD (base 18°C): ___
   - Cloud cover: [ ] Clear  [ ] Partial  [ ] Overcast
 
-Comfort compliance (08:00-22:00):
-  - Hours in bounds: ___ / 14
+Comfort metrics (08:00-22:00):
+  - Avg temp: ___°C
   - Min temp: ___°C at ___:___
-  - Max temp: ___°C at ___:___
+  - Violation %: ___% (target: ≤20%)
 
 Energy:
   - Grid import: ___ kWh
@@ -300,7 +300,8 @@ Weather summary:
   - PV generation days: ___ good / ___ partial / ___ poor
 
 Performance metrics:
-  - Comfort compliance: ___% (target: ≥95%)
+  - Avg daytime temp: ___°C
+  - Violation %: ___% (target: ≤20%)
   - Grid consumption: ___ kWh
   - Grid per HDD: ___ kWh/HDD
   - Mean COP: ___
@@ -323,7 +324,8 @@ Block quality: [ ] Good  [ ] Usable  [ ] Exclude (reason: ___)
 
 | Outcome | Definition | Unit | Target |
 |---------|------------|------|--------|
-| **Comfort compliance** | % time T_weighted in bounds (08:00-22:00) | % | ≥95% |
+| **Average Temperature** | Mean T_weighted during 08:00-22:00 | °C | Maximize |
+| **Violation %** | % time T_weighted < 18.5°C during 08:00-22:00 | % | ≤20% (constraint) |
 | **Grid per HDD** | External supply ÷ Heating degree days | kWh/HDD | Minimize |
 | **COP** | Heat produced ÷ Electricity consumed | - | Maximize |
 | **Net cost per HDD** | (Import×rate - Export×feedin) ÷ HDD | CHF/HDD | Minimize |
@@ -337,19 +339,24 @@ Block quality: [ ] Good  [ ] Usable  [ ] Exclude (reason: ___)
 | Peak flow temperature | Max T_flow observed | °C |
 | Compressor cycles | Number of on/off cycles | count |
 
-### 8.3 Comfort Bounds by Strategy
+### 8.3 Comfort Constraint
 
-| Strategy | Min Temp | Max Temp | Evaluation Hours |
-|----------|----------|----------|------------------|
-| A (Baseline) | 18.5°C | 22°C | 08:00-22:00 |
-| B (Energy-Opt) | 18.5°C | 22°C | 08:00-22:00 |
-| C (Cost-Opt) | 18.5°C | 22.5°C | 08:00-22:00 |
+**Constraint Definition:**
+- T_weighted must not be below 18.5°C for more than 20% of daytime hours (08:00-22:00)
+- There is **no upper temperature limit** - higher temperatures are always acceptable
+- This constraint applies equally to all strategies
 
-**Note:** All comfort bounds are evaluated using T_weighted (see Section 8.4).
+| Strategy | Min Threshold | Max Threshold | Evaluation Hours |
+|----------|---------------|---------------|------------------|
+| All strategies | 18.5°C | None | 08:00-22:00 |
+
+**Rationale:** The optimization framework uses three objectives (maximize average temperature, minimize grid import, minimize net cost) with a soft constraint on low-temperature violations. Solutions exceeding 20% violation are penalized but not excluded.
+
+**Note:** All comfort metrics are evaluated using T_weighted (see Section 8.4).
 
 ### 8.4 Weighted Indoor Temperature Definition
 
-Comfort compliance is measured using a weighted combination of five indoor temperature sensors:
+The comfort objective uses a weighted combination of five indoor temperature sensors:
 
 ```
 T_weighted = 0.40×davis_inside + 0.30×office1 + 0.10×atelier + 0.10×studio + 0.10×simlab
@@ -387,7 +394,7 @@ T_weighted = 0.40×davis_inside + 0.30×office1 + 0.10×atelier + 0.10×studio +
 
 | Parameter | Limit | Action |
 |-----------|-------|--------|
-| Comfort < 85% | For 24 hours | Document, consider adjustment |
+| Violation % > 30% | For 24 hours | Document, consider adjustment |
 | COP < 3.0 | Single day | Check conditions, verify data |
 | Manual override | Any | Document reason, include in analysis |
 

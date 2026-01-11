@@ -11,16 +11,14 @@ Decision Variables (5):
 - comfort_end: [16.0, 22.0] hours
 - curve_rise: [0.80, 1.20]
 
-Objectives (4, all minimized):
-1. Mean T_weighted deficit (target - mean) during occupied hours
-2. Min T_weighted deficit (threshold - min) during occupied hours
-3. Grid import (kWh)
-4. Electricity cost (CHF)
+Objectives (3, all minimized):
+1. Negative mean T_weighted during occupied hours (minimizing negative = maximizing temp)
+2. Grid import (kWh)
+3. Net electricity cost (CHF)
 
-Constraints:
-- comfort_end > comfort_start + 4 (minimum 4h comfort period)
-- setpoint_eco <= setpoint_comfort - 1 (eco must be setback)
-- min(T_weighted) >= 16.0°C (hard safety constraint)
+Constraints (soft penalty):
+- setpoint_eco <= setpoint_comfort (eco must not exceed comfort)
+- violation_pct <= 20% (T_weighted < 18.5°C for no more than 20% of daytime hours)
 """
 
 import pandas as pd
@@ -33,6 +31,7 @@ import argparse
 
 try:
     from pymoo.core.problem import Problem
+    from pymoo.core.callback import Callback
     from pymoo.algorithms.moo.nsga2 import NSGA2
     from pymoo.optimize import minimize
     from pymoo.operators.crossover.sbx import SBX
@@ -250,13 +249,14 @@ def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
     occupied_mask = (sim_data['hour'].values >= OCCUPIED_START) & (sim_data['hour'].values < OCCUPIED_END)
     T_weighted_occupied = T_weighted_adj[occupied_mask]
 
-    # Objective 1: Mean temperature deficit
-    target_temp = 20.5
-    mean_deficit = target_temp - np.mean(T_weighted_occupied)
+    # Objective 1: Negative mean temperature (minimize to maximize avg temp)
+    mean_temp = np.mean(T_weighted_occupied)
+    neg_mean_temp = -mean_temp
 
-    # Objective 2: Min temperature deficit
+    # Calculate violation percentage for constraint
     threshold_temp = 18.5
-    min_deficit = threshold_temp - np.min(T_weighted_occupied)
+    violation_count = np.sum(T_weighted_occupied < threshold_temp)
+    violation_pct = violation_count / len(T_weighted_occupied) if len(T_weighted_occupied) > 0 else 0.0
 
     # --- Vectorized Energy/Cost Simulation ---
 
@@ -334,22 +334,23 @@ def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
     grid_cost = np.sum(grid_import * purchase_rate / 100)
     feedin_revenue = np.sum(feedin * feedin_rate / 100)
 
-    # Objective 3: Total grid import (kWh)
+    # Objective 2: Total grid import (kWh)
     grid_import_total = np.sum(grid_import)
 
-    # Objective 4: Net cost (CHF) = grid cost - feed-in revenue
+    # Objective 3: Net cost (CHF) = grid cost - feed-in revenue
     net_cost_total = grid_cost - feedin_revenue
 
-    # Constraints
-    g1 = 4.0 - comfort_hours  # Minimum 4h comfort period
-    g2 = setpoint_eco - (setpoint_comfort - 1.0)  # Eco must be setback
+    # Constraints (g <= 0 means satisfied, g > 0 means violation - soft penalty)
+    g1 = setpoint_eco - setpoint_comfort  # Eco must be <= comfort
+    g2 = violation_pct - 0.20  # T_weighted < 18.5°C for no more than 20% of daytime hours
 
     return {
-        'objectives': np.array([mean_deficit, min_deficit, grid_import_total, net_cost_total]),
+        'objectives': np.array([neg_mean_temp, grid_import_total, net_cost_total]),
         'constraints': np.array([g1, g2]),
         'metrics': {
-            'mean_T_weighted': np.mean(T_weighted_occupied),
+            'mean_T_weighted': mean_temp,
             'min_T_weighted': np.min(T_weighted_occupied),
+            'violation_pct': violation_pct,
             'grid_import_kwh': grid_import_total,
             'net_cost_chf': net_cost_total,
             'comfort_hours': comfort_hours,
@@ -365,10 +366,12 @@ class HeatingOptimizationProblem(Problem):
         Initialize problem with simulation data.
 
         Variables: [setpoint_comfort, setpoint_eco, comfort_start, comfort_end, curve_rise]
+        Objectives (3): neg_mean_temp, grid_import, net_cost
+        Constraints (2): eco_leq_comfort, violation_pct
         """
         super().__init__(
             n_var=5,
-            n_obj=4,
+            n_obj=3,
             n_constr=2,
             xl=np.array([19.0, 12.0, 6.0, 16.0, 0.80]),   # lower bounds (eco 12°C = frost protection)
             xu=np.array([22.0, 19.0, 12.0, 22.0, 1.20]),  # upper bounds
@@ -378,8 +381,8 @@ class HeatingOptimizationProblem(Problem):
     def _evaluate(self, X, out, *args, **kwargs):
         """Evaluate population of solutions."""
         n_pop = X.shape[0]
-        F = np.zeros((n_pop, 4))  # objectives
-        G = np.zeros((n_pop, 2))  # constraints
+        F = np.zeros((n_pop, 3))  # objectives (3)
+        G = np.zeros((n_pop, 2))  # constraints (2)
 
         for i in range(n_pop):
             params = {
@@ -395,6 +398,121 @@ class HeatingOptimizationProblem(Problem):
 
         out["F"] = F
         out["G"] = G
+
+
+class OptimizationHistoryCallback(Callback):
+    """
+    Callback to track all evaluated solutions across generations.
+
+    Records:
+    - All unique parameter sets evaluated
+    - Generation when each was first seen
+    - Pareto front membership at each generation
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.history = []  # List of generation snapshots
+        self.all_solutions = {}  # Dict mapping solution hash -> solution data
+        self.generation_pareto_fronts = []  # Pareto front indices per generation
+
+    def _solution_hash(self, x: np.ndarray) -> str:
+        """Create a hash for a solution vector (rounded for floating point stability)."""
+        rounded = tuple(np.round(x, 4))
+        return str(rounded)
+
+    def notify(self, algorithm):
+        """Called after each generation."""
+        gen = algorithm.n_gen
+        pop = algorithm.pop
+        timestamp = datetime.now().isoformat()
+
+        # Get current population
+        X = pop.get("X")
+        F = pop.get("F")
+        G = pop.get("G") if pop.get("G") is not None else np.zeros((len(X), 2))
+
+        # Determine which solutions are on the Pareto front
+        nds = NonDominatedSorting()
+        fronts = nds.do(F)
+        pareto_indices = set(fronts[0]) if len(fronts) > 0 else set()
+
+        # Record generation snapshot
+        gen_snapshot = {
+            'generation': gen,
+            'timestamp': timestamp,
+            'population_size': len(X),
+            'n_pareto': len(pareto_indices),
+            'solutions': []
+        }
+
+        # Process each solution
+        for i in range(len(X)):
+            sol_hash = self._solution_hash(X[i])
+            is_pareto = i in pareto_indices
+
+            # Convert objective 0 back to mean_temp (it's stored as negative)
+            mean_temp = -float(F[i, 0])
+
+            sol_data = {
+                'hash': sol_hash,
+                'variables': {
+                    'setpoint_comfort': float(X[i, 0]),
+                    'setpoint_eco': float(X[i, 1]),
+                    'comfort_start': float(X[i, 2]),
+                    'comfort_end': float(X[i, 3]),
+                    'curve_rise': float(X[i, 4]),
+                },
+                'objectives': {
+                    'mean_temp': mean_temp,
+                    'grid_kwh': float(F[i, 1]),
+                    'cost_chf': float(F[i, 2]),
+                },
+                'constraints': {
+                    'eco_leq_comfort': float(G[i, 0]),
+                    'violation_pct': float(G[i, 1]),
+                },
+                'is_pareto': is_pareto,
+            }
+
+            # Track in all_solutions (first appearance)
+            if sol_hash not in self.all_solutions:
+                self.all_solutions[sol_hash] = {
+                    **sol_data,
+                    'first_gen': gen,
+                    'pareto_generations': [],
+                }
+
+            # Record Pareto membership for this generation
+            if is_pareto:
+                self.all_solutions[sol_hash]['pareto_generations'].append(gen)
+
+            gen_snapshot['solutions'].append({
+                'hash': sol_hash,
+                'is_pareto': is_pareto,
+                'rank': 0 if is_pareto else self._get_rank(i, fronts),
+            })
+
+        self.history.append(gen_snapshot)
+
+    def _get_rank(self, idx: int, fronts: list) -> int:
+        """Get the Pareto rank (front number) for a solution."""
+        for rank, front in enumerate(fronts):
+            if idx in front:
+                return rank
+        return len(fronts)
+
+    def get_full_history(self) -> dict:
+        """Return the complete optimization history."""
+        return {
+            'generations': self.history,
+            'all_solutions': list(self.all_solutions.values()),
+            'summary': {
+                'total_generations': len(self.history),
+                'unique_solutions': len(self.all_solutions),
+                'final_pareto_size': self.history[-1]['n_pareto'] if self.history else 0,
+            }
+        }
 
 
 def run_optimization(sim_data: SimulationData,
@@ -471,18 +589,26 @@ def run_optimization(sim_data: SimulationData,
                 )
                 print(f"  Initialized with {len(initial_X)} solutions from archive")
 
-    # Run optimization
+    # Create history callback
+    history_callback = OptimizationHistoryCallback()
+
+    # Run optimization with callback
     result = minimize(
         problem,
         algorithm,
         ('n_gen', n_gen),
         seed=seed,
-        verbose=True
+        verbose=True,
+        callback=history_callback
     )
+
+    # Get optimization history
+    opt_history = history_callback.get_full_history()
 
     print(f"\nOptimization complete!")
     print(f"  Total evaluations: {result.algorithm.n_gen * pop_size:,}")
     print(f"  Pareto solutions: {len(result.F)}")
+    print(f"  Unique solutions tracked: {opt_history['summary']['unique_solutions']}")
 
     return {
         'X': result.X,  # Decision variables
@@ -491,6 +617,7 @@ def run_optimization(sim_data: SimulationData,
         'n_gen': n_gen,
         'pop_size': pop_size,
         'seed': seed,
+        'history': opt_history,  # Full optimization history
     }
 
 
@@ -506,6 +633,8 @@ def extract_pareto_front(result: dict) -> list:
 
     solutions = []
     for i, idx in enumerate(pareto_idx):
+        # F[idx, 0] is neg_mean_temp, convert back to mean_temp
+        mean_temp = -float(F[idx, 0])
         sol = {
             'id': f'sol_{i+1:03d}',
             'variables': {
@@ -516,10 +645,9 @@ def extract_pareto_front(result: dict) -> list:
                 'curve_rise': float(X[idx, 4]),
             },
             'objectives': {
-                'mean_temp_deficit': float(F[idx, 0]),
-                'min_temp_deficit': float(F[idx, 1]),
-                'grid_kwh': float(F[idx, 2]),
-                'cost_chf': float(F[idx, 3]),
+                'mean_temp': mean_temp,  # Average daytime temperature (higher is better)
+                'grid_kwh': float(F[idx, 1]),
+                'cost_chf': float(F[idx, 2]),
             },
             'is_pareto': True,
         }
@@ -540,10 +668,10 @@ def select_diverse_strategies(solutions: list, n_select: int = 10) -> list:
     if len(solutions) <= n_select:
         selected = solutions.copy()
     else:
-        # Extract objective values
+        # Extract objective values (3 objectives: mean_temp, grid_kwh, cost_chf)
+        # Note: mean_temp is stored as positive (higher is better), so we negate for crowding
         F = np.array([
-            [s['objectives']['mean_temp_deficit'],
-             s['objectives']['min_temp_deficit'],
+            [-s['objectives']['mean_temp'],  # Negate so lower is better for crowding calc
              s['objectives']['grid_kwh'],
              s['objectives']['cost_chf']]
             for s in solutions
@@ -558,7 +686,7 @@ def select_diverse_strategies(solutions: list, n_select: int = 10) -> list:
         n_sol = len(solutions)
         crowding = np.zeros(n_sol)
 
-        for obj_idx in range(4):
+        for obj_idx in range(3):  # 3 objectives
             sorted_idx = np.argsort(F_norm[:, obj_idx])
             crowding[sorted_idx[0]] = np.inf
             crowding[sorted_idx[-1]] = np.inf
@@ -573,19 +701,19 @@ def select_diverse_strategies(solutions: list, n_select: int = 10) -> list:
         selected_idx = np.argsort(crowding)[-n_select:]
         selected = [solutions[i] for i in sorted(selected_idx)]
 
-    # Assign descriptive labels
+    # Assign descriptive labels based on objectives
     labels = []
     for sol in selected:
         obj = sol['objectives']
         # Determine dominant characteristic
-        if obj['mean_temp_deficit'] <= -0.5:  # High comfort
+        if obj['mean_temp'] >= max(s['objectives']['mean_temp'] for s in selected) - 0.1:
             label = "Comfort-First"
         elif obj['grid_kwh'] == min(s['objectives']['grid_kwh'] for s in selected):
             label = "Grid-Minimal"
         elif obj['cost_chf'] == min(s['objectives']['cost_chf'] for s in selected):
             label = "Cost-Minimal"
-        elif obj['min_temp_deficit'] <= -1.0:  # Good min temp
-            label = "Warm-Stable"
+        elif obj['mean_temp'] >= 20.5:  # Good average temp
+            label = "Warm-Balanced"
         else:
             label = "Balanced"
 
@@ -605,8 +733,8 @@ def select_diverse_strategies(solutions: list, n_select: int = 10) -> list:
     return selected
 
 
-def save_archive(solutions: list, metadata: dict, path: Path):
-    """Save optimization archive to JSON."""
+def save_archive(solutions: list, metadata: dict, path: Path, history: dict = None):
+    """Save optimization archive to JSON, optionally including optimization history."""
     archive = {
         'metadata': {
             'timestamp': datetime.now().isoformat(),
@@ -616,10 +744,17 @@ def save_archive(solutions: list, metadata: dict, path: Path):
         'solutions': solutions,
     }
 
+    # Include optimization history if provided
+    if history:
+        archive['optimization_history'] = history
+
     with open(path, 'w') as f:
         json.dump(archive, f, indent=2)
 
     print(f"Saved archive: {path}")
+    if history:
+        print(f"  Includes history: {history['summary']['total_generations']} generations, "
+              f"{history['summary']['unique_solutions']} unique solutions")
 
 
 def load_archive(path: str) -> dict:
@@ -638,10 +773,9 @@ def plot_pareto_front(solutions: list, selected: list = None):
 
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 
-    # Extract objective values
+    # Extract objective values (3 objectives: mean_temp, grid_kwh, cost_chf)
     F = np.array([
-        [s['objectives']['mean_temp_deficit'],
-         s['objectives']['min_temp_deficit'],
+        [s['objectives']['mean_temp'],
          s['objectives']['grid_kwh'],
          s['objectives']['cost_chf']]
         for s in solutions
@@ -650,24 +784,23 @@ def plot_pareto_front(solutions: list, selected: list = None):
     # If selected, extract their objectives too
     if selected:
         F_sel = np.array([
-            [s['objectives']['mean_temp_deficit'],
-             s['objectives']['min_temp_deficit'],
+            [s['objectives']['mean_temp'],
              s['objectives']['grid_kwh'],
              s['objectives']['cost_chf']]
             for s in selected
         ])
 
     obj_labels = [
-        'Mean Temp Deficit (°C)',
-        'Min Temp Deficit (°C)',
+        'Avg Temp (°C)',
         'Grid Import (kWh)',
         'Net Cost (CHF)'
     ]
 
-    # Plot pairs of objectives
-    pairs = [(0, 2), (0, 3), (2, 3), (1, 2)]
+    # Plot pairs of objectives (3 unique pairs + one repeated for 4 panels)
+    pairs = [(0, 1), (0, 2), (1, 2), (0, 1)]  # Last panel repeats temp vs grid
+    panel_titles = ['Temp vs Grid', 'Temp vs Cost', 'Grid vs Cost', 'Temp vs Grid (zoom)']
 
-    for ax, (i, j) in zip(axes.flat, pairs):
+    for ax_idx, (ax, (i, j)) in enumerate(zip(axes.flat, pairs)):
         ax.scatter(F[:, i], F[:, j], c='lightgray', alpha=0.5, s=30, label='All Pareto')
         if selected:
             ax.scatter(F_sel[:, i], F_sel[:, j], c='blue', s=80, edgecolors='black',
@@ -678,11 +811,13 @@ def plot_pareto_front(solutions: list, selected: list = None):
                            fontsize=7, ha='left', va='bottom')
         ax.set_xlabel(obj_labels[i])
         ax.set_ylabel(obj_labels[j])
+        ax.set_title(panel_titles[ax_idx], fontsize=10)
         ax.grid(True, alpha=0.3)
         if ax == axes[0, 0]:
             ax.legend(loc='upper right', fontsize=8)
 
-    fig.suptitle('Pareto Front: Multi-Objective Heating Optimization', fontsize=12)
+    fig.suptitle('Pareto Front: Multi-Objective Heating Optimization\n'
+                 '(Maximize Avg Temp, Minimize Grid Import, Minimize Net Cost)', fontsize=12)
     plt.tight_layout()
     plt.savefig(OUTPUT_DIR / 'fig19_pareto_front.png', dpi=150, bbox_inches='tight')
     plt.close()
@@ -770,13 +905,16 @@ def generate_report(solutions: list, selected: list, metadata: dict) -> str:
         <tr><td>curve_rise</td><td>[0.80, 1.20]</td><td>Heating curve slope</td></tr>
     </table>
 
-    <h3>Objectives (Minimized)</h3>
+    <h3>Objectives</h3>
     <ol>
-        <li><strong>Mean temp deficit</strong>: Target (20.5°C) - mean T_weighted during 08:00-22:00</li>
-        <li><strong>Min temp deficit</strong>: Threshold (18.5°C) - min T_weighted during 08:00-22:00</li>
-        <li><strong>Grid import</strong>: Total kWh purchased from grid</li>
-        <li><strong>Net cost</strong>: Grid cost - feed-in revenue (CHF)</li>
+        <li><strong>Average Temperature</strong>: Maximize mean T_weighted during 08:00-22:00 (higher is better)</li>
+        <li><strong>Grid import</strong>: Minimize total kWh purchased from grid</li>
+        <li><strong>Net cost</strong>: Minimize grid cost - feed-in revenue (CHF)</li>
     </ol>
+
+    <h3>Constraint (Soft Penalty)</h3>
+    <p><strong>Low-temperature violation</strong>: T_weighted &lt; 18.5°C for no more than 20% of daytime hours (08:00-22:00).
+    Solutions exceeding this threshold are penalized but not excluded.</p>
 
     <h3>Selected Strategies (10 Diverse)</h3>
     <table>
@@ -786,6 +924,7 @@ def generate_report(solutions: list, selected: list, metadata: dict) -> str:
             <th>Eco<br>Setpoint</th>
             <th>Schedule</th>
             <th>Curve<br>Rise</th>
+            <th>Avg Temp<br>(°C)</th>
             <th>Grid<br>(kWh)</th>
             <th>Cost<br>(CHF)</th>
         </tr>
@@ -801,6 +940,7 @@ def generate_report(solutions: list, selected: list, metadata: dict) -> str:
             <td>{v['setpoint_eco']:.1f}°C</td>
             <td>{time_str(v['comfort_start'])}-{time_str(v['comfort_end'])}</td>
             <td>{v['curve_rise']:.2f}</td>
+            <td>{o['mean_temp']:.1f}</td>
             <td>{o['grid_kwh']:.0f}</td>
             <td>{o['cost_chf']:.1f}</td>
         </tr>
@@ -890,9 +1030,9 @@ def main():
             all_solutions = existing_solutions + new_solutions
 
             # Re-compute Pareto front on combined set
+            # Use negative mean_temp so lower values are better for Pareto sorting
             all_F = np.array([
-                [s['objectives']['mean_temp_deficit'],
-                 s['objectives']['min_temp_deficit'],
+                [-s['objectives']['mean_temp'],
                  s['objectives']['grid_kwh'],
                  s['objectives']['cost_chf']]
                 for s in all_solutions
@@ -932,8 +1072,11 @@ def main():
         'seed': args.seed,
     }
 
-    # Save full archive
-    save_archive(solutions, metadata, OUTPUT_DIR / 'pareto_archive.json')
+    # Get optimization history from this run
+    opt_history = result.get('history')
+
+    # Save full archive with optimization history
+    save_archive(solutions, metadata, OUTPUT_DIR / 'pareto_archive.json', history=opt_history)
 
     # Save Pareto front as CSV
     pareto_df = pd.DataFrame([
@@ -971,16 +1114,16 @@ def main():
     print("="*60)
 
     print("\nSelected strategies for Phase 5:")
-    print("-" * 80)
-    print(f"{'Label':<15} {'Comfort':<8} {'Eco':<6} {'Schedule':<13} {'Rise':<6} {'Grid':<8} {'Cost':<8}")
-    print("-" * 80)
+    print("-" * 90)
+    print(f"{'Label':<15} {'Comfort':<8} {'Eco':<6} {'Schedule':<13} {'Rise':<6} {'AvgTemp':<8} {'Grid':<8} {'Cost':<8}")
+    print("-" * 90)
 
     for sol in selected:
         v = sol['variables']
         o = sol['objectives']
         schedule = f"{int(v['comfort_start']):02d}:00-{int(v['comfort_end']):02d}:00"
         print(f"{sol.get('label', sol['id']):<15} {v['setpoint_comfort']:.1f}°C   {v['setpoint_eco']:.1f}°C "
-              f"{schedule:<13} {v['curve_rise']:.2f}  {o['grid_kwh']:<8.0f} {o['cost_chf']:<8.1f}")
+              f"{schedule:<13} {v['curve_rise']:.2f}  {o['mean_temp']:<8.1f} {o['grid_kwh']:<8.0f} {o['cost_chf']:<8.1f}")
 
     print("\n" + "="*60)
     print("STEP COMPLETE")

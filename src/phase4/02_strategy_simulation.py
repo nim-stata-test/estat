@@ -224,8 +224,8 @@ def simulate_strategy(sim_data: pd.DataFrame, strategy: dict,
     setpoint_eco = params.get('setpoint_eco', 18.5)
     curve_rise = params.get('curve_rise', 1.08)
     curve_rise_grid = params.get('curve_rise_grid_fallback', curve_rise)
-    comfort_min = params.get('comfort_band_min', 18.5)
-    comfort_max = params.get('comfort_band_max', 22.0)
+    # Minimum temperature threshold for comfort constraint
+    temp_threshold = 18.5  # No upper limit
 
     results = []
 
@@ -267,8 +267,8 @@ def simulate_strategy(sim_data: pd.DataFrame, strategy: dict,
         # Occupied hours flag (comfort only evaluated during 08:00-22:00)
         is_occupied = OCCUPIED_HOURS_START <= hour < OCCUPIED_HOURS_END
 
-        # Comfort compliance (only relevant during occupied hours)
-        in_comfort_band = comfort_min <= T_room_actual <= comfort_max
+        # Temperature violation: below minimum threshold (no upper limit)
+        is_below_threshold = T_room_actual < temp_threshold
 
         # Solar utilization (heating during PV hours)
         solar_heating = is_comfort and is_pv_available
@@ -307,7 +307,7 @@ def simulate_strategy(sim_data: pd.DataFrame, strategy: dict,
             'pv_generation': pv,
             'grid_import': grid_import,
             'total_consumption': row.get('total_consumption', 0),
-            'in_comfort_band': in_comfort_band,
+            'is_below_threshold': is_below_threshold,  # T < 18.5°C violation
             'solar_heating': solar_heating,
             # Cost metrics
             'is_high_tariff': is_high_tariff,
@@ -323,7 +323,7 @@ def simulate_strategy(sim_data: pd.DataFrame, strategy: dict,
 def aggregate_daily_metrics(simulation_results: pd.DataFrame) -> pd.DataFrame:
     """Aggregate simulation results to daily metrics.
 
-    Note: Comfort compliance is calculated ONLY for occupied hours (08:00-22:00).
+    Note: Violation percentage is calculated ONLY for occupied hours (08:00-22:00).
     Night temperatures are not considered in the comfort objective.
     """
     simulation_results['date'] = pd.to_datetime(simulation_results['datetime']).dt.date
@@ -354,16 +354,16 @@ def aggregate_daily_metrics(simulation_results: pd.DataFrame) -> pd.DataFrame:
                     'solar_heating_pct', 'comfort_hours',
                     'grid_cost_rp', 'feedin_revenue_rp', 'net_cost_rp', 'high_tariff_pct']
 
-    # Calculate comfort compliance ONLY for occupied hours (08:00-22:00)
-    # Filter to occupied hours and compute compliance
+    # Calculate metrics ONLY for occupied hours (08:00-22:00)
     occupied_data = simulation_results[simulation_results['is_occupied'] == True]
-    comfort_by_day = occupied_data.groupby(['strategy', 'date']).agg({
-        'in_comfort_band': 'mean',  # % time in band during occupied hours
+    occupied_metrics = occupied_data.groupby(['strategy', 'date']).agg({
+        'is_below_threshold': 'mean',  # % time below 18.5°C (violation)
+        'T_room_actual': 'mean',       # Average daytime temperature
     }).reset_index()
-    comfort_by_day.columns = ['strategy', 'date', 'comfort_compliance']
+    occupied_metrics.columns = ['strategy', 'date', 'violation_pct', 'mean_temp_daytime']
 
-    # Merge comfort compliance back
-    daily = daily.merge(comfort_by_day, on=['strategy', 'date'], how='left')
+    # Merge occupied metrics back
+    daily = daily.merge(occupied_metrics, on=['strategy', 'date'], how='left')
 
     # Calculate self-sufficiency
     daily['self_sufficiency'] = 1 - (daily['grid_total'] / daily['consumption_total'].clip(lower=0.1))
@@ -406,7 +406,8 @@ def compare_strategies(daily_metrics: pd.DataFrame, strategies: dict) -> pd.Data
             'cop_vs_baseline': strategy_means['cop_strategy'] - baseline_means['cop_actual'],
             'self_sufficiency': strategy_means['self_sufficiency'],
             'ss_vs_baseline': strategy_means['self_sufficiency'] - baseline_means['self_sufficiency'],
-            'comfort_compliance': strategy_means['comfort_compliance'],
+            'mean_temp_daytime': strategy_means['mean_temp_daytime'],  # Average temp during 08:00-22:00
+            'violation_pct': strategy_means['violation_pct'],  # % time below 18.5°C (target: ≤20%)
             'solar_heating_pct': strategy_means['solar_heating_pct'],
             'grid_savings_pct': strategy_means['grid_savings_pct'],
             'comfort_hours_per_day': strategy_means['comfort_hours'] / 4,  # 15-min intervals to hours
@@ -422,7 +423,8 @@ def compare_strategies(daily_metrics: pd.DataFrame, strategies: dict) -> pd.Data
         print(f"\n  {strategies[strategy_id]['name']}:")
         print(f"    COP: {comparison['avg_cop']:.2f} (vs baseline: {comparison['cop_vs_baseline']:+.2f})")
         print(f"    Self-sufficiency: {comparison['self_sufficiency']*100:.1f}% ({comparison['ss_vs_baseline']*100:+.1f}pp)")
-        print(f"    Comfort compliance: {comparison['comfort_compliance']*100:.1f}%")
+        print(f"    Mean daytime temp: {comparison['mean_temp_daytime']:.1f}°C")
+        print(f"    Violation %: {comparison['violation_pct']*100:.1f}% (target: ≤20%)")
         print(f"    Solar heating: {comparison['solar_heating_pct']*100:.1f}% of comfort hours")
         print(f"    Daily net cost: CHF {daily_net_cost:.2f} ({comparison['cost_reduction_pct']:+.1f}% vs baseline)")
 
@@ -485,8 +487,8 @@ def plot_simulation_results(simulation_results: pd.DataFrame, daily_metrics: pd.
     # Panel 3: Strategy comparison bar chart
     ax = axes[1, 0]
 
-    metrics = ['cop_vs_baseline', 'ss_vs_baseline', 'comfort_compliance']
-    metric_labels = ['COP\nImprovement', 'Self-Sufficiency\n(+pp)', 'Comfort\nCompliance (%)']
+    metrics = ['cop_vs_baseline', 'ss_vs_baseline', 'mean_temp_daytime', 'violation_pct']
+    metric_labels = ['COP\nImprovement', 'Self-Sufficiency\n(+pp)', 'Avg Temp\n(°C)', 'Violation\n%']
 
     x = np.arange(len(metrics))
     width = 0.35
@@ -496,7 +498,8 @@ def plot_simulation_results(simulation_results: pd.DataFrame, daily_metrics: pd.
         values = [
             row['cop_vs_baseline'],
             row['ss_vs_baseline'] * 100,
-            row['comfort_compliance'] * 100,
+            row['mean_temp_daytime'],
+            row['violation_pct'] * 100,  # % time below 18.5°C
         ]
         offset = (i - 0.5) * width
         bars = ax.bar(x + offset, values, width,
@@ -510,6 +513,7 @@ def plot_simulation_results(simulation_results: pd.DataFrame, daily_metrics: pd.
     ax.legend()
     ax.grid(True, alpha=0.3, axis='y')
     ax.axhline(y=0, color='black', linewidth=0.5)
+    ax.axhline(y=20, color='red', linewidth=0.5, linestyle='--', label='20% threshold')
 
     # Panel 4: Hourly COP profile
     ax = axes[1, 1]
@@ -589,10 +593,16 @@ def generate_report(comparison: pd.DataFrame, daily_metrics: pd.DataFrame,
             <td>{cost_row['self_sufficiency']*100:.1f}% ({cost_row['ss_vs_baseline']*100:+.1f}pp)</td>
         </tr>
         <tr>
-            <td>Comfort Compliance (08:00-22:00)</td>
-            <td>{baseline_row['comfort_compliance']*100:.1f}%</td>
-            <td>{energy_row['comfort_compliance']*100:.1f}%</td>
-            <td>{cost_row['comfort_compliance']*100:.1f}%</td>
+            <td>Mean Daytime Temp (08:00-22:00)</td>
+            <td>{baseline_row['mean_temp_daytime']:.1f}°C</td>
+            <td>{energy_row['mean_temp_daytime']:.1f}°C</td>
+            <td>{cost_row['mean_temp_daytime']:.1f}°C</td>
+        </tr>
+        <tr>
+            <td>Violation % (&lt;18.5°C, target ≤20%)</td>
+            <td>{baseline_row['violation_pct']*100:.1f}%</td>
+            <td>{energy_row['violation_pct']*100:.1f}%</td>
+            <td>{cost_row['violation_pct']*100:.1f}%</td>
         </tr>
         <tr>
             <td>Solar Heating %</td>
@@ -679,8 +689,8 @@ def generate_report(comparison: pd.DataFrame, daily_metrics: pd.DataFrame,
 
     <p><em>Note: Simulation uses actual historical data, so results reflect real weather conditions
     during the 64-day overlap period. Cost calculations use actual high/low tariff rates (Primeo Energie).
-    <strong>Comfort compliance is evaluated only during occupied hours (08:00-22:00)</strong>; night temperatures
-    are excluded from the comfort objective. Full-season validation in Phase 5 will provide more robust estimates.</em></p>
+    <strong>Comfort constraint: T_weighted must not be below 18.5°C for more than 20% of daytime hours (08:00-22:00)</strong>.
+    Night temperatures are excluded from the comfort objective. Full-season validation in Phase 5 will provide more robust estimates.</em></p>
 
     <figure>
         <img src="fig17_simulation_results.png" alt="Simulation Results">
@@ -760,7 +770,8 @@ def main():
         print(f"\n{strategies[strategy_id]['name']}:")
         print(f"  COP improvement: {row['cop_vs_baseline']:+.2f}")
         print(f"  Self-sufficiency gain: {row['ss_vs_baseline']*100:+.1f}pp")
-        print(f"  Comfort compliance: {row['comfort_compliance']*100:.1f}%")
+        print(f"  Mean daytime temp: {row['mean_temp_daytime']:.1f}°C")
+        print(f"  Violation %: {row['violation_pct']*100:.1f}% (target: ≤20%)")
         print(f"  Cost change: {row['cost_reduction_pct']:+.1f}%")
 
     print("\n" + "="*60)
