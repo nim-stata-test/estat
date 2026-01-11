@@ -307,10 +307,10 @@ def main():
     print(f"\nScripts completed: {success_count}/{len(scripts)}")
     print(f"\nOutputs saved to: {OUTPUT_DIR}")
     print("\nKey outputs:")
-    print("  - fig13_thermal_model.png")
-    print("  - fig14_heat_pump_model.png")
-    print("  - fig15_energy_system_model.png")
-    print("  - fig16_tariff_cost_model.png")
+    print("  - fig17_thermal_model.png")
+    print("  - fig18_heat_pump_model.png")
+    print("  - fig19_energy_system_model.png")
+    print("  - fig20_tariff_cost_model.png")
     print("  - phase3_report.html")
 
 

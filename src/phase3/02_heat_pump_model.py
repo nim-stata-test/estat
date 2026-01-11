@@ -419,10 +419,10 @@ def create_heat_pump_plots(daily: pd.DataFrame, heating: pd.DataFrame,
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig14_heat_pump_model.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig18_heat_pump_model.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig14_heat_pump_model.png")
+    print("  Saved: fig18_heat_pump_model.png")
 
 
 def generate_report(daily: pd.DataFrame, cop_results: dict,
@@ -525,8 +525,8 @@ def generate_report(daily: pd.DataFrame, cop_results: dict,
     </ul>
 
     <figure>
-        <img src="fig14_heat_pump_model.png" alt="Heat Pump Model Analysis">
-        <figcaption>Heat pump analysis: COP vs outdoor temperature (top-left),
+        <img src="fig18_heat_pump_model.png" alt="Heat Pump Model Analysis">
+        <figcaption><strong>Figure 18:</strong> Heat pump analysis: COP vs outdoor temperature (top-left),
         COP vs flow temperature (top-right), daily energy (bottom-left),
         buffer tank dynamics (bottom-right).</figcaption>
     </figure>

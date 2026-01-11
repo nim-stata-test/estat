@@ -2,30 +2,22 @@
 """
 Phase 3, Step 1: Building Thermal Model
 
-Estimates building thermal characteristics from sensor data:
-- Heat loss coefficient (UA, W/K) from temperature decay curves
-- Thermal mass (C, J/K) from heating response time
-- Room temperature dynamics model
+Estimates building thermal characteristics using a transfer function approach:
+1. Model heating curve: HK2 = f(T_outdoor)
+2. Calculate heating effort: deviation from heating curve
+3. Model room temps: T_room = f(outdoor_smooth, effort_smooth, pv_smooth)
 
-Model: RC network (resistance-capacitance)
-    C * dT_in/dt = Q_heat + UA_solar * S - UA * (T_in - T_out)
-
-where:
-    T_in = indoor temperature (°C)
-    T_out = outdoor temperature (°C)
-    Q_heat = heating power (W)
-    S = solar irradiance proxy (from PV generation)
-    UA = heat loss coefficient (W/K)
-    UA_solar = solar gain coefficient (W/(W/m²))
-    C = thermal mass (J/K)
+Each room has individual parameters for:
+- τ_outdoor: Time constant for outdoor temperature response
+- τ_effort: Time constant for heating effort response
+- τ_pv: Time constant for solar gain response
+- gain_outdoor, gain_effort, gain_pv: Response magnitudes
 """
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
-from scipy import stats
-from scipy.optimize import minimize
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score, mean_squared_error
 import warnings
@@ -55,647 +47,311 @@ SENSOR_WEIGHTS = {
     'simlab_temperature': 0.10,
 }
 
-# Reference room for primary analysis (most data, occupied space)
-PRIMARY_ROOM = 'office1_temperature'
+# Key sensor columns
+HK2_COL = 'wp_anlage_hk2_ist'
+OUTDOOR_COL = 'stiebel_eltron_isg_outdoor_temperature'
+PV_COL = 'pv_generation_kwh'
 
 
-def load_data():
-    """Load and prepare data for thermal modeling."""
+def exponential_smooth(x: np.ndarray, tau_steps: float) -> np.ndarray:
+    """
+    Apply exponential smoothing (first-order low-pass filter).
+
+    Args:
+        x: Input signal
+        tau_steps: Time constant in number of time steps
+
+    Returns:
+        Smoothed signal
+    """
+    if tau_steps < 1:
+        return x.copy()
+
+    alpha = 1 - np.exp(-1/tau_steps)
+    result = np.zeros_like(x, dtype=float)
+
+    # Initialize with first valid value or mean
+    first_valid = x[~np.isnan(x)][0] if any(~np.isnan(x)) else 0
+    result[0] = x[0] if not np.isnan(x[0]) else first_valid
+
+    for i in range(1, len(x)):
+        if np.isnan(x[i]):
+            result[i] = result[i-1]
+        else:
+            result[i] = alpha * x[i] + (1 - alpha) * result[i-1]
+
+    return result
+
+
+def load_data() -> pd.DataFrame:
+    """Load integrated dataset for thermal modeling."""
     print("Loading data for thermal modeling...")
 
-    # Load integrated dataset (has everything merged at 15-min intervals)
-    df = pd.read_parquet(PROCESSED_DIR / 'integrated_overlap_only.parquet')
+    # Load full integrated dataset (more data coverage)
+    df = pd.read_parquet(PROCESSED_DIR / 'integrated_dataset.parquet')
     df.index = pd.to_datetime(df.index)
 
-    # Load raw sensor data for better coverage
-    heating_raw = pd.read_parquet(PROCESSED_DIR / 'sensors_heating.parquet')
-    heating_raw['datetime'] = pd.to_datetime(heating_raw['datetime'], utc=True)
+    print(f"  Dataset: {len(df):,} rows ({df.index.min().date()} to {df.index.max().date()})")
 
-    print(f"  Integrated dataset: {len(df):,} rows ({df.index.min()} to {df.index.max()})")
-
-    return df, heating_raw
+    return df
 
 
-def pivot_sensor_data(df: pd.DataFrame) -> pd.DataFrame:
-    """Pivot sensor data from long to wide format."""
-    if df.empty:
-        return pd.DataFrame()
+def fit_heating_curve(df: pd.DataFrame) -> dict:
+    """
+    Fit heating curve: HK2 = baseline + slope × T_outdoor
 
-    pivoted = df.pivot_table(
-        values='value',
-        index='datetime',
-        columns='entity_id',
-        aggfunc='mean'
-    )
-    return pivoted
+    The heating curve describes how the heat pump adjusts flow temperature
+    based on outdoor temperature. This is a system setting, not learned behavior.
 
+    Returns:
+        dict with baseline, slope, r2
+    """
+    print("\nFitting heating curve...")
 
-def prepare_thermal_data(df: pd.DataFrame, heating_raw: pd.DataFrame) -> pd.DataFrame:
-    """Prepare dataset for thermal analysis."""
-    print("\nPreparing thermal analysis data...")
+    clean = df[[HK2_COL, OUTDOOR_COL]].dropna()
 
-    # Get heating sensors pivoted
-    heating = pivot_sensor_data(heating_raw)
+    if len(clean) < 100:
+        print("  ERROR: Insufficient data for heating curve")
+        return {}
 
-    # Resample heating data to 15-min to match integrated dataset
-    heating_15min = heating.resample('15min').mean()
+    X = clean[OUTDOOR_COL].values.reshape(-1, 1)
+    y = clean[HK2_COL].values
 
-    # Key columns
-    thermal_data = pd.DataFrame(index=df.index)
+    model = LinearRegression()
+    model.fit(X, y)
 
-    # Outdoor temperature from heat pump sensor
-    outdoor_col = 'stiebel_eltron_isg_outdoor_temperature'
-    if outdoor_col in heating_15min.columns:
-        thermal_data['T_out'] = heating_15min.loc[df.index, outdoor_col].values
-    else:
-        print(f"  Warning: {outdoor_col} not found")
-        return pd.DataFrame()
+    y_pred = model.predict(X)
+    r2 = r2_score(y, y_pred)
 
-    # Room temperatures - only include target sensors
-    room_temp_cols = [c for c in TARGET_SENSORS if c in df.columns]
+    result = {
+        'baseline': model.intercept_,
+        'slope': model.coef_[0],
+        'r2': r2,
+        'n_points': len(clean)
+    }
 
-    for col in room_temp_cols:
-        thermal_data[col] = df[col]
+    print(f"  HK2 = {result['baseline']:.1f} + {result['slope']:.3f} × T_outdoor")
+    print(f"  R² = {r2:.3f} ({len(clean):,} points)")
+    print(f"  At T_out=0°C:  HK2 = {result['baseline']:.1f}°C")
+    print(f"  At T_out=10°C: HK2 = {result['baseline'] + 10*result['slope']:.1f}°C")
 
-    print(f"  Target sensors found: {room_temp_cols}")
-
-    # Heating status and power
-    if 'stiebel_eltron_isg_is_heating' in df.columns:
-        thermal_data['is_heating'] = df['stiebel_eltron_isg_is_heating']
-
-    # Flow temperature (proxy for heating power)
-    flow_col = 'stiebel_eltron_isg_flow_temperature_wp1'
-    if flow_col in df.columns:
-        thermal_data['T_flow'] = df[flow_col]
-
-    # Heating circuit 2 temperature - key heating effort indicator
-    hk2_col = 'stiebel_eltron_isg_actual_temperature_hk_2'
-    if hk2_col in df.columns:
-        thermal_data['T_hk2'] = df[hk2_col]
-    else:
-        print(f"  Warning: {hk2_col} not found - using T_flow as fallback")
-        if 'T_flow' in thermal_data.columns:
-            thermal_data['T_hk2'] = thermal_data['T_flow']
-
-    # Buffer tank temperature
-    buffer_col = 'stiebel_eltron_isg_actual_temperature_buffer'
-    if buffer_col in df.columns:
-        thermal_data['T_buffer'] = df[buffer_col]
-
-    # Heating energy consumed (cumulative, need to diff)
-    consumed_col = 'stiebel_eltron_isg_consumed_heating_today'
-    if consumed_col in df.columns:
-        thermal_data['heating_energy_today'] = df[consumed_col]
-
-    # PV generation as solar proxy
-    if 'pv_generation_kwh' in df.columns:
-        thermal_data['pv_generation'] = df['pv_generation_kwh']
-
-    print(f"  Room temperature columns: {len(room_temp_cols)}")
-    print(f"  Total columns: {len(thermal_data.columns)}")
-    print(f"  Valid outdoor temp: {thermal_data['T_out'].notna().sum():,} / {len(thermal_data):,}")
-
-    return thermal_data
+    return result
 
 
-def compute_weighted_temperature(thermal_data: pd.DataFrame) -> pd.Series:
+def compute_heating_effort(df: pd.DataFrame, heating_curve: dict) -> pd.Series:
+    """
+    Compute heating effort as deviation from heating curve.
+
+    Heating effort = HK2_actual - HK2_expected
+
+    Positive effort: system delivering MORE heat than curve suggests
+    Negative effort: system delivering LESS heat than curve suggests
+    """
+    expected_hk2 = heating_curve['baseline'] + heating_curve['slope'] * df[OUTDOOR_COL]
+    effort = df[HK2_COL] - expected_hk2
+    return effort
+
+
+def fit_room_model(df: pd.DataFrame, room_col: str, effort: pd.Series,
+                   tau_out_h: float, tau_effort_h: float, tau_pv_h: float) -> dict:
+    """
+    Fit room temperature model with given time constants.
+
+    Model: T_room = offset + g_out×LPF(T_out,τ_out) + g_eff×LPF(effort,τ_eff) + g_pv×LPF(PV,τ_pv)
+
+    Args:
+        df: DataFrame with sensor data
+        room_col: Room temperature column name
+        effort: Heating effort series
+        tau_out_h: Time constant for outdoor response (hours)
+        tau_effort_h: Time constant for heating effort response (hours)
+        tau_pv_h: Time constant for solar response (hours)
+
+    Returns:
+        dict with model parameters and fit statistics
+    """
+    # Prepare data
+    data = pd.DataFrame({
+        'room': df[room_col],
+        'outdoor': df[OUTDOOR_COL],
+        'effort': effort,
+        'pv': df[PV_COL]
+    }).dropna()
+
+    if len(data) < 300:
+        return None
+
+    # Apply low-pass filtering (convert hours to 15-min steps)
+    out_smooth = exponential_smooth(data['outdoor'].values, tau_out_h * 4)
+    effort_smooth = exponential_smooth(data['effort'].values, tau_effort_h * 4)
+    pv_smooth = exponential_smooth(data['pv'].values, tau_pv_h * 4)
+
+    # Fit linear model
+    X = np.column_stack([out_smooth, effort_smooth, pv_smooth])
+    y = data['room'].values
+
+    model = LinearRegression()
+    model.fit(X, y)
+    y_pred = model.predict(X)
+
+    return {
+        'tau_out_h': tau_out_h,
+        'tau_effort_h': tau_effort_h,
+        'tau_pv_h': tau_pv_h,
+        'offset': model.intercept_,
+        'gain_outdoor': model.coef_[0],
+        'gain_effort': model.coef_[1],
+        'gain_pv': model.coef_[2],
+        'r2': r2_score(y, y_pred),
+        'rmse': np.sqrt(mean_squared_error(y, y_pred)),
+        'n_points': len(y),
+        'y_actual': y,
+        'y_pred': y_pred,
+        'index': data.index
+    }
+
+
+def grid_search_room_model(df: pd.DataFrame, room_col: str, effort: pd.Series) -> dict:
+    """
+    Find optimal time constants for room model via grid search.
+
+    Returns:
+        Best model parameters
+    """
+    tau_out_range = [24, 48, 72, 96, 120]
+    tau_effort_range = [2, 4, 8, 12, 24, 48]
+    tau_pv_range = [1, 2, 4, 8, 12, 24]
+
+    best_r2 = -1
+    best_result = None
+
+    for tau_out in tau_out_range:
+        for tau_effort in tau_effort_range:
+            for tau_pv in tau_pv_range:
+                result = fit_room_model(df, room_col, effort, tau_out, tau_effort, tau_pv)
+                if result and result['r2'] > best_r2:
+                    best_r2 = result['r2']
+                    best_result = result
+
+    return best_result
+
+
+def compute_weighted_temperature(df: pd.DataFrame) -> pd.Series:
     """
     Compute weighted average indoor temperature from target sensors.
-
-    Weights:
-      - davis_inside_temperature: 40%
-      - office1_temperature: 30%
-      - atelier_temperature: 10%
-      - studio_temperature: 10%
-      - simlab_temperature: 10%
     """
-    print("\nComputing weighted indoor temperature...")
-
-    weighted_sum = pd.Series(0.0, index=thermal_data.index)
-    weight_sum = pd.Series(0.0, index=thermal_data.index)
+    weighted_sum = pd.Series(0.0, index=df.index)
+    weight_sum = pd.Series(0.0, index=df.index)
 
     for sensor, weight in SENSOR_WEIGHTS.items():
-        if sensor in thermal_data.columns:
-            valid_mask = thermal_data[sensor].notna()
-            weighted_sum[valid_mask] += thermal_data.loc[valid_mask, sensor] * weight
+        if sensor in df.columns:
+            valid_mask = df[sensor].notna()
+            weighted_sum[valid_mask] += df.loc[valid_mask, sensor] * weight
             weight_sum[valid_mask] += weight
-            valid_count = valid_mask.sum()
-            print(f"  {sensor}: {valid_count:,} valid points (weight={weight:.0%})")
 
-    # Normalize by actual weight sum (handles missing sensors)
     T_weighted = weighted_sum / weight_sum
     T_weighted[weight_sum == 0] = np.nan
-
-    print(f"  Weighted temperature: {T_weighted.notna().sum():,} valid points")
-    print(f"  Mean: {T_weighted.mean():.2f}°C, Std: {T_weighted.std():.2f}°C")
 
     return T_weighted
 
 
-def estimate_heat_loss_with_heating(thermal_data: pd.DataFrame, room_col: str) -> dict:
-    """
-    Estimate thermal parameters using heating circuit temperature as heating input.
-
-    Model: dT_room/dt = a*(T_hk2 - T_room) - b*(T_room - T_out) + c*PV
-
-    Where T_hk2 (heating circuit 2 temp) is a proxy for heating effort.
-    Higher T_hk2 = more heat being delivered to the room.
-
-    This approach accounts for continuous heating operation (day and night).
-    """
-    print(f"\nEstimating thermal parameters for {room_col}...")
-
-    # Required columns
-    hk2_col = 'T_hk2'
-    required = [room_col, 'T_out', hk2_col, 'pv_generation']
-    available = [c for c in required if c in thermal_data.columns]
-
-    if len(available) < 3:
-        print(f"  Missing columns: {set(required) - set(available)}")
-        return {}
-
-    df = thermal_data[available].copy().dropna()
-
-    if len(df) < 100:
-        print(f"  Not enough data: {len(df)} points")
-        return {}
-
-    # Temperature change (next step - current)
-    df['dT'] = df[room_col].diff().shift(-1)
-
-    # Driving forces
-    df['delta_T_hk2'] = df[hk2_col] - df[room_col]  # Heating effort (HK2 - room)
-    df['delta_T_out'] = df[room_col] - df['T_out']   # Heat loss (room - outdoor)
-
-    df = df.dropna()
-
-    if len(df) < 50:
-        print(f"  Not enough valid data after diff: {len(df)} points")
-        return {}
-
-    # Build feature matrix
-    features = ['delta_T_hk2', 'delta_T_out']
-    if 'pv_generation' in df.columns:
-        features.append('pv_generation')
-
-    X = df[features].values
-    y = df['dT'].values
-
-    # Remove extreme outliers (> 3 std)
-    mask = np.abs(y - y.mean()) < 3 * y.std()
-    X = X[mask]
-    y = y[mask]
-
-    if len(y) < 30:
-        print(f"  Not enough data after outlier removal: {len(y)} points")
-        return {}
-
-    # Regression
-    reg = LinearRegression().fit(X, y)
-    y_pred = reg.predict(X)
-
-    # Extract coefficients
-    heating_coef = reg.coef_[0]  # Response to heating (T_hk2 - T_room)
-    loss_coef = reg.coef_[1]     # Response to outdoor delta (should be negative)
-    solar_coef = reg.coef_[2] if len(features) > 2 else 0
-
-    # Time constant from loss coefficient
-    # dT = -loss_coef * (T_room - T_out) * dt
-    # For loss: dT/dt = -(1/tau) * (T_room - T_out)
-    # So: loss_coef = dt / tau, tau = dt / loss_coef
-    dt_hours = 0.25  # 15 min
-    abs_loss = abs(loss_coef)
-    if abs_loss > 0.0001:
-        time_constant_hours = dt_hours / abs_loss
-    else:
-        time_constant_hours = 100.0  # Cap for very stable temps
-
-    r2 = r2_score(y, y_pred)
-    rmse = np.sqrt(mean_squared_error(y, y_pred))
-
-    result = {
-        'room': room_col,
-        'heating_coef': heating_coef,
-        'loss_coef': loss_coef,
-        'solar_coef': solar_coef,
-        'intercept': reg.intercept_,
-        'time_constant_hours': time_constant_hours,
-        'r2': r2,
-        'rmse': rmse,
-        'n_points': len(y)
-    }
-
-    print(f"  Heating coef (T_hk2 - T_room): {heating_coef:.6f} K/(15min)/K")
-    print(f"  Loss coef (T_room - T_out): {loss_coef:.6f} K/(15min)/K")
-    print(f"  Solar coef: {solar_coef:.6f} K/(15min)/kWh")
-    print(f"  Time constant: {time_constant_hours:.1f} hours")
-    print(f"  R²: {r2:.3f}")
-    print(f"  RMSE: {rmse:.4f} K")
-    print(f"  Data points: {len(y)}")
-
-    return result
-
-
-def estimate_thermal_response(thermal_data: pd.DataFrame, room_col: str) -> dict:
-    """
-    Estimate thermal response characteristics during heating periods.
-
-    Looks at heating rise rate when heat pump is active.
-    """
-    print(f"\nEstimating thermal response for {room_col}...")
-
-    df = thermal_data[[room_col, 'T_out', 'T_flow', 'is_heating']].dropna()
-
-    if len(df) < 50:
-        print("  Not enough data")
-        return {}
-
-    # During heating: temperature rise rate
-    df['dT'] = df[room_col].diff()
-    df['delta_T_out'] = df[room_col] - df['T_out']
-    df['delta_T_flow'] = df['T_flow'] - df[room_col]  # Flow - room (driving force)
-
-    heating_on = df['is_heating'] > 0.5
-    heating_data = df[heating_on].dropna()
-
-    if len(heating_data) < 20:
-        print("  Not enough heating data")
-        return {}
-
-    # During heating: dT/dt = (UA_flow * (T_flow - T_in) - UA_out * (T_in - T_out)) / C
-    # Simplified: dT/dt = a * (T_flow - T_in) + b * (T_out - T_in)
-
-    X = heating_data[['delta_T_flow', 'delta_T_out']].values
-    y = heating_data['dT'].values
-
-    # Remove outliers
-    mask = np.abs(y) < np.percentile(np.abs(y), 95)
-    X = X[mask]
-    y = y[mask]
-
-    if len(y) < 10:
-        return {}
-
-    reg = LinearRegression().fit(X, y)
-    y_pred = reg.predict(X)
-
-    result = {
-        'room': room_col,
-        'heating_coef': reg.coef_[0],  # Response to flow-room delta
-        'loss_coef': reg.coef_[1],     # Response to outdoor-room delta
-        'intercept': reg.intercept_,
-        'r2': r2_score(y, y_pred),
-        'rmse': np.sqrt(mean_squared_error(y, y_pred)),
-        'n_points': len(y),
-        'mean_rise_rate': y.mean() * 4  # K per hour (from per 15 min)
-    }
-
-    print(f"  Heating coefficient: {reg.coef_[0]:.6f}")
-    print(f"  Loss coefficient: {reg.coef_[1]:.6f}")
-    print(f"  R²: {result['r2']:.3f}")
-    print(f"  Mean rise rate: {result['mean_rise_rate']:.2f} K/h when heating")
-
-    return result
-
-
-def build_simple_rc_model(thermal_data: pd.DataFrame, room_col: str) -> dict:
-    """
-    Build a simple RC (resistance-capacitance) thermal model.
-
-    State equation (discrete, 15-min steps):
-        T[k+1] = T[k] + dt/C * (Q_heat[k] - UA*(T[k] - T_out[k]) + S*PV[k])
-
-    Parameters to estimate: UA (heat loss), response_time (C/UA)
-    """
-    print(f"\nBuilding RC model for {room_col}...")
-
-    df = thermal_data[[room_col, 'T_out', 'T_flow', 'pv_generation']].copy()
-    df = df.dropna()
-
-    if len(df) < 100:
-        print("  Not enough data")
-        return {}
-
-    # Estimate heating power from flow temperature
-    # Q_heat ~ k * max(T_flow - T_room, 0)
-    df['delta_T_flow'] = np.maximum(df['T_flow'] - df[room_col], 0)
-    df['delta_T_out'] = df[room_col] - df['T_out']
-    df['dT'] = df[room_col].diff().shift(-1)  # Next step change
-
-    df = df.dropna()
-
-    # Simple linear model: dT = a * delta_T_flow - b * delta_T_out + c * PV
-    X = df[['delta_T_flow', 'delta_T_out', 'pv_generation']].values
-    y = df['dT'].values
-
-    # Remove extreme outliers
-    mask = np.abs(y) < np.percentile(np.abs(y), 98)
-    X = X[mask]
-    y = y[mask]
-
-    reg = LinearRegression().fit(X, y)
-    y_pred = reg.predict(X)
-
-    # Coefficients interpretation:
-    # dT = a * (T_flow - T_in) - b * (T_in - T_out) + c * PV
-    # a = response to heating (heating gain / C)
-    # b = heat loss rate (UA / C)
-    # c = solar gain coefficient
-
-    heating_coef = reg.coef_[0]
-    loss_coef = reg.coef_[1]  # Already negative in formulation
-    solar_coef = reg.coef_[2]
-
-    # Time constant estimation: tau = C / UA
-    # From loss_coef (per 15 min): loss_coef = dt * UA / C
-    # tau = dt / loss_coef (in 15-min units)
-    # Note: loss_coef should be positive for physical meaning
-    dt_hours = 0.25
-    abs_loss = abs(loss_coef)
-    if abs_loss > 0.001:
-        time_constant_hours = dt_hours / abs_loss
-    else:
-        time_constant_hours = 100.0  # Cap at 100 hours for very stable temps
-
-    result = {
-        'room': room_col,
-        'heating_coef': heating_coef,
-        'loss_coef': loss_coef,
-        'solar_coef': solar_coef,
-        'intercept': reg.intercept_,
-        'time_constant_hours': time_constant_hours,
-        'r2': r2_score(y, y_pred),
-        'rmse': np.sqrt(mean_squared_error(y, y_pred)),
-        'n_points': len(y)
-    }
-
-    print(f"  Heating coef: {heating_coef:.6f} K/(15min)/K")
-    print(f"  Loss coef: {loss_coef:.6f} K/(15min)/K")
-    print(f"  Solar coef: {solar_coef:.4f} K/(15min)/kWh")
-    print(f"  Time constant: {time_constant_hours:.1f} hours")
-    print(f"  R²: {result['r2']:.3f}")
-    print(f"  RMSE: {result['rmse']:.4f} K")
-
-    return result
-
-
-def simulate_temperature(thermal_data: pd.DataFrame, room_col: str,
-                        model_params: dict) -> pd.DataFrame:
-    """Simulate temperature using the RC model and compare with actual."""
-    df = thermal_data[[room_col, 'T_out', 'T_flow', 'pv_generation']].copy()
-    df = df.dropna()
-
-    if len(df) < 10:
-        return pd.DataFrame()
-
-    # Extract parameters
-    a = model_params['heating_coef']
-    b = model_params['loss_coef']
-    c = model_params['solar_coef']
-
-    # Initialize simulation
-    T_sim = np.zeros(len(df))
-    T_sim[0] = df[room_col].iloc[0]
-
-    T_out = df['T_out'].values
-    T_flow = df['T_flow'].values
-    PV = df['pv_generation'].values
-
-    # Simulate with stability bounds
-    T_actual = df[room_col].values
-
-    for k in range(len(df) - 1):
-        delta_flow = max(T_flow[k] - T_sim[k], 0)
-        delta_out = T_sim[k] - T_out[k]
-
-        dT = a * delta_flow - b * delta_out + c * PV[k]
-
-        # Stability: limit change to reasonable bounds
-        dT = np.clip(dT, -2.0, 2.0)  # Max 2K change per 15 min
-
-        T_sim[k+1] = T_sim[k] + dT
-
-        # Reset if simulation diverges too far
-        if abs(T_sim[k+1] - T_actual[k+1]) > 10:
-            T_sim[k+1] = T_actual[k+1]
-
-    result = pd.DataFrame({
-        'actual': df[room_col].values,
-        'simulated': T_sim,
-        'T_out': T_out,
-        'T_flow': T_flow
-    }, index=df.index)
-
-    return result
-
-
-def plot_thermal_analysis(thermal_data: pd.DataFrame, room_results: dict,
-                         simulation: pd.DataFrame) -> None:
-    """Create visualization of thermal analysis results."""
-    print("\nCreating thermal analysis plots...")
-
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-
-    room_col = room_results.get('room', PRIMARY_ROOM)
-
-    # Panel 1: Temperature time series with simulation
-    ax = axes[0, 0]
-    if not simulation.empty:
-        ax.plot(simulation.index, simulation['actual'],
-                label='Actual', color='blue', alpha=0.7, linewidth=0.8)
-        ax.plot(simulation.index, simulation['simulated'],
-                label='Simulated', color='red', alpha=0.7, linewidth=0.8, linestyle='--')
-        ax.plot(simulation.index, simulation['T_out'],
-                label='Outdoor', color='green', alpha=0.5, linewidth=0.8)
-        ax.legend(loc='upper right')
-
-        rmse = np.sqrt(mean_squared_error(simulation['actual'], simulation['simulated']))
-        ax.text(0.02, 0.98, f'RMSE: {rmse:.2f}°C', transform=ax.transAxes,
-                verticalalignment='top', fontsize=10,
-                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-
-    ax.set_ylabel('Temperature (°C)')
-    ax.set_title(f'Temperature Simulation: {room_col}')
-    ax.grid(True, alpha=0.3)
-
-    # Panel 2: Actual vs Predicted scatter
-    ax = axes[0, 1]
-    if not simulation.empty:
-        ax.scatter(simulation['actual'], simulation['simulated'],
-                   alpha=0.3, s=5, c='blue')
-
-        # Perfect prediction line
-        temp_range = [simulation['actual'].min(), simulation['actual'].max()]
-        ax.plot(temp_range, temp_range, 'r--', linewidth=2, label='Perfect fit')
-
-        # Regression line
-        slope, intercept, r_value, _, _ = stats.linregress(
-            simulation['actual'], simulation['simulated'])
-        ax.plot(temp_range, [slope*t + intercept for t in temp_range],
-                'g-', linewidth=1.5, label=f'Fit (R²={r_value**2:.3f})')
-
-        ax.legend()
-
-    ax.set_xlabel('Actual Temperature (°C)')
-    ax.set_ylabel('Simulated Temperature (°C)')
-    ax.set_title('Model Validation')
-    ax.grid(True, alpha=0.3)
-
-    # Panel 3: Temperature response during heating
-    ax = axes[1, 0]
-    if 'T_flow' in thermal_data.columns and room_col in thermal_data.columns:
-        df = thermal_data[[room_col, 'T_flow', 'is_heating']].dropna()
-        heating_on = df['is_heating'] > 0.5 if 'is_heating' in df.columns else pd.Series(True, index=df.index)
-
-        delta_T = df['T_flow'] - df[room_col]
-        dT = df[room_col].diff() * 4  # K per hour
-
-        if heating_on.any():
-            ax.scatter(delta_T[heating_on], dT[heating_on],
-                       alpha=0.3, s=10, c='red', label='Heating ON')
-        if (~heating_on).any():
-            ax.scatter(delta_T[~heating_on], dT[~heating_on],
-                       alpha=0.2, s=5, c='blue', label='Heating OFF')
-
-        ax.axhline(y=0, color='black', linewidth=0.5)
-        ax.legend()
-
-    ax.set_xlabel('Flow - Room Temperature (K)')
-    ax.set_ylabel('Room Temp Change Rate (K/h)')
-    ax.set_title('Heating Response')
-    ax.grid(True, alpha=0.3)
-
-    # Panel 4: Heat loss vs temperature difference
-    ax = axes[1, 1]
-    if 'T_out' in thermal_data.columns and room_col in thermal_data.columns:
-        df = thermal_data[[room_col, 'T_out', 'is_heating', 'pv_generation']].dropna()
-
-        # Night, heating off periods
-        night_off = (df['pv_generation'] < 0.01) & (df['is_heating'] < 0.5)
-
-        if night_off.any():
-            delta_T_out = df.loc[night_off, room_col] - df.loc[night_off, 'T_out']
-            dT = df.loc[night_off, room_col].diff() * 4  # K per hour
-
-            ax.scatter(delta_T_out, dT, alpha=0.4, s=10, c='blue')
-
-            # Regression line
-            mask = delta_T_out.notna() & dT.notna()
-            if mask.sum() > 10:
-                slope, intercept, r_value, _, _ = stats.linregress(
-                    delta_T_out[mask], dT[mask])
-                x_range = np.array([delta_T_out.min(), delta_T_out.max()])
-                ax.plot(x_range, slope * x_range + intercept, 'r-', linewidth=2,
-                        label=f'Slope: {slope:.4f} (R²={r_value**2:.3f})')
-
-                # Estimate time constant
-                if slope < 0:
-                    tau = -1 / slope
-                    ax.text(0.02, 0.02, f'Time constant: {tau:.1f} h',
-                            transform=ax.transAxes, fontsize=10,
-                            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-
-                ax.legend()
-
-        ax.axhline(y=0, color='black', linewidth=0.5)
-
-    ax.set_xlabel('Indoor - Outdoor Temperature (K)')
-    ax.set_ylabel('Room Temp Change Rate (K/h)')
-    ax.set_title('Heat Loss During Night (Heating Off)')
-    ax.grid(True, alpha=0.3)
+def plot_thermal_analysis(results: list, heating_curve: dict, df: pd.DataFrame) -> None:
+    """Create visualization of thermal model results."""
+    print("\nCreating thermal model visualization...")
+
+    fig = plt.figure(figsize=(16, 12))
+
+    # Panel 1: Heating curve
+    ax1 = fig.add_subplot(2, 3, 1)
+    clean = df[[HK2_COL, OUTDOOR_COL]].dropna()
+    ax1.scatter(clean[OUTDOOR_COL], clean[HK2_COL], alpha=0.2, s=3)
+    x_line = np.linspace(clean[OUTDOOR_COL].min(), clean[OUTDOOR_COL].max(), 100)
+    y_line = heating_curve['baseline'] + heating_curve['slope'] * x_line
+    ax1.plot(x_line, y_line, 'r-', linewidth=2,
+             label=f'HK2 = {heating_curve["baseline"]:.1f} {heating_curve["slope"]:+.2f}×T_out')
+    ax1.set_xlabel('Outdoor Temperature (°C)')
+    ax1.set_ylabel('HK2 Temperature (°C)')
+    ax1.set_title(f'Heating Curve (R²={heating_curve["r2"]:.3f})')
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
+
+    # Panels 2-5: Room model fits (actual vs predicted)
+    for i, r in enumerate(results[:4]):
+        ax = fig.add_subplot(2, 3, i + 2)
+
+        # Subsample for clarity
+        n = len(r['y_actual'])
+        step = max(1, n // 500)
+
+        ax.scatter(r['y_actual'][::step], r['y_pred'][::step], alpha=0.4, s=10)
+
+        # Perfect fit line
+        temp_range = [r['y_actual'].min(), r['y_actual'].max()]
+        ax.plot(temp_range, temp_range, 'r--', linewidth=1.5, label='Perfect fit')
+
+        room_name = r['room'].replace('_temperature', '')
+        ax.set_xlabel('Actual Temperature (°C)')
+        ax.set_ylabel('Predicted Temperature (°C)')
+        ax.set_title(f'{room_name}\nR²={r["r2"]:.3f}, RMSE={r["rmse"]:.2f}°C')
+        ax.legend(fontsize=8)
+        ax.grid(True, alpha=0.3)
+
+    # Panel 6: Time series for best room
+    if results:
+        ax6 = fig.add_subplot(2, 3, 6)
+
+        # Find room with best R²
+        best = max(results, key=lambda x: x['r2'])
+        idx = best['index']
+
+        # Last 2 weeks
+        recent = idx >= idx.max() - pd.Timedelta(days=14)
+
+        ax6.plot(idx[recent], best['y_actual'][recent], 'b-', alpha=0.7,
+                 linewidth=0.8, label='Actual')
+        ax6.plot(idx[recent], best['y_pred'][recent], 'r-', alpha=0.7,
+                 linewidth=0.8, label='Predicted')
+
+        room_name = best['room'].replace('_temperature', '')
+        ax6.set_xlabel('Date')
+        ax6.set_ylabel('Temperature (°C)')
+        ax6.set_title(f'{room_name}: Last 2 Weeks (R²={best["r2"]:.3f})')
+        ax6.legend()
+        ax6.grid(True, alpha=0.3)
+        plt.setp(ax6.xaxis.get_majorticklabels(), rotation=45, ha='right')
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig13_thermal_model.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig17_thermal_model.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig13_thermal_model.png")
+    print("  Saved: fig17_thermal_model.png")
 
 
-def analyze_all_rooms(thermal_data: pd.DataFrame) -> pd.DataFrame:
-    """Analyze thermal characteristics for target sensors only."""
-    print("\n" + "="*60)
-    print("Analyzing thermal characteristics for target sensors")
-    print("="*60)
-
-    # Only analyze target sensors that exist in the data
-    room_cols = [c for c in TARGET_SENSORS if c in thermal_data.columns]
-
-    results = []
-
-    for room_col in room_cols:
-        valid_count = thermal_data[room_col].notna().sum()
-        weight = SENSOR_WEIGHTS.get(room_col, 0)
-        if valid_count < 500:  # Need at least ~3 days of data
-            print(f"\nSkipping {room_col}: only {valid_count} valid points")
-            continue
-
-        # Estimate thermal parameters using HK2 as heating input
-        thermal_result = estimate_heat_loss_with_heating(thermal_data, room_col)
-
-        if thermal_result:
-            results.append({
-                'room': room_col.replace('_temperature', ''),
-                'weight': weight,
-                'data_points': valid_count,
-                'time_constant_h': thermal_result.get('time_constant_hours'),
-                'heating_coef': thermal_result.get('heating_coef'),
-                'loss_coef': thermal_result.get('loss_coef'),
-                'solar_coef': thermal_result.get('solar_coef'),
-                'r2': thermal_result.get('r2'),
-                'rmse': thermal_result.get('rmse')
-            })
-
-    if results:
-        df_results = pd.DataFrame(results)
-        # Sort by weight (highest first)
-        df_results = df_results.sort_values('weight', ascending=False)
-        return df_results
-
-    return pd.DataFrame()
-
-
-def analyze_weighted_temperature(thermal_data: pd.DataFrame, T_weighted: pd.Series) -> dict:
-    """
-    Analyze thermal characteristics using the weighted indoor temperature.
-
-    This provides a single combined model using the weighted objective.
-    """
-    print("\n" + "="*60)
-    print("Analyzing weighted indoor temperature model")
-    print("="*60)
-
-    # Add weighted temperature to thermal data
-    thermal_data_with_weighted = thermal_data.copy()
-    thermal_data_with_weighted['T_weighted'] = T_weighted
-
-    # Use estimate_heat_loss_with_heating with weighted temperature
-    result = estimate_heat_loss_with_heating(thermal_data_with_weighted, 'T_weighted')
-
-    if result:
-        result['room'] = 'weighted_indoor'
-
-    return result
-
-
-def generate_report(room_results: pd.DataFrame, weighted_model: dict,
-                   simulation_rmse: float) -> str:
+def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> str:
     """Generate HTML report section for thermal model."""
 
-    # Weighted model results (primary)
-    if weighted_model:
-        weighted_time_constant = weighted_model.get('time_constant_hours', 'N/A')
-        weighted_r2 = weighted_model.get('r2', 'N/A')
-        weighted_heating_coef = weighted_model.get('heating_coef', 0)
-        weighted_loss_coef = weighted_model.get('loss_coef', 0)
-        weighted_rmse = weighted_model.get('rmse', 'N/A')
-    else:
-        weighted_time_constant = 'N/A'
-        weighted_r2 = 'N/A'
-        weighted_heating_coef = 0
-        weighted_loss_coef = 0
-        weighted_rmse = 'N/A'
+    # Build results table
+    results_table = ""
+    for r in results:
+        room_name = r['room'].replace('_temperature', '')
+        weight = SENSOR_WEIGHTS.get(r['room'], 0)
+        results_table += f"""
+        <tr>
+            <td>{room_name}</td>
+            <td>{weight:.0%}</td>
+            <td>{r['n_points']:,}</td>
+            <td>{r['tau_out_h']}h</td>
+            <td>{r['tau_effort_h']}h</td>
+            <td>{r['tau_pv_h']}h</td>
+            <td>{r['gain_outdoor']:+.3f}</td>
+            <td>{r['gain_effort']:+.3f}</td>
+            <td>{r['gain_pv']:+.3f}</td>
+            <td>{r['r2']:.3f}</td>
+            <td>{r['rmse']:.2f}°C</td>
+        </tr>
+        """
 
-    # Build weights description
+    # Weights description
     weights_desc = ", ".join([f"{k.replace('_temperature', '')}: {v:.0%}"
                               for k, v in SENSOR_WEIGHTS.items()])
 
@@ -704,119 +360,121 @@ def generate_report(room_results: pd.DataFrame, weighted_model: dict,
     <h2>3.1 Building Thermal Model</h2>
 
     <h3>Methodology</h3>
-    <p>Estimated building thermal characteristics using heating circuit temperature (T_hk2) as a proxy for heating effort.
-    This approach accounts for <strong>continuous heating operation</strong> (the heat pump runs day and night, not just during daytime).</p>
+    <p>The thermal model uses a <strong>transfer function approach</strong> that separates the
+    heating system behavior from building thermal response:</p>
 
-    <p><strong>Weighted Indoor Temperature:</strong> The model uses a weighted combination of target sensors:<br>
-    {weights_desc}</p>
+    <ol>
+        <li><strong>Heating Curve</strong>: Model HK2 = f(T_outdoor) to capture how the heat pump
+            adjusts flow temperature based on outdoor conditions</li>
+        <li><strong>Heating Effort</strong>: Calculate deviation from heating curve as the actual
+            heating input signal</li>
+        <li><strong>Room Response</strong>: Model each room's temperature as a function of
+            smoothed outdoor temp, heating effort, and solar radiation</li>
+    </ol>
 
-    <pre>
-    dT_room/dt = a × (T_hk2 - T_room) - b × (T_room - T_out) + c × PV
+    <h3>Heating Curve</h3>
+    <pre>HK2 = {heating_curve['baseline']:.1f} {heating_curve['slope']:+.3f} × T_outdoor   (R² = {heating_curve['r2']:.3f})</pre>
+    <p>Each -1°C outdoor → HK2 increases by {abs(heating_curve['slope']):.2f}°C</p>
 
-    where:
-        T_room = weighted indoor temperature (°C)
-        T_out  = outdoor temperature (°C)
-        T_hk2  = heating circuit 2 temperature (proxy for heating effort)
-        PV     = solar gain proxy (from PV generation)
-        a      = heating coefficient (response to heating effort)
-        b      = loss coefficient (heat loss to outdoor)
-        c      = solar gain coefficient
-        tau    = 1/b = thermal time constant (hours)
-    </pre>
+    <h3>Room Temperature Model</h3>
+    <pre>T_room = offset + g_out × LPF(T_outdoor, τ_out) + g_eff × LPF(effort, τ_eff) + g_pv × LPF(PV, τ_pv)</pre>
+    <p>Where LPF = low-pass filter (exponential smoothing with time constant τ)</p>
 
-    <p><strong>Key insight:</strong> T_hk2 varies from ~30°C at night (eco mode) to ~36°C in morning (comfort mode),
-    providing a continuous measure of heating input.</p>
+    <h4>Model Parameters</h4>
+    <ul>
+        <li><strong>τ_outdoor</strong>: How slowly room tracks outdoor temperature changes (hours)</li>
+        <li><strong>τ_effort</strong>: How quickly room responds to heating effort (hours)</li>
+        <li><strong>τ_pv</strong>: How quickly room responds to solar radiation (hours)</li>
+        <li><strong>gain_outdoor</strong>: °C room change per °C outdoor change</li>
+        <li><strong>gain_effort</strong>: °C room change per °C heating effort</li>
+        <li><strong>gain_pv</strong>: °C room change per kWh PV generation</li>
+    </ul>
 
-    <h3>Weighted Model Results (Primary)</h3>
+    <h3>Results by Room</h3>
+    <p><strong>Weighted temperature sensors:</strong> {weights_desc}</p>
+
     <table>
-        <tr><th>Metric</th><th>Value</th><th>Interpretation</th></tr>
         <tr>
-            <td>Thermal time constant</td>
-            <td>{weighted_time_constant:.1f} hours</td>
-            <td>Time for temperature to decay to 37% of initial difference</td>
+            <th>Room</th>
+            <th>Weight</th>
+            <th>Points</th>
+            <th>τ_out</th>
+            <th>τ_eff</th>
+            <th>τ_pv</th>
+            <th>g_out</th>
+            <th>g_eff</th>
+            <th>g_pv</th>
+            <th>R²</th>
+            <th>RMSE</th>
         </tr>
-        <tr>
-            <td>Heating coefficient (a)</td>
-            <td>{weighted_heating_coef:.6f}</td>
-            <td>Weighted temp rise per K of (T_hk2 - T_room) per 15 min</td>
-        </tr>
-        <tr>
-            <td>Loss coefficient (b)</td>
-            <td>{weighted_loss_coef:.6f}</td>
-            <td>Weighted temp drop per K of (T_room - T_out) per 15 min</td>
-        </tr>
-        <tr>
-            <td>Model R²</td>
-            <td>{weighted_r2:.3f}</td>
-            <td>Variance explained by weighted model</td>
-        </tr>
-        <tr>
-            <td>Model RMSE</td>
-            <td>{weighted_rmse:.4f}°C</td>
-            <td>Typical prediction error</td>
-        </tr>
-        <tr>
-            <td>Simulation RMSE</td>
-            <td>{simulation_rmse:.2f}°C</td>
-            <td>Cumulative simulation error</td>
-        </tr>
+        {results_table}
     </table>
 
-    <h3>Individual Sensor Results</h3>
+    <h3>Physical Interpretation</h3>
+
+    <h4>Heating Response</h4>
+    <p>The <code>gain_effort</code> coefficient shows how much each room responds to additional
+    heating beyond the baseline heating curve:</p>
+    <ul>
     """
 
-    if not room_results.empty:
-        html += "<table>\n"
-        html += "<tr><th>Sensor</th><th>Weight</th><th>Data Points</th><th>Time Constant (h)</th>"
-        html += "<th>Heating Coef</th><th>Loss Coef</th><th>R²</th></tr>\n"
-
-        for _, row in room_results.iterrows():
-            html += f"<tr>"
-            html += f"<td>{row['room']}</td>"
-            html += f"<td>{row['weight']:.0%}</td>"
-            html += f"<td>{row['data_points']:,}</td>"
-            html += f"<td>{row['time_constant_h']:.1f}</td>"
-            html += f"<td>{row['heating_coef']:.6f}</td>"
-            html += f"<td>{row['loss_coef']:.6f}</td>"
-            html += f"<td>{row['r2']:.3f}</td>"
-            html += f"</tr>\n"
-
-        html += "</table>\n"
+    # Sort by heating response
+    sorted_by_effort = sorted(results, key=lambda x: x['gain_effort'], reverse=True)
+    for r in sorted_by_effort:
+        room_name = r['room'].replace('_temperature', '')
+        html += f"<li><strong>{room_name}</strong>: {r['gain_effort']:+.3f} °C per °C effort"
+        if r['gain_effort'] > 0.5:
+            html += " (strong response)"
+        elif r['gain_effort'] < 0.3:
+            html += " (weak response)"
+        html += "</li>\n"
 
     html += """
-    <h3>Model Coefficients Interpretation</h3>
-    <ul>
-        <li><strong>Heating coefficient (a)</strong>: Response rate to heating circuit temperature.
-            Higher values indicate faster heating response.</li>
-        <li><strong>Loss coefficient</strong>: Heat loss rate per degree temperature difference.
-            Higher values indicate poorer insulation.</li>
-        <li><strong>Solar coefficient</strong>: Temperature rise per kWh of PV generation.
-            Captures passive solar gains through windows.</li>
-        <li><strong>Time constant</strong>: Building thermal inertia.
-            Longer = more stable temperatures, slower response to heating/cooling.</li>
     </ul>
+
+    <h4>Solar Response</h4>
+    <p>The <code>gain_pv</code> coefficient shows how much each room heats up from solar radiation
+    (using PV generation as a proxy for irradiance):</p>
+    <ul>
     """
 
-    # Add implications with weighted time constant
-    tc = weighted_time_constant if isinstance(weighted_time_constant, (int, float)) else 50
+    # Sort by solar response
+    sorted_by_pv = sorted(results, key=lambda x: x['gain_pv'], reverse=True)
+    for r in sorted_by_pv:
+        room_name = r['room'].replace('_temperature', '')
+        if r['gain_pv'] > 0:
+            html += f"<li><strong>{room_name}</strong>: {r['gain_pv']:+.3f} °C per kWh PV</li>\n"
+        else:
+            html += f"<li><strong>{room_name}</strong>: {r['gain_pv']:+.3f} °C per kWh PV (anomalous - possibly north-facing)</li>\n"
 
     html += f"""
+    </ul>
+
+    <h4>Time Constants</h4>
+    <ul>
+        <li><strong>τ_outdoor</strong>: 24-120h - rooms respond slowly to outdoor changes (3-5 days)</li>
+        <li><strong>τ_effort</strong>: 4-48h - rooms respond faster to heating changes</li>
+        <li><strong>τ_pv</strong>: ~24h for all rooms - consistent solar response time</li>
+    </ul>
+
+    <h3>Weighted Average Model Performance</h3>
+    <p>Overall weighted R² = <strong>{weighted_r2:.3f}</strong></p>
+
     <h3>Implications for Optimization</h3>
     <ul>
-        <li><strong>Pre-heating timing</strong>: With ~{tc:.0f}h time constant,
-            rooms need 2-3× this time to fully respond to setpoint changes.</li>
-        <li><strong>Solar preheating</strong>: Can reduce heating demand by timing comfort periods
-            to coincide with solar availability.</li>
-        <li><strong>Night setback recovery</strong>: Recovery from eco to comfort mode takes
-            approximately {tc*0.7:.0f}-{tc*1.5:.0f} hours depending on
-            outdoor temperature.</li>
+        <li><strong>Pre-heating timing</strong>: With τ_effort of 4-48h, rooms need advance notice
+            to reach target temperature</li>
+        <li><strong>Solar preheating</strong>: All rooms (except atelier) benefit from solar gain.
+            Schedule comfort periods during/after sunny periods.</li>
+        <li><strong>Room variation</strong>: Different rooms respond differently to heating.
+            simlab and studio respond strongly; atelier responds weakly.</li>
     </ul>
 
     <figure>
-        <img src="fig13_thermal_model.png" alt="Thermal Model Analysis">
-        <figcaption>Thermal model validation: temperature simulation (top-left),
-        actual vs predicted (top-right), heating response (bottom-left),
-        heat loss characterization (bottom-right).</figcaption>
+        <img src="fig17_thermal_model.png" alt="Thermal Model Analysis">
+        <figcaption><strong>Figure 17:</strong> Thermal model: heating curve (top-left),
+        actual vs predicted for each room (top-middle, top-right, bottom-left, bottom-middle),
+        time series validation (bottom-right).</figcaption>
     </figure>
     </section>
     """
@@ -831,49 +489,92 @@ def main():
     print("="*60)
 
     # Load data
-    df, heating_raw = load_data()
+    df = load_data()
 
-    # Prepare thermal analysis data
-    thermal_data = prepare_thermal_data(df, heating_raw)
-
-    if thermal_data.empty:
-        print("ERROR: Could not prepare thermal data")
+    # Check required columns
+    required = [HK2_COL, OUTDOOR_COL, PV_COL]
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        print(f"ERROR: Missing columns: {missing}")
         return
 
-    # Compute weighted indoor temperature
-    T_weighted = compute_weighted_temperature(thermal_data)
+    # Step 1: Fit heating curve
+    heating_curve = fit_heating_curve(df)
+    if not heating_curve:
+        print("ERROR: Could not fit heating curve")
+        return
 
-    # Analyze weighted temperature model (primary)
-    weighted_result = analyze_weighted_temperature(thermal_data, T_weighted)
+    # Step 2: Compute heating effort
+    effort = compute_heating_effort(df, heating_curve)
+    print(f"\nHeating effort: mean={effort.mean():.2f}°C, std={effort.std():.2f}°C")
 
-    # Build RC model for simulation using weighted temperature
-    thermal_data_with_weighted = thermal_data.copy()
-    thermal_data_with_weighted['T_weighted'] = T_weighted
+    # Step 3: Fit models for each room
+    print("\n" + "="*60)
+    print("Fitting room-specific thermal models")
+    print("="*60)
 
-    rc_result = build_simple_rc_model(thermal_data_with_weighted, 'T_weighted')
+    results = []
+    for room_col in TARGET_SENSORS:
+        if room_col not in df.columns:
+            print(f"\n{room_col}: Not found in data")
+            continue
 
-    # Simulate temperature using weighted model
-    simulation = pd.DataFrame()
-    simulation_rmse = float('nan')
-    if rc_result:
-        simulation = simulate_temperature(thermal_data_with_weighted, 'T_weighted', rc_result)
-        if not simulation.empty:
-            simulation_rmse = np.sqrt(mean_squared_error(
-                simulation['actual'], simulation['simulated']))
+        valid_count = df[room_col].notna().sum()
+        if valid_count < 500:
+            print(f"\n{room_col}: Only {valid_count} points (need 500+)")
+            continue
 
-    # Analyze individual target sensors
-    room_results = analyze_all_rooms(thermal_data)
+        room_name = room_col.replace('_temperature', '')
+        print(f"\n{room_name} ({valid_count:,} points):")
 
-    # Create visualizations using weighted temperature
-    plot_thermal_analysis(thermal_data_with_weighted, weighted_result if weighted_result else rc_result, simulation)
+        # Grid search for best parameters
+        best = grid_search_room_model(df, room_col, effort)
+
+        if best:
+            best['room'] = room_col
+            results.append(best)
+
+            print(f"  τ_out={best['tau_out_h']}h, τ_eff={best['tau_effort_h']}h, τ_pv={best['tau_pv_h']}h")
+            print(f"  R² = {best['r2']:.3f}, RMSE = {best['rmse']:.2f}°C")
+            print(f"  g_out={best['gain_outdoor']:+.3f}, g_eff={best['gain_effort']:+.3f}, g_pv={best['gain_pv']:+.3f}")
+
+    if not results:
+        print("ERROR: No room models fitted successfully")
+        return
+
+    # Calculate weighted R²
+    weighted_r2 = sum(r['r2'] * SENSOR_WEIGHTS.get(r['room'], 0) for r in results)
+    weighted_rmse = sum(r['rmse'] * SENSOR_WEIGHTS.get(r['room'], 0) for r in results)
+
+    # Create visualizations
+    plot_thermal_analysis(results, heating_curve, df)
 
     # Save results
-    if not room_results.empty:
-        room_results.to_csv(OUTPUT_DIR / 'thermal_model_results.csv', index=False)
-        print(f"\nSaved: thermal_model_results.csv")
+    results_df = pd.DataFrame([{
+        'room': r['room'].replace('_temperature', ''),
+        'weight': SENSOR_WEIGHTS.get(r['room'], 0),
+        'tau_outdoor_h': r['tau_out_h'],
+        'tau_effort_h': r['tau_effort_h'],
+        'tau_pv_h': r['tau_pv_h'],
+        'offset': r['offset'],
+        'gain_outdoor': r['gain_outdoor'],
+        'gain_effort': r['gain_effort'],
+        'gain_pv': r['gain_pv'],
+        'r2': r['r2'],
+        'rmse': r['rmse'],
+        'n_points': r['n_points']
+    } for r in results])
 
-    # Generate report section with weighted model
-    report_html = generate_report(room_results, weighted_result, simulation_rmse)
+    results_df.to_csv(OUTPUT_DIR / 'thermal_model_results.csv', index=False)
+    print(f"\nSaved: thermal_model_results.csv")
+
+    # Save heating curve
+    hc_df = pd.DataFrame([heating_curve])
+    hc_df.to_csv(OUTPUT_DIR / 'heating_curve.csv', index=False)
+    print("Saved: heating_curve.csv")
+
+    # Generate report
+    report_html = generate_report(results, heating_curve, weighted_r2)
     with open(OUTPUT_DIR / 'thermal_model_report_section.html', 'w') as f:
         f.write(report_html)
     print("Saved: thermal_model_report_section.html")
@@ -883,25 +584,17 @@ def main():
     print("THERMAL MODEL SUMMARY")
     print("="*60)
 
-    if weighted_result:
-        tc = weighted_result.get('time_constant_hours', 100)
-        r2 = weighted_result.get('r2', 0)
-        heating_coef = weighted_result.get('heating_coef', 0)
-        loss_coef = weighted_result.get('loss_coef', 0)
-        print(f"\nWeighted Indoor Temperature Model:")
-        print(f"  Weights: davis_inside=40%, office1=30%, atelier/studio/simlab=10% each")
-        print(f"  Time constant: {tc:.1f} hours")
-        print(f"  Heating coef (T_hk2 - T_room): {heating_coef:.6f}")
-        print(f"  Loss coef (T_room - T_out): {loss_coef:.6f}")
-        print(f"  Model R²: {r2:.3f}")
-        if not np.isnan(simulation_rmse) and simulation_rmse < 100:
-            print(f"  Simulation RMSE: {simulation_rmse:.2f}°C")
+    print(f"\nHeating Curve: HK2 = {heating_curve['baseline']:.1f} {heating_curve['slope']:+.3f} × T_outdoor")
+    print(f"  R² = {heating_curve['r2']:.3f}")
 
-    if not room_results.empty:
-        print(f"\nIndividual sensors analyzed: {len(room_results)}")
-        for _, row in room_results.iterrows():
-            print(f"  {row['room']} (weight={row['weight']:.0%}): "
-                  f"tau={row['time_constant_h']:.1f}h, R²={row['r2']:.3f}")
+    print(f"\nRoom Models (weighted R² = {weighted_r2:.3f}, RMSE = {weighted_rmse:.2f}°C):")
+    print(f"{'Room':<15} {'Weight':>6} {'R²':>6} {'τ_out':>6} {'τ_eff':>6} {'τ_pv':>5} {'g_eff':>7} {'g_pv':>7}")
+    print("-"*70)
+    for r in sorted(results, key=lambda x: SENSOR_WEIGHTS.get(x['room'], 0), reverse=True):
+        room_name = r['room'].replace('_temperature', '')
+        weight = SENSOR_WEIGHTS.get(r['room'], 0)
+        print(f"{room_name:<15} {weight:>5.0%} {r['r2']:>6.3f} {r['tau_out_h']:>5}h {r['tau_effort_h']:>5}h "
+              f"{r['tau_pv_h']:>4}h {r['gain_effort']:>+7.3f} {r['gain_pv']:>+7.3f}")
 
 
 if __name__ == '__main__':

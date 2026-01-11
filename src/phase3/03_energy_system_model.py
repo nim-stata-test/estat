@@ -457,10 +457,10 @@ def create_energy_system_plots(energy_15min: pd.DataFrame, pv_results: dict,
     ax.grid(True, alpha=0.3, axis='y')
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig15_energy_system_model.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig19_energy_system_model.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig15_energy_system_model.png")
+    print("  Saved: fig19_energy_system_model.png")
 
 
 def generate_report(pv_results: dict, battery_results: dict,
@@ -564,8 +564,8 @@ def generate_report(pv_results: dict, battery_results: dict,
     </ul>
 
     <figure>
-        <img src="fig15_energy_system_model.png" alt="Energy System Model">
-        <figcaption>Energy system analysis: daily profile (top-left),
+        <img src="fig19_energy_system_model.png" alt="Energy System Model">
+        <figcaption><strong>Figure 19:</strong> Energy system analysis: daily profile (top-left),
         battery patterns (top-right), monthly grid balance (bottom-left),
         self-sufficiency scenarios (bottom-right).</figcaption>
     </figure>

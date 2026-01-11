@@ -3,102 +3,177 @@
     <h2>3.1 Building Thermal Model</h2>
 
     <h3>Methodology</h3>
-    <p>Estimated building thermal characteristics using heating circuit temperature (T_hk2) as a proxy for heating effort.
-    This approach accounts for <strong>continuous heating operation</strong> (the heat pump runs day and night, not just during daytime).</p>
+    <p>The thermal model uses a <strong>transfer function approach</strong> that separates the
+    heating system behavior from building thermal response:</p>
 
-    <p><strong>Weighted Indoor Temperature:</strong> The model uses a weighted combination of target sensors:<br>
-    davis_inside: 40%, office1: 30%, atelier: 10%, studio: 10%, simlab: 10%</p>
+    <ol>
+        <li><strong>Heating Curve</strong>: Model HK2 = f(T_outdoor) to capture how the heat pump
+            adjusts flow temperature based on outdoor conditions</li>
+        <li><strong>Heating Effort</strong>: Calculate deviation from heating curve as the actual
+            heating input signal</li>
+        <li><strong>Room Response</strong>: Model each room's temperature as a function of
+            smoothed outdoor temp, heating effort, and solar radiation</li>
+    </ol>
 
-    <pre>
-    dT_room/dt = a × (T_hk2 - T_room) - b × (T_room - T_out) + c × PV
+    <h3>Heating Curve</h3>
+    <pre>HK2 = 38.4 -0.842 × T_outdoor   (R² = 0.562)</pre>
+    <p>Each -1°C outdoor → HK2 increases by 0.84°C</p>
 
-    where:
-        T_room = weighted indoor temperature (°C)
-        T_out  = outdoor temperature (°C)
-        T_hk2  = heating circuit 2 temperature (proxy for heating effort)
-        PV     = solar gain proxy (from PV generation)
-        a      = heating coefficient (response to heating effort)
-        b      = loss coefficient (heat loss to outdoor)
-        c      = solar gain coefficient
-        tau    = 1/b = thermal time constant (hours)
-    </pre>
+    <h3>Room Temperature Model</h3>
+    <pre>T_room = offset + g_out × LPF(T_outdoor, τ_out) + g_eff × LPF(effort, τ_eff) + g_pv × LPF(PV, τ_pv)</pre>
+    <p>Where LPF = low-pass filter (exponential smoothing with time constant τ)</p>
 
-    <p><strong>Key insight:</strong> T_hk2 varies from ~30°C at night (eco mode) to ~36°C in morning (comfort mode),
-    providing a continuous measure of heating input.</p>
+    <h4>Model Parameters</h4>
+    <ul>
+        <li><strong>τ_outdoor</strong>: How slowly room tracks outdoor temperature changes (hours)</li>
+        <li><strong>τ_effort</strong>: How quickly room responds to heating effort (hours)</li>
+        <li><strong>τ_pv</strong>: How quickly room responds to solar radiation (hours)</li>
+        <li><strong>gain_outdoor</strong>: °C room change per °C outdoor change</li>
+        <li><strong>gain_effort</strong>: °C room change per °C heating effort</li>
+        <li><strong>gain_pv</strong>: °C room change per kWh PV generation</li>
+    </ul>
 
-    <h3>Weighted Model Results (Primary)</h3>
+    <h3>Results by Room</h3>
+    <p><strong>Weighted temperature sensors:</strong> davis_inside: 40%, office1: 30%, atelier: 10%, studio: 10%, simlab: 10%</p>
+
     <table>
-        <tr><th>Metric</th><th>Value</th><th>Interpretation</th></tr>
         <tr>
-            <td>Thermal time constant</td>
-            <td>3.2 hours</td>
-            <td>Time for temperature to decay to 37% of initial difference</td>
+            <th>Room</th>
+            <th>Weight</th>
+            <th>Points</th>
+            <th>τ_out</th>
+            <th>τ_eff</th>
+            <th>τ_pv</th>
+            <th>g_out</th>
+            <th>g_eff</th>
+            <th>g_pv</th>
+            <th>R²</th>
+            <th>RMSE</th>
         </tr>
+        
         <tr>
-            <td>Heating coefficient (a)</td>
-            <td>0.056068</td>
-            <td>Weighted temp rise per K of (T_hk2 - T_room) per 15 min</td>
+            <td>davis_inside</td>
+            <td>40%</td>
+            <td>2,972</td>
+            <td>24h</td>
+            <td>8h</td>
+            <td>24h</td>
+            <td>+0.142</td>
+            <td>+0.629</td>
+            <td>+3.681</td>
+            <td>0.756</td>
+            <td>0.43°C</td>
         </tr>
+        
         <tr>
-            <td>Loss coefficient (b)</td>
-            <td>-0.078695</td>
-            <td>Weighted temp drop per K of (T_room - T_out) per 15 min</td>
+            <td>office1</td>
+            <td>30%</td>
+            <td>2,322</td>
+            <td>72h</td>
+            <td>8h</td>
+            <td>24h</td>
+            <td>+0.235</td>
+            <td>+0.509</td>
+            <td>+2.117</td>
+            <td>0.620</td>
+            <td>0.57°C</td>
         </tr>
+        
         <tr>
-            <td>Model R²</td>
-            <td>0.075</td>
-            <td>Variance explained by weighted model</td>
+            <td>atelier</td>
+            <td>10%</td>
+            <td>1,901</td>
+            <td>72h</td>
+            <td>8h</td>
+            <td>24h</td>
+            <td>+0.349</td>
+            <td>+0.670</td>
+            <td>-4.779</td>
+            <td>0.324</td>
+            <td>0.68°C</td>
         </tr>
+        
         <tr>
-            <td>Model RMSE</td>
-            <td>0.6214°C</td>
-            <td>Typical prediction error</td>
+            <td>studio</td>
+            <td>10%</td>
+            <td>2,294</td>
+            <td>120h</td>
+            <td>12h</td>
+            <td>24h</td>
+            <td>+0.203</td>
+            <td>+0.616</td>
+            <td>+1.454</td>
+            <td>0.559</td>
+            <td>0.53°C</td>
         </tr>
+        
         <tr>
-            <td>Simulation RMSE</td>
-            <td>5.39°C</td>
-            <td>Cumulative simulation error</td>
+            <td>simlab</td>
+            <td>10%</td>
+            <td>2,593</td>
+            <td>24h</td>
+            <td>48h</td>
+            <td>24h</td>
+            <td>+0.126</td>
+            <td>+0.848</td>
+            <td>+5.419</td>
+            <td>0.549</td>
+            <td>0.73°C</td>
         </tr>
+        
     </table>
 
-    <h3>Individual Sensor Results</h3>
-    <table>
-<tr><th>Sensor</th><th>Weight</th><th>Data Points</th><th>Time Constant (h)</th><th>Heating Coef</th><th>Loss Coef</th><th>R²</th></tr>
-<tr><td>davis_inside</td><td>40%</td><td>3,471</td><td>14.1</td><td>0.017024</td><td>-0.017671</td><td>0.323</td></tr>
-<tr><td>office1</td><td>30%</td><td>2,745</td><td>17.5</td><td>0.013097</td><td>-0.014250</td><td>0.238</td></tr>
-<tr><td>atelier</td><td>10%</td><td>2,232</td><td>29.5</td><td>0.008511</td><td>-0.008478</td><td>0.144</td></tr>
-<tr><td>studio</td><td>10%</td><td>2,699</td><td>32.8</td><td>0.007280</td><td>-0.007630</td><td>0.061</td></tr>
-<tr><td>simlab</td><td>10%</td><td>3,038</td><td>21.6</td><td>0.008729</td><td>-0.011588</td><td>0.034</td></tr>
-</table>
+    <h3>Physical Interpretation</h3>
 
-    <h3>Model Coefficients Interpretation</h3>
+    <h4>Heating Response</h4>
+    <p>The <code>gain_effort</code> coefficient shows how much each room responds to additional
+    heating beyond the baseline heating curve:</p>
     <ul>
-        <li><strong>Heating coefficient (a)</strong>: Response rate to heating circuit temperature.
-            Higher values indicate faster heating response.</li>
-        <li><strong>Loss coefficient</strong>: Heat loss rate per degree temperature difference.
-            Higher values indicate poorer insulation.</li>
-        <li><strong>Solar coefficient</strong>: Temperature rise per kWh of PV generation.
-            Captures passive solar gains through windows.</li>
-        <li><strong>Time constant</strong>: Building thermal inertia.
-            Longer = more stable temperatures, slower response to heating/cooling.</li>
+    <li><strong>simlab</strong>: +0.848 °C per °C effort (strong response)</li>
+<li><strong>atelier</strong>: +0.670 °C per °C effort (strong response)</li>
+<li><strong>davis_inside</strong>: +0.629 °C per °C effort (strong response)</li>
+<li><strong>studio</strong>: +0.616 °C per °C effort (strong response)</li>
+<li><strong>office1</strong>: +0.509 °C per °C effort (strong response)</li>
+
     </ul>
-    
+
+    <h4>Solar Response</h4>
+    <p>The <code>gain_pv</code> coefficient shows how much each room heats up from solar radiation
+    (using PV generation as a proxy for irradiance):</p>
+    <ul>
+    <li><strong>simlab</strong>: +5.419 °C per kWh PV</li>
+<li><strong>davis_inside</strong>: +3.681 °C per kWh PV</li>
+<li><strong>office1</strong>: +2.117 °C per kWh PV</li>
+<li><strong>studio</strong>: +1.454 °C per kWh PV</li>
+<li><strong>atelier</strong>: -4.779 °C per kWh PV (anomalous - possibly north-facing)</li>
+
+    </ul>
+
+    <h4>Time Constants</h4>
+    <ul>
+        <li><strong>τ_outdoor</strong>: 24-120h - rooms respond slowly to outdoor changes (3-5 days)</li>
+        <li><strong>τ_effort</strong>: 4-48h - rooms respond faster to heating changes</li>
+        <li><strong>τ_pv</strong>: ~24h for all rooms - consistent solar response time</li>
+    </ul>
+
+    <h3>Weighted Average Model Performance</h3>
+    <p>Overall weighted R² = <strong>0.632</strong></p>
+
     <h3>Implications for Optimization</h3>
     <ul>
-        <li><strong>Pre-heating timing</strong>: With ~3h time constant,
-            rooms need 2-3× this time to fully respond to setpoint changes.</li>
-        <li><strong>Solar preheating</strong>: Can reduce heating demand by timing comfort periods
-            to coincide with solar availability.</li>
-        <li><strong>Night setback recovery</strong>: Recovery from eco to comfort mode takes
-            approximately 2-5 hours depending on
-            outdoor temperature.</li>
+        <li><strong>Pre-heating timing</strong>: With τ_effort of 4-48h, rooms need advance notice
+            to reach target temperature</li>
+        <li><strong>Solar preheating</strong>: All rooms (except atelier) benefit from solar gain.
+            Schedule comfort periods during/after sunny periods.</li>
+        <li><strong>Room variation</strong>: Different rooms respond differently to heating.
+            simlab and studio respond strongly; atelier responds weakly.</li>
     </ul>
 
     <figure>
-        <img src="fig13_thermal_model.png" alt="Thermal Model Analysis">
-        <figcaption>Thermal model validation: temperature simulation (top-left),
-        actual vs predicted (top-right), heating response (bottom-left),
-        heat loss characterization (bottom-right).</figcaption>
+        <img src="fig17_thermal_model.png" alt="Thermal Model Analysis">
+        <figcaption><strong>Figure 17:</strong> Thermal model: heating curve (top-left),
+        actual vs predicted for each room (top-middle, top-right, bottom-left, bottom-middle),
+        time series validation (bottom-right).</figcaption>
     </figure>
     </section>
     

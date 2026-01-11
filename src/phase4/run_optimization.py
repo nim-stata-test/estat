@@ -263,11 +263,11 @@ def main():
     print("  - phase5_parameter_sets.json (intervention parameters)")
     print("  - phase5_predictions.json (testable predictions)")
     print("\nFigures:")
-    print("  - fig16_strategy_comparison.png")
-    print("  - fig17_simulation_results.png")
-    print("  - fig18_parameter_space.png")
-    print("  - fig19_pareto_front.png (Pareto optimization)")
-    print("  - fig20_strategy_comparison.png (Pareto strategies)")
+    print("  - fig21_strategy_comparison.png")
+    print("  - fig22_simulation_results.png")
+    print("  - fig23_parameter_space.png")
+    print("  - fig24_pareto_front.png (Pareto optimization)")
+    print("  - fig25_pareto_strategy_comparison.png (Pareto strategies)")
 
 
 if __name__ == '__main__':

@@ -305,11 +305,11 @@ T_weighted = 0.40×davis_inside + 0.30×office1 + 0.10×atelier + 0.10×studio +
 
 After running `python src/phase3/run_phase3.py`, outputs are saved to `output/phase3/`:
 
-**Figures (fig13-fig16):**
-- fig13: Thermal model (temperature simulation, decay analysis)
-- fig14: Heat pump model (COP vs temperature, capacity, buffer tank)
-- fig15: Energy system (daily profiles, battery patterns, self-sufficiency)
-- fig16: Tariff cost model (cost breakdown, high/low tariff, forecasting)
+**Figures (fig17-fig20):**
+- fig17: Thermal model (temperature simulation, decay analysis)
+- fig18: Heat pump model (COP vs temperature, capacity, buffer tank)
+- fig19: Energy system (daily profiles, battery patterns, self-sufficiency)
+- fig20: Tariff cost model (cost breakdown, high/low tariff, forecasting)
 
 **Reports:**
 - `phase3_report.html` - Combined modeling report
@@ -344,10 +344,13 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
 
 After running `python src/phase4/run_optimization.py`, outputs are saved to `output/phase4/`:
 
-**Figures (fig16-fig18):**
-- fig16: Strategy comparison (COP by strategy, schedule alignment, expected improvements)
-- fig17: Simulation results (time series, self-sufficiency, hourly COP profiles)
-- fig18: Parameter space (trade-offs, parameter summary table)
+**Figures (fig21-fig26):**
+- fig21: Strategy comparison (COP by strategy, schedule alignment, expected improvements)
+- fig22: Simulation results (time series, self-sufficiency, hourly COP profiles)
+- fig23: Parameter space (trade-offs, parameter summary table)
+- fig24: Pareto front (2D projections of Pareto-optimal solutions)
+- fig25: Pareto strategy comparison (radar chart comparing strategies)
+- fig26: Pareto evolution (optimization history animation frame)
 
 **Reports:**
 - `phase4_report.html` - Combined optimization report
@@ -450,8 +453,9 @@ output/phase4/
 ├── pareto_front.csv           # All Pareto-optimal solutions
 ├── selected_strategies.csv    # 10 diverse strategies selected
 ├── selected_strategies.json   # Machine-readable format
-├── fig19_pareto_front.png     # 2D projections of Pareto front
-├── fig20_strategy_comparison.png # Radar chart comparing strategies
+├── fig24_pareto_front.png     # 2D projections of Pareto front
+├── fig25_pareto_strategy_comparison.png # Radar chart comparing strategies
+├── fig26_pareto_evolution.png # Pareto front evolution frame
 └── pareto_report_section.html # HTML report section
 ```
 

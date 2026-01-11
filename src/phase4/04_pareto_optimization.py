@@ -861,10 +861,10 @@ def plot_pareto_front(solutions: list, selected: list = None):
     fig.suptitle('Pareto Front: Multi-Objective Heating Optimization\n'
                  '(Maximize Avg Temp, Minimize Grid Import, Minimize Net Cost)', fontsize=12)
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig19_pareto_front.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig24_pareto_front.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig19_pareto_front.png")
+    print("  Saved: fig24_pareto_front.png")
 
 
 def plot_strategy_comparison(selected: list):
@@ -909,10 +909,10 @@ def plot_strategy_comparison(selected: list):
     ax.set_title('Strategy Parameter Comparison (Normalized)', fontsize=12)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig20_strategy_comparison.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig25_pareto_strategy_comparison.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig20_strategy_comparison.png")
+    print("  Saved: fig25_pareto_strategy_comparison.png")
 
 
 def generate_report(solutions: list, selected: list, metadata: dict) -> str:
@@ -997,14 +997,14 @@ def generate_report(solutions: list, selected: list, metadata: dict) -> str:
 
     <h3>Pareto Front Visualization</h3>
     <figure>
-        <img src="fig19_pareto_front.png" alt="Pareto Front">
-        <figcaption>Pareto front showing trade-offs between objectives.
+        <img src="fig24_pareto_front.png" alt="Pareto Front">
+        <figcaption><strong>Figure 24:</strong> Pareto front showing trade-offs between objectives.
         Blue points are the 10 selected strategies.</figcaption>
     </figure>
 
     <figure>
-        <img src="fig20_strategy_comparison.png" alt="Strategy Comparison">
-        <figcaption>Radar chart comparing parameter values across selected strategies.</figcaption>
+        <img src="fig25_pareto_strategy_comparison.png" alt="Strategy Comparison">
+        <figcaption><strong>Figure 25:</strong> Radar chart comparing parameter values across selected strategies.</figcaption>
     </figure>
     </section>
     """
