@@ -279,7 +279,7 @@ python src/phase2/03_heating_curve_analysis.py
 
 **Model:**
 ```
-T_flow = T_setpoint + curve_rise × (T_ref - T_outdoor)
+T_HK2 = T_setpoint + curve_rise × (T_ref - T_outdoor)
 ```
 
 **Key features:**
@@ -313,10 +313,10 @@ The Phase 2 heating curve model exports parameters to JSON for use in Phase 3 an
 ```
 
 **Why this matters:** The optimization only makes sense if controllable parameters
-(setpoint, curve_rise) actually affect T_flow. The parametric model ensures:
+(setpoint, curve_rise) actually affect T_HK2. The parametric model ensures:
 - Changing setpoint shifts the heating curve up/down
-- Changing curve_rise affects how aggressively flow temp responds to cold
-- Both propagate through: T_flow → COP → energy consumption
+- Changing curve_rise affects how aggressively target temp responds to cold
+- Both propagate through: T_HK2 → COP → energy consumption
 
 **Scripts that load heating curve params:**
 - `src/phase3/01_thermal_model.py` - Displays for comparison with simple model
@@ -393,7 +393,7 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
 **Key Model Results:**
 - Building time constant: ~14-33 hours (varies by sensor)
 - davis_inside: tau=24h (primary comfort sensor)
-- COP model (R²=0.95): `COP = 6.52 + 0.13×T_outdoor - 0.10×T_flow`
+- COP model (R²=0.94): `COP = 5.93 + 0.13×T_outdoor - 0.08×T_HK2`
 - Current self-sufficiency: 58%, potential with optimization: 85%
 
 ## Phase 4: Optimization Strategy Outputs
@@ -437,9 +437,10 @@ After running `python src/phase4/run_optimization.py`, outputs are saved to `out
 
 **Heating Curve Model (from Phase 2):**
 ```
-T_flow = T_setpoint + curve_rise × (T_ref - T_outdoor)
+T_HK2 = T_setpoint + curve_rise × (T_ref - T_outdoor)
 ```
 Where:
+- T_HK2 = target flow temperature (heating curve setpoint)
 - T_ref = 21.32°C (comfort mode) or 19.18°C (eco mode)
 - curve_rise typically 0.85-1.08
 
