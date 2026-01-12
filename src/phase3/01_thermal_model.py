@@ -304,19 +304,33 @@ def plot_thermal_analysis(results: list, heating_curve: dict, df: pd.DataFrame) 
         # Single sensor: 1x3 layout
         fig, axes = plt.subplots(1, 3, figsize=(15, 4))
 
-        # Panel 1: Heating curve
+        # Panel 1: Heating curve with both models
         ax1 = axes[0]
         clean = df[[HK2_COL, OUTDOOR_COL]].dropna()
-        ax1.scatter(clean[OUTDOOR_COL], clean[HK2_COL], alpha=0.2, s=3)
+        ax1.scatter(clean[OUTDOOR_COL], clean[HK2_COL], alpha=0.2, s=3, label='Data')
         x_line = np.linspace(clean[OUTDOOR_COL].min(), clean[OUTDOOR_COL].max(), 100)
-        y_line = heating_curve['baseline'] + heating_curve['slope'] * x_line
-        ax1.plot(x_line, y_line, 'r-', linewidth=2,
-                 label=f'HK2 = {heating_curve["baseline"]:.1f} {heating_curve["slope"]:+.2f}×T_out')
+
+        # Simple linear model (diagnostic)
+        y_simple = heating_curve['baseline'] + heating_curve['slope'] * x_line
+        ax1.plot(x_line, y_simple, 'r--', linewidth=1.5, alpha=0.7,
+                 label=f'Simple: R²={heating_curve["r2"]:.2f}')
+
+        # Phase 2 parametric model (for optimization) - show comfort mode example
+        p2 = heating_curve['phase2_params']
+        setpoint_example = 20.5  # typical comfort setpoint
+        curve_rise_example = 1.08  # typical curve rise
+        y_parametric = setpoint_example + curve_rise_example * (p2['t_ref_comfort'] - x_line)
+        ax1.plot(x_line, y_parametric, 'g-', linewidth=2,
+                 label=f'Parametric: R²={p2["normal_r_squared"]:.2f}')
+
         ax1.set_xlabel('Outdoor Temperature (°C)')
-        ax1.set_ylabel('HK2 Temperature (°C)')
-        ax1.set_title(f'Heating Curve (R²={heating_curve["r2"]:.3f})')
-        ax1.legend()
+        ax1.set_ylabel('Flow Temperature (°C)')
+        ax1.set_title('Heating Curve Models')
+        ax1.legend(fontsize=8)
         ax1.grid(True, alpha=0.3)
+        ax1.text(0.02, 0.02, 'Parametric model used\nfor optimization',
+                 transform=ax1.transAxes, fontsize=7, va='bottom',
+                 bbox=dict(boxstyle='round', facecolor='lightgreen', alpha=0.8))
 
         # Panel 2: Actual vs Predicted scatter
         r = results[0]
@@ -350,19 +364,33 @@ def plot_thermal_analysis(results: list, heating_curve: dict, df: pd.DataFrame) 
         # Multiple sensors: 2x3 layout
         fig = plt.figure(figsize=(16, 12))
 
-        # Panel 1: Heating curve
+        # Panel 1: Heating curve with both models
         ax1 = fig.add_subplot(2, 3, 1)
         clean = df[[HK2_COL, OUTDOOR_COL]].dropna()
-        ax1.scatter(clean[OUTDOOR_COL], clean[HK2_COL], alpha=0.2, s=3)
+        ax1.scatter(clean[OUTDOOR_COL], clean[HK2_COL], alpha=0.2, s=3, label='Data')
         x_line = np.linspace(clean[OUTDOOR_COL].min(), clean[OUTDOOR_COL].max(), 100)
-        y_line = heating_curve['baseline'] + heating_curve['slope'] * x_line
-        ax1.plot(x_line, y_line, 'r-', linewidth=2,
-                 label=f'HK2 = {heating_curve["baseline"]:.1f} {heating_curve["slope"]:+.2f}×T_out')
+
+        # Simple linear model (diagnostic)
+        y_simple = heating_curve['baseline'] + heating_curve['slope'] * x_line
+        ax1.plot(x_line, y_simple, 'r--', linewidth=1.5, alpha=0.7,
+                 label=f'Simple: R²={heating_curve["r2"]:.2f}')
+
+        # Phase 2 parametric model (for optimization)
+        p2 = heating_curve['phase2_params']
+        setpoint_example = 20.5
+        curve_rise_example = 1.08
+        y_parametric = setpoint_example + curve_rise_example * (p2['t_ref_comfort'] - x_line)
+        ax1.plot(x_line, y_parametric, 'g-', linewidth=2,
+                 label=f'Parametric: R²={p2["normal_r_squared"]:.2f}')
+
         ax1.set_xlabel('Outdoor Temperature (°C)')
-        ax1.set_ylabel('HK2 Temperature (°C)')
-        ax1.set_title(f'Heating Curve (R²={heating_curve["r2"]:.3f})')
-        ax1.legend()
+        ax1.set_ylabel('Flow Temperature (°C)')
+        ax1.set_title('Heating Curve Models')
+        ax1.legend(fontsize=8)
         ax1.grid(True, alpha=0.3)
+        ax1.text(0.02, 0.02, 'Parametric model used\nfor optimization',
+                 transform=ax1.transAxes, fontsize=7, va='bottom',
+                 bbox=dict(boxstyle='round', facecolor='lightgreen', alpha=0.8))
 
         # Panels 2-5: Room model fits (actual vs predicted)
         for i, r in enumerate(results[:4]):
@@ -478,9 +506,23 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
             smoothed outdoor temp, heating effort, and solar radiation</li>
     </ol>
 
-    <h3>Heating Curve</h3>
+    <h3>Heating Curve Model</h3>
+
+    <h4>Parametric Model (from Phase 2 - used for optimization)</h4>
+    <pre>T_flow = setpoint + curve_rise × (T_ref - T_outdoor)   (R² = {heating_curve['phase2_params']['normal_r_squared']:.3f})</pre>
+    <p>Where:</p>
+    <ul>
+        <li>T_ref (comfort) = {heating_curve['phase2_params']['t_ref_comfort']:.2f}°C</li>
+        <li>T_ref (eco) = {heating_curve['phase2_params']['t_ref_eco']:.2f}°C</li>
+        <li>RMSE = {heating_curve['phase2_params']['normal_rmse']:.2f}°C</li>
+    </ul>
+    <p><strong>This is the model used in Phase 4 optimization.</strong> It accounts for controllable
+    parameters (setpoint, curve_rise) that affect T_flow → COP → energy consumption.</p>
+
+    <h4>Simple Reference Model (diagnostic only)</h4>
     <pre>HK2 = {heating_curve['baseline']:.1f} {heating_curve['slope']:+.3f} × T_outdoor   (R² = {heating_curve['r2']:.3f})</pre>
-    <p>Each -1°C outdoor → HK2 increases by {abs(heating_curve['slope']):.2f}°C</p>
+    <p>This simplified model ignores controllable parameters and is used only for computing
+    "heating effort" as a diagnostic signal for thermal response analysis.</p>
 
     <h3>Room Temperature Model</h3>
     <pre>T_room = offset + g_out × LPF(T_outdoor, τ_out) + g_eff × LPF(effort, τ_eff) + g_pv × LPF(PV, τ_pv)</pre>
