@@ -259,11 +259,12 @@ python src/phase2/03_heating_curve_analysis.py
 - `output/phase2/fig12_heating_curve_schedule.png` - 4-panel visualization
 - `output/phase2/heating_curve_schedules.csv` - Detected schedule regimes
 - `output/phase2/heating_curve_setpoints.csv` - Detected setpoint regimes
+- `output/phase2/heating_curve_params.json` - Model parameters for Phase 3/4 import
 - `output/phase2/heating_curve_report_section.html` - HTML section for report
 
 **Model:**
 ```
-T_target = T_setpoint + curve_rise × (T_ref - T_outdoor)
+T_flow = T_setpoint + curve_rise × (T_ref - T_outdoor)
 ```
 
 **Key features:**
@@ -281,6 +282,34 @@ T_target = T_setpoint + curve_rise × (T_ref - T_outdoor)
 - 2025-10-28 to 2025-12-04: comfort ~20.2-20.5°C, eco ~18.0-18.7°C
 - 2025-12-04 to 2025-12-07: eco=30°C (anomalous - effectively 24h comfort)
 - 2025-12-14+: comfort rising to 21°C
+
+**Heating Curve Parameter Integration:**
+
+The Phase 2 heating curve model exports parameters to JSON for use in Phase 3 and Phase 4:
+
+```json
+// output/phase2/heating_curve_params.json
+{
+  "t_ref_comfort": 21.32,   // Reference temperature for comfort mode
+  "t_ref_eco": 19.16,       // Reference temperature for eco mode
+  "r_squared": 0.931,       // Model fit (all data)
+  "normal_r_squared": 0.963 // Model fit (excluding anomalies)
+}
+```
+
+**Why this matters:** The optimization only makes sense if controllable parameters
+(setpoint, curve_rise) actually affect T_flow. The parametric model ensures:
+- Changing setpoint shifts the heating curve up/down
+- Changing curve_rise affects how aggressively flow temp responds to cold
+- Both propagate through: T_flow → COP → energy consumption
+
+**Scripts that load heating curve params:**
+- `src/phase3/01_thermal_model.py` - Displays for comparison with simple model
+- `src/phase4/01_rule_based_strategies.py` - Strategy definitions
+- `src/phase4/02_strategy_simulation.py` - Simulation
+- `src/phase4/04_pareto_optimization.py` - NSGA-II optimization
+- `src/phase4/05_strategy_evaluation.py` - Violation analysis
+- `src/phase4/06_strategy_detailed_analysis.py` - Detailed analysis
 
 ## Weighted Temperature Analysis
 
