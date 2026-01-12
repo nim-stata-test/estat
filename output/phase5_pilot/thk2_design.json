@@ -1,0 +1,160 @@
+{
+  "generated": "2026-01-12T18:31:07.336755",
+  "design_type": "T_HK2-targeted",
+  "n_points": 10,
+  "reference_outdoor_temp": 5.0,
+  "heating_curve_params": {
+    "t_ref_comfort": 21.32184684684685,
+    "t_ref_eco": 19.164948453608247,
+    "r_squared": 0.931278681157215,
+    "rmse": 1.1471880564399153,
+    "normal_r_squared": 0.9625619895096165,
+    "normal_rmse": 0.80881469344849,
+    "rmse_comfort": 0.39997123141327323,
+    "rmse_eco": 1.147185560070007,
+    "model": "T_flow = setpoint + curve_rise \u00d7 (T_ref - T_outdoor)"
+  },
+  "param_bounds": {
+    "comfort_setpoint": [
+      19.0,
+      22.0
+    ],
+    "eco_setpoint": [
+      14.0,
+      19.0
+    ],
+    "curve_rise": [
+      0.8,
+      1.2
+    ],
+    "comfort_hours": [
+      8.0,
+      16.0
+    ]
+  },
+  "safety": {
+    "min_temp_floor": 17.0
+  },
+  "design_points": [
+    {
+      "design_point": 1,
+      "comfort_setpoint": 19.0,
+      "eco_setpoint": 14.0,
+      "curve_rise": 0.8,
+      "comfort_hours": 12,
+      "comfort_start": "07:00",
+      "comfort_end": "19:00",
+      "T_HK2_comfort": 32.1,
+      "T_HK2_eco": 25.3,
+      "notes": "Minimum T_HK2 corner"
+    },
+    {
+      "design_point": 2,
+      "comfort_setpoint": 19.5,
+      "eco_setpoint": 18.0,
+      "curve_rise": 0.95,
+      "comfort_hours": 10,
+      "comfort_start": "08:00",
+      "comfort_end": "18:00",
+      "T_HK2_comfort": 35.0,
+      "T_HK2_eco": 31.5,
+      "notes": "Low-mid comfort, high eco"
+    },
+    {
+      "design_point": 3,
+      "comfort_setpoint": 20.0,
+      "eco_setpoint": 15.0,
+      "curve_rise": 1.1,
+      "comfort_hours": 8,
+      "comfort_start": "09:00",
+      "comfort_end": "17:00",
+      "T_HK2_comfort": 38.0,
+      "T_HK2_eco": 30.6,
+      "notes": "Mid comfort, mid eco"
+    },
+    {
+      "design_point": 4,
+      "comfort_setpoint": 20.5,
+      "eco_setpoint": 19.0,
+      "curve_rise": 1.2,
+      "comfort_hours": 14,
+      "comfort_start": "06:00",
+      "comfort_end": "20:00",
+      "T_HK2_comfort": 40.1,
+      "T_HK2_eco": 36.0,
+      "notes": "High T_HK2 both modes"
+    },
+    {
+      "design_point": 5,
+      "comfort_setpoint": 22.0,
+      "eco_setpoint": 14.0,
+      "curve_rise": 1.2,
+      "comfort_hours": 10,
+      "comfort_start": "08:00",
+      "comfort_end": "18:00",
+      "T_HK2_comfort": 41.6,
+      "T_HK2_eco": 31.0,
+      "notes": "Maximum comfort T_HK2"
+    },
+    {
+      "design_point": 6,
+      "comfort_setpoint": 21.0,
+      "eco_setpoint": 17.0,
+      "curve_rise": 0.85,
+      "comfort_hours": 16,
+      "comfort_start": "06:00",
+      "comfort_end": "22:00",
+      "T_HK2_comfort": 34.9,
+      "T_HK2_eco": 29.0,
+      "notes": "High setpoint, low curve"
+    },
+    {
+      "design_point": 7,
+      "comfort_setpoint": 19.0,
+      "eco_setpoint": 16.0,
+      "curve_rise": 1.15,
+      "comfort_hours": 12,
+      "comfort_start": "07:00",
+      "comfort_end": "19:00",
+      "T_HK2_comfort": 37.8,
+      "T_HK2_eco": 32.3,
+      "notes": "Low setpoint, high curve"
+    },
+    {
+      "design_point": 8,
+      "comfort_setpoint": 20.5,
+      "eco_setpoint": 14.5,
+      "curve_rise": 0.9,
+      "comfort_hours": 8,
+      "comfort_start": "09:00",
+      "comfort_end": "17:00",
+      "T_HK2_comfort": 35.2,
+      "T_HK2_eco": 27.2,
+      "notes": "Mid comfort, low eco T_HK2"
+    },
+    {
+      "design_point": 9,
+      "comfort_setpoint": 21.5,
+      "eco_setpoint": 18.5,
+      "curve_rise": 1.0,
+      "comfort_hours": 14,
+      "comfort_start": "06:00",
+      "comfort_end": "20:00",
+      "T_HK2_comfort": 37.8,
+      "T_HK2_eco": 32.7,
+      "notes": "Near baseline + high eco"
+    },
+    {
+      "design_point": 10,
+      "comfort_setpoint": 19.5,
+      "eco_setpoint": 15.5,
+      "curve_rise": 1.05,
+      "comfort_hours": 16,
+      "comfort_start": "06:00",
+      "comfort_end": "22:00",
+      "T_HK2_comfort": 36.6,
+      "T_HK2_eco": 30.4,
+      "notes": "Center of space"
+    }
+  ]
+}

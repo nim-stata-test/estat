@@ -605,7 +605,112 @@ Primary sensors for analysis:
 
 ---
 
-*Document version: 2.1*
+## Appendix E: Pilot Experiment (January-March 2026)
+
+### E.1 Purpose
+
+Before the main Phase 5 intervention study, a pilot experiment explores the parameter space to learn the **thermal response function**:
+
+```
+T_indoor = f(T_HK2 history, T_outdoor history, thermal_mass)
+```
+
+**Key Insight:** The heating curve model is deterministic and well-understood:
+```
+T_HK2 = T_setpoint + curve_rise × (T_ref - T_outdoor)
+```
+
+What we DON'T understand is how indoor temperature depends on T_HK2 history.
+Therefore, the pilot maximizes **T_HK2 spread** rather than raw parameter spread.
+
+Historical data limitations:
+- Comfort setpoint: 20.2-21.0°C (0.8°C range)
+- Eco setpoint: 18.0-18.3°C (0.3°C range)
+- Curve rise: 0.97-1.14 (0.17 range)
+- Result: eco_setpoint p=0.087 and comfort_hours p=0.34 (NOT significant)
+
+### E.2 Pilot Design
+
+| Aspect | Value |
+|--------|-------|
+| **Type** | T_HK2-targeted design (optimizes flow temp spread) |
+| **Duration** | 10 weeks (January 13 - March 23, 2026) |
+| **Block length** | 7 days (2-day washout + 5-day measurement) |
+| **Total blocks** | 10 |
+| **Randomization** | Random sequence assignment |
+
+### E.3 T_HK2 Spread (Reference T_outdoor = 5°C)
+
+| Mode | Min T_HK2 | Max T_HK2 | Spread |
+|------|-----------|-----------|--------|
+| Comfort | 32.1°C | 41.6°C | 9.5°C |
+| Eco | 25.3°C | 36.0°C | 10.7°C |
+
+### E.4 Parameter Bounds
+
+| Parameter | Min | Max | Role in Design |
+|-----------|-----|-----|----------------|
+| comfort_setpoint | 19.0°C | 22.0°C | Varies T_HK2 comfort |
+| eco_setpoint | 14.0°C | 19.0°C | Varies T_HK2 eco |
+| curve_rise | 0.80 | 1.20 | Varies T_HK2 slope |
+| comfort_hours | 8h | 16h | Orthogonal to T_HK2 |
+
+### E.5 Safety Constraints
+
+| Constraint | Pilot Threshold | Main Study Threshold |
+|------------|-----------------|----------------------|
+| Minimum T_weighted | 17.0°C | 18.5°C |
+| Maximum violation % | 50% | 5% |
+| Minimum COP | 2.0 | 2.0 |
+
+The pilot allows more aggressive exploration because the goal is data collection,
+not optimization. If comfort drops below 16.5°C, the block should be aborted and
+baseline settings restored.
+
+### E.6 Analysis Plan
+
+**Primary Model (T_HK2-based):**
+```
+T_indoor = b0 + b1×T_HK2_comfort + b2×T_HK2_eco + b3×comfort_hours + b4×T_outdoor
+```
+
+**Comparison Model (raw parameters):**
+```
+T_indoor = b0 + b1×comfort_sp + b2×eco_sp + b3×curve_rise + b4×hours + b5×T_outdoor
+```
+
+Key questions to answer:
+1. What is the thermal transfer function (T_indoor response to T_HK2)?
+2. Is there a difference between comfort T_HK2 and eco T_HK2 effects?
+3. Does schedule duration matter independently of T_HK2?
+
+### E.7 Commands
+
+```bash
+# Generate design and schedule
+python src/phase5_pilot/run_pilot.py
+
+# Use different reference outdoor temperature
+python src/phase5_pilot/run_pilot.py --ref-outdoor 3
+
+# Analyze after each completed block
+python src/phase5_pilot/03_pilot_analysis.py
+python src/phase5_pilot/03_pilot_analysis.py --block 5  # Through block 5
+
+# View schedule
+open output/phase5_pilot/pilot_protocol.html
+```
+
+### E.8 Expected Outcomes
+
+1. **Thermal transfer function**: Quantify T_indoor response to T_HK2 changes
+2. **Validated model**: Compare T_HK2-based vs raw parameter model fit (R²)
+3. **Schedule independence**: Verify comfort_hours effect is orthogonal to T_HK2
+4. **Informed Phase 5 design**: Update strategy definitions based on pilot learnings
+
+---
+
+*Document version: 2.3*
 *Created: January 2026*
-*Updated: January 2026 (5% violation constraint, updated curve_rise 0.89-0.90)*
+*Updated: January 2026 (T_HK2-targeted design in Appendix E)*
 *Author: ESTAT Project*

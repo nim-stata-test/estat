@@ -89,6 +89,14 @@ python src/phase4/05_strategy_evaluation.py        # Phase 4, Step 5
 python src/phase4/06_strategy_detailed_analysis.py # Phase 4, Step 6 (Phase 5 strategy details)
 python src/phase4/07_pareto_animation.py           # Phase 4, Step 7 (GIF + MP4 animation)
 python src/phase4/07_pareto_animation.py --mp4-only  # Convert existing GIFs to MP4 only
+
+# Phase 5 Pilot: T_HK2-Targeted Parameter Exploration (Jan-Mar 2026)
+python src/phase5_pilot/run_pilot.py               # Generate T_HK2 design + schedule
+python src/phase5_pilot/run_pilot.py --ref-outdoor 3   # Use different reference temp
+python src/phase5_pilot/run_pilot.py --design-only # Generate design only
+python src/phase5_pilot/run_pilot.py --schedule-only # Generate schedule from existing design
+python src/phase5_pilot/03_pilot_analysis.py       # Analyze pilot data (run after each block)
+python src/phase5_pilot/03_pilot_analysis.py --block 5  # Analyze through block 5 only
 ```
 
 ## Source Code Structure
@@ -124,20 +132,26 @@ src/
 │   ├── 05_strategy_evaluation.py     # Comfort violation analysis + winter predictions
 │   ├── 06_strategy_detailed_analysis.py  # Detailed Phase 5 strategy visualizations
 │   └── 07_pareto_animation.py        # Pareto evolution GIF + MP4 for PowerPoint
-└── phase5/              # Intervention Study
-    ├── estimate_study_parameters.py  # Data-driven washout/block estimation
-    └── generate_schedule.py          # Randomization schedule generator
+├── phase5/              # Intervention Study
+│   ├── estimate_study_parameters.py  # Data-driven washout/block estimation
+│   └── generate_schedule.py          # Randomization schedule generator
+└── phase5_pilot/        # Pilot Experiment (Jan-Mar 2026)
+    ├── run_pilot.py                  # Main runner: design + schedule
+    ├── 01_generate_thk2_design.py    # T_HK2-targeted design generation
+    ├── 02_generate_pilot_schedule.py # Dated block schedule
+    └── 03_pilot_analysis.py          # T_HK2-based thermal response analysis
 ```
 
 ## Output Directory Structure
 
 ```
 output/
-├── phase1/    # Preprocessing outputs (parquet files, reports)
-├── phase2/    # EDA outputs (figures, HTML reports)
-├── phase3/    # System modeling outputs (figures, model results)
-├── phase4/    # Optimization outputs (strategies, predictions)
-└── phase5/    # Intervention study outputs (schedules, logs, analysis)
+├── phase1/       # Preprocessing outputs (parquet files, reports)
+├── phase2/       # EDA outputs (figures, HTML reports)
+├── phase3/       # System modeling outputs (figures, model results)
+├── phase4/       # Optimization outputs (strategies, predictions)
+├── phase5/       # Intervention study outputs (schedules, logs, analysis)
+└── phase5_pilot/ # Pilot experiment outputs (Jan-Mar 2026)
 ```
 
 ## Processed Data
@@ -581,6 +595,89 @@ output/phase4/
 ├── strategy_violation_analysis.csv             # Detailed violation stats
 └── strategy_evaluation_report.html             # HTML report section
 ```
+
+## Phase 5 Pilot: T_HK2-Targeted Parameter Exploration (Jan-Mar 2026)
+
+T_HK2-targeted design experiment to learn the thermal response function:
+```
+T_indoor = f(T_HK2 history, T_outdoor history, thermal_mass)
+```
+
+**Key Insight:** The heating curve model is deterministic and well-understood:
+```
+T_HK2 = T_setpoint + curve_rise × (T_ref - T_outdoor)
+```
+What we DON'T understand is how indoor temperature depends on T_HK2 history.
+Therefore, the pilot maximizes **T_HK2 spread** rather than raw parameter spread.
+
+**Commands:**
+```bash
+# Generate design + schedule (10 blocks, starting Jan 13, 2026)
+python src/phase5_pilot/run_pilot.py
+
+# Use different reference outdoor temperature for T_HK2 calculation
+python src/phase5_pilot/run_pilot.py --ref-outdoor 3
+
+# Analyze data after each completed block
+python src/phase5_pilot/03_pilot_analysis.py
+python src/phase5_pilot/03_pilot_analysis.py --block 5  # Analyze through block 5
+```
+
+**Design:**
+- Type: T_HK2-targeted (optimizes for flow temperature spread)
+- Blocks: 10 (70 days = 10 weeks)
+- Block length: 7 days (2-day washout + 5-day measurement)
+- Period: Jan 13 - Mar 23, 2026
+
+**T_HK2 Spread (at reference T_outdoor = 5°C):**
+
+| Mode | Min T_HK2 | Max T_HK2 | Spread |
+|------|-----------|-----------|--------|
+| Comfort | 32.1°C | 41.6°C | 9.5°C |
+| Eco | 25.3°C | 36.0°C | 10.7°C |
+
+**Parameter Bounds:**
+
+| Parameter | Min | Max | Goal |
+|-----------|-----|-----|------|
+| comfort_setpoint | 19.0°C | 22.0°C | Varies T_HK2 comfort |
+| eco_setpoint | 14.0°C | 19.0°C | Varies T_HK2 eco |
+| curve_rise | 0.80 | 1.20 | Varies T_HK2 slope |
+| comfort_hours | 8h | 16h | Schedule (orthogonal to T_HK2) |
+
+**Safety Constraints:**
+- Minimum T_weighted: 17.0°C (abort block if breached)
+- Minimum COP: 2.0 (check heat pump if below)
+- Maximum violation %: 50% (pilot allows more than Phase 5)
+
+**Outputs:**
+```
+output/phase5_pilot/
+├── thk2_design.csv             # T_HK2-targeted design matrix
+├── thk2_design.json            # Machine-readable design with T_HK2 values
+├── pilot_schedule.csv          # Dated block schedule
+├── pilot_schedule.json         # Machine-readable schedule
+├── pilot_protocol.html         # Human-readable protocol with T_HK2 values
+├── pilot_analysis_results.csv  # Block-level metrics
+├── pilot_model_coefficients.json # T_HK2-based model results
+└── pilot_analysis_report.html  # Analysis report with dual model comparison
+```
+
+**Analysis Models:**
+
+Primary (T_HK2-based):
+```
+T_indoor = b0 + b1×T_HK2_comfort + b2×T_HK2_eco + b3×comfort_hours + b4×T_outdoor
+```
+
+Comparison (raw parameters):
+```
+T_indoor = b0 + b1×comfort_sp + b2×eco_sp + b3×curve_rise + b4×hours + b5×T_outdoor
+```
+
+**Expected Outcome:** Learn the thermal transfer function - how T_indoor responds
+to T_HK2 levels. This enables accurate prediction of indoor comfort for any
+combination of heating parameters.
 
 ## Phase 5: Intervention Study
 
