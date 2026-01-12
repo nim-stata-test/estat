@@ -551,20 +551,20 @@ Evaluates selected strategies for comfort violations and generates winter predic
 python src/phase4/05_strategy_evaluation.py
 ```
 
-**Evaluation Results (Jan 2026, 5% constraint):**
+**Evaluation Results (Jan 2026, 500 pop × 100 gen):**
 
 | Strategy | Violation % | Cold Hours | Min Temp | Mean Temp | Status |
 |----------|-------------|------------|----------|-----------|--------|
-| Grid-Minimal | 4.5% | 40h | 17.3°C | 19.9°C | ✓ Pass |
-| Balanced | 4.7% | 42h | 17.3°C | 19.9°C | ✓ Pass |
-| Cost-Minimal | 4.7% | 42h | 17.3°C | 19.9°C | ✓ Pass |
-| Comfort-First | 0.0% | 0h | 20.4°C | 23.0°C | ✓ Comfortable |
+| Grid-Minimal | 2.9% | 31h | 17.7°C | 19.6°C | ✓ Pass |
+| Balanced | 2.9% | 31h | 17.7°C | 19.6°C | ✓ Pass |
+| Cost-Minimal | 2.9% | 31h | 17.7°C | 19.6°C | ✓ Pass |
+| Comfort-First | 0.0% | 0h | 21.5°C | 23.4°C | ✓ Comfortable |
 
-**Key improvements from 5% constraint (vs previous 20%):**
-- Violation reduced: 15-19% → 4.5-4.7%
-- Cold hours reduced: 136-170h → 40-42h
-- Min temps improved: 16.7-16.8°C → 17.3°C
-- Optimizer adapted by increasing curve_rise: 0.83 → 0.89-0.90
+**Key improvements from large-scale optimization:**
+- Violation reduced: 4.5% → 2.9% (well under 5% limit)
+- Cold hours reduced: 40h → 31h
+- Min temps improved: 17.3°C → 17.7°C
+- Optimizer found lower curve_rise: 0.89-0.90 → 0.82 with higher eco setpoint (14°C)
 
 **Outputs:**
 ```
@@ -603,28 +603,29 @@ python src/phase5/generate_schedule.py --start 2027-11-01 --weeks 20 --seed 42
 | Setpoint comfort/eco | Climate entity | Home Assistant |
 | Curve rise (Steilheit) | Heating curve menu | Heat pump interface |
 
-**Strategy Parameter Summary (Pareto-Optimized, Jan 2026, 5% constraint):**
+**Strategy Parameter Summary (Pareto-Optimized, 500 pop × 100 gen):**
 
 Three strategies selected from Pareto-optimal solutions for Phase 5 intervention study:
 
 | Parameter | A (Baseline) | B (Grid-Minimal) | C (Balanced) |
 |-----------|--------------|------------------|--------------|
-| Comfort start | 06:30 | 09:00 | 10:00 |
+| Comfort start | 06:30 | 11:30 | 11:45 |
 | Comfort end | 20:00 | 16:00 | 16:00 |
-| Setpoint comfort | 20.2°C | 22.0°C | 21.9°C |
-| Setpoint eco | 18.5°C | **12.0°C** | **12.1°C** |
-| Curve rise | 1.08 | **0.89** | **0.90** |
-| Grid (kWh)* | — | **2235** | 2239 |
-| Cost (CHF)* | — | 704 | **703** |
-| Violation % | — | 4.5% | 4.7% |
-| Min temp | — | 17.3°C | 17.3°C |
+| Setpoint comfort | 20.2°C | 22.0°C | 22.0°C |
+| Setpoint eco | 18.5°C | **14.1°C** | **14.2°C** |
+| Curve rise | 1.08 | **0.82** | **0.82** |
+| Grid (kWh)* | — | **2007** | 2007 |
+| Cost (CHF)* | — | 598 | **597** |
+| Violation % | — | 2.9% | 2.9% |
+| Min temp | — | 17.7°C | 17.7°C |
 
 *52-day simulation period
 
-**Key insight:** The 5% constraint forced higher curve_rise (0.89-0.90 vs 0.83):
-- Eco setpoint remains aggressive (12°C) as it has minimal effect on daytime comfort
-- Higher curve_rise ensures adequate heating during cold periods
-- Trade-off: slightly higher grid import, but acceptable comfort levels
+**Key insight:** Large-scale optimization found a different trade-off than initial runs:
+- Eco setpoint at 14°C (vs 12°C) provides buffer without affecting daytime comfort
+- Lower curve_rise (0.82) achieves better COP with narrower comfort window
+- Later comfort start (11:30-11:45) aligns better with solar production
+- Result: 10% lower grid import (2007 vs 2235 kWh) with better comfort (2.9% violation)
 
 **Comfort Objective (T_weighted):**
 
