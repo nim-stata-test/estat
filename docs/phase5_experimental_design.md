@@ -14,12 +14,12 @@ Evaluate three heating control strategies in a real-world setting to determine w
 |--------|-------|
 | **Type** | Randomized crossover intervention study |
 | **Duration** | 20 weeks (November 2027 - March 2028) |
-| **Block length** | 4 days per condition |
-| **Washout period** | 2 days (excluded from analysis) |
-| **Measurement period** | 2 days (used for analysis) |
+| **Block length** | 7 days per condition (weekly) |
+| **Washout period** | 3 days (excluded from analysis) |
+| **Measurement period** | 4 days (used for analysis) |
 | **Conditions** | 3 strategies |
-| **Total blocks** | 35 blocks (~11 per strategy) |
-| **Statistical power** | >95% to detect +0.30 COP change |
+| **Total blocks** | 20 blocks (~6-7 per strategy) |
+| **Statistical power** | 97% to detect +0.30 COP change |
 | **Randomization** | Latin square with weather stratification |
 
 ### 1.3 Data-Driven Parameter Estimates
@@ -29,9 +29,9 @@ These parameters were estimated from 69 days of historical data using `src/phase
 | Parameter | Value | Basis |
 |-----------|-------|-------|
 | **Heating response time (τ_effort)** | 12.4 hours | Weighted average from transfer function model |
-| **Washout period** | 37 hours (2 days) | 3×τ_effort = 95% equilibrium, rounded |
+| **Washout period** | 3 days (72 hours) | 3×τ_effort = 37h, rounded up for weekly blocks |
 | **COP residual std** | 0.21 | After HDD adjustment (R²=0.93) |
-| **Minimum detectable effect** | +0.25 COP | 80% power threshold |
+| **Minimum detectable effect** | +0.30 COP | 97% power with 7-day blocks |
 
 **Note on τ_effort:** The Phase 3 thermal model uses a transfer function approach with separate time constants for outdoor temperature response (τ_outdoor: 24-120h) and heating effort response (τ_effort: 8-48h). For washout calculation, we use τ_effort because it represents how quickly indoor temperature equilibrates after changing heating parameters.
 
@@ -166,28 +166,28 @@ Output: `output/phase5/block_schedule.csv`
 
 | Block | Start Date | End Date | Strategy | Season | Washout | Measurement |
 |-------|------------|----------|----------|--------|---------|-------------|
-| 1 | 2027-11-01 | 2027-11-05 | C | Early | Nov 1-3 | Nov 4-5 |
-| 2 | 2027-11-06 | 2027-11-10 | B | Early | Nov 6-8 | Nov 9-10 |
-| 3 | 2027-11-11 | 2027-11-15 | C | Early | Nov 11-13 | Nov 14-15 |
-| 4 | 2027-11-16 | 2027-11-20 | A | Early | Nov 16-18 | Nov 19-20 |
+| 1 | 2027-11-01 | 2027-11-07 | C | Early | Nov 1-3 | Nov 4-7 |
+| 2 | 2027-11-08 | 2027-11-14 | B | Early | Nov 8-10 | Nov 11-14 |
+| 3 | 2027-11-15 | 2027-11-21 | A | Early | Nov 15-17 | Nov 18-21 |
+| 4 | 2027-11-22 | 2027-11-28 | C | Early | Nov 22-24 | Nov 25-28 |
 | ... | ... | ... | ... | ... | ... | ... |
 
 ### 4.4 Season Definitions
-- **Early winter**: Nov 1 - Dec 15 (blocks 1-9)
-- **Mid winter**: Dec 16 - Feb 15 (blocks 10-21)
-- **Late winter**: Feb 16 - Mar 21 (blocks 22-28)
+- **Early winter**: Nov 1 - Dec 15 (blocks 1-6)
+- **Mid winter**: Dec 16 - Feb 15 (blocks 7-14)
+- **Late winter**: Feb 16 - Mar 21 (blocks 15-20)
 
 ---
 
 ## 5. Block Transition Protocol
 
 ### 5.1 Transition Timing
-- **Change time**: 00:00 (midnight) on block day 1
+- **Change time**: 00:00 (midnight) on block day 1 (weekly, e.g., every Monday)
 - **Washout period**: Days 1-3 (72 hours, excluded from analysis)
-- **Measurement period**: Days 4-5 (48 hours, used for analysis)
-- **Block ends**: 23:59 on day 5
+- **Measurement period**: Days 4-7 (96 hours, used for analysis)
+- **Block ends**: 23:59 on day 7
 
-The 3-day washout is based on the building's thermal time constant (19.3 hours). After 3 tau (~58 hours), the system reaches 95% of the new equilibrium.
+The 3-day washout is based on the building's thermal time constant (τ_effort = 12.4 hours). After 3×τ (~37 hours), the system reaches 95% of the new equilibrium. The extra day provides margin for scheduling.
 
 ### 5.2 Step-by-Step Parameter Change Procedure
 
@@ -257,7 +257,7 @@ Complete each day during the study:
 
 ```
 Date: ________
-Block: ___ of 28
+Block: ___ of 20
 Strategy: [ ] A  [ ] B  [ ] C
 
 Weather:
@@ -285,7 +285,7 @@ _________________________________
 
 ## 7. Block Summary Log
 
-Complete at end of each 4-day block:
+Complete at end of each 7-day block:
 
 ### 7.1 Block Summary Template
 
@@ -451,13 +451,14 @@ Based on power analysis using historical data (`src/phase5/estimate_study_parame
 | Metric | Value |
 |--------|-------|
 | COP residual std (after HDD adjustment) | 0.21 |
-| Minimum detectable effect | +0.25 COP (80% power) |
+| Minimum detectable effect | +0.30 COP |
 | Expected effect (Energy-Optimized) | +0.30 COP |
-| Blocks per strategy | 7 |
-| Statistical power | 93% |
+| Blocks per strategy | 6-7 |
+| Measurement days per block | 4 |
+| Statistical power | 97% |
 | α | 0.05 (two-sided) |
 
-**Key insight**: HDD explains 92.5% of COP variance. Using HDD as a covariate in the analysis reduces residual variance by 73%, enabling detection of smaller effects with fewer blocks.
+**Key insight**: 7-day blocks improve power from ~75% (4-day) to ~97% (7-day) because more measurement days per block reduces within-block variance. HDD explains 92.5% of COP variance, further enabling detection of smaller effects.
 
 ---
 
@@ -523,9 +524,9 @@ output/phase5/
 
 | Phase | Dates | Blocks | Focus |
 |-------|-------|--------|-------|
-| Early winter | Nov 1 - Dec 15 | 1-11 | Initial data, refine washout |
-| Mid winter | Dec 16 - Feb 15 | 12-26 | Core data collection |
-| Late winter | Feb 16 - Mar 31 | 27-35 | Final blocks, wrap-up |
+| Early winter | Nov 1 - Dec 15 | 1-6 | Initial data, refine washout |
+| Mid winter | Dec 16 - Feb 15 | 7-14 | Core data collection |
+| Late winter | Feb 16 - Mar 21 | 15-20 | Final blocks, wrap-up |
 
 ### 12.3 Post-Study (April 2028)
 

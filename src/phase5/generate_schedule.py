@@ -60,17 +60,18 @@ STRATEGIES = {
     },
 }
 
-# Block duration in days (from τ_effort analysis: 2-day washout + 2-day measurement)
-# τ_effort = 12.4h (weighted avg) → 3×τ = 37h ≈ 1.5 days → rounded to 2 days
-BLOCK_DAYS = 4
-WASHOUT_DAYS = 2
-MEASUREMENT_DAYS = 2
+# Block duration in days (from power analysis: 3-day washout + 4-day measurement)
+# τ_effort = 12.4h (weighted avg) → 3×τ = 37h ≈ 1.5 days → rounded to 3 days for margin
+# 7-day blocks enable weekly parameter changes with 97% power (vs 75% for 4-day blocks)
+BLOCK_DAYS = 7
+WASHOUT_DAYS = 3
+MEASUREMENT_DAYS = 4
 
 
 def get_season(date: datetime, study_start: datetime) -> str:
     """Determine season tercile based on study progress."""
     days_elapsed = (date - study_start).days
-    total_days = 140  # ~20 weeks
+    total_days = 140  # 20 weeks = 20 blocks of 7 days
 
     if days_elapsed < total_days / 3:
         return 'early'
@@ -400,10 +401,10 @@ def generate_html_report(
                 <li><strong>Seasonal balance:</strong> Each strategy appears in early, mid, and late winter to account
                 for changing outdoor temperatures and solar availability</li>
                 <li><strong>Randomization:</strong> Block order is randomized to prevent systematic bias from time trends</li>
-                <li><strong>Washout periods:</strong> 2-day washout between strategies allows the thermal mass to
+                <li><strong>Washout periods:</strong> 3-day washout between strategies allows the thermal mass to
                 equilibrate to new settings before measurement (based on τ_effort analysis)</li>
-                <li><strong>Replication:</strong> ~11 blocks per strategy provides increased statistical power to detect
-                meaningful differences</li>
+                <li><strong>Replication:</strong> ~6-7 blocks per strategy provides 97% statistical power to detect
+                +0.30 COP changes</li>
             </ul>
         </div>
 
@@ -417,7 +418,7 @@ def generate_html_report(
                 energy consumption, and comfort metrics are recorded for analysis.</li>
             </ul>
             <p style="margin-top: 1rem;">The {WASHOUT_DAYS}-day washout was determined from Phase 3 thermal model analysis showing
-            the weighted τ_effort (heating response time) is ~12 hours. Two days provides >95% equilibration.</p>
+            the weighted τ_effort (heating response time) is ~12 hours. Three days provides >99% equilibration with margin for scheduling.</p>
         </div>
 
         <div class="card">
