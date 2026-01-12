@@ -1039,7 +1039,7 @@ def main():
     DEFAULT_ARCHIVE = OUTPUT_DIR / 'pareto_archive.json'
 
     parser = argparse.ArgumentParser(description='Multi-objective Pareto optimization for heating')
-    parser.add_argument('--generations', '-g', type=int, default=10, help='Number of generations (default: 10)')
+    parser.add_argument('--generations', '-g', type=int, default=200, help='Number of generations (default: 200)')
     parser.add_argument('--population', '-p', type=int, default=100, help='Population size')
     parser.add_argument('--seed', '-s', type=int, default=42, help='Random seed')
     parser.add_argument('--warm-start', '-w', type=str, help='Path to previous archive (default: auto-detect)')

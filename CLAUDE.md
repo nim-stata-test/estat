@@ -449,14 +449,14 @@ Multi-objective optimization using NSGA-II to find Pareto-optimal heating strate
 
 **Commands:**
 ```bash
-# Run Pareto optimization (default: 10 generations, auto warm-start)
+# Run Pareto optimization (default: 200 generations, auto warm-start)
 python src/phase4/04_pareto_optimization.py
 
-# More generations for deeper optimization
+# Quick refinement (fewer generations)
 python src/phase4/04_pareto_optimization.py -g 50
 
 # Start fresh (ignore existing archive)
-python src/phase4/04_pareto_optimization.py --fresh -g 200
+python src/phase4/04_pareto_optimization.py --fresh
 
 # Custom settings
 python src/phase4/04_pareto_optimization.py -g 100 -p 150 -n 15 --seed 123
@@ -464,7 +464,7 @@ python src/phase4/04_pareto_optimization.py -g 100 -p 150 -n 15 --seed 123
 
 **Default behavior:**
 - Auto-detects `pareto_archive.json` and uses it for warm start
-- Runs 10 generations (quick refinement)
+- Runs 200 generations (full optimization)
 - Use `--fresh` to start from scratch
 
 **Decision Variables (5):**
@@ -533,8 +533,8 @@ The archive includes full optimization history for visualization:
 - Enables animated visualization of Pareto front evolution
 
 **Workflow:**
-1. First run: `python src/phase4/04_pareto_optimization.py --fresh -g 200` (full optimization)
-2. Refinement: `python src/phase4/04_pareto_optimization.py` (auto warm-start, 10 generations)
+1. First run: `python src/phase4/04_pareto_optimization.py --fresh` (full optimization, 200 generations)
+2. Refinement: `python src/phase4/04_pareto_optimization.py -g 50` (auto warm-start, quick refinement)
 3. **Evaluate strategies**: `python src/phase4/05_strategy_evaluation.py`
 4. Review violation analysis in `strategy_violation_analysis.csv`
 5. Manually select 3 strategies for Phase 5 intervention study
