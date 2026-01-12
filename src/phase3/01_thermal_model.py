@@ -251,59 +251,95 @@ def plot_thermal_analysis(results: list, heating_curve: dict, df: pd.DataFrame) 
     """Create visualization of thermal model results."""
     print("\nCreating thermal model visualization...")
 
-    fig = plt.figure(figsize=(16, 12))
+    # Adaptive layout based on number of sensors
+    n_sensors = len(results)
 
-    # Panel 1: Heating curve
-    ax1 = fig.add_subplot(2, 3, 1)
-    clean = df[[HK2_COL, OUTDOOR_COL]].dropna()
-    ax1.scatter(clean[OUTDOOR_COL], clean[HK2_COL], alpha=0.2, s=3)
-    x_line = np.linspace(clean[OUTDOOR_COL].min(), clean[OUTDOOR_COL].max(), 100)
-    y_line = heating_curve['baseline'] + heating_curve['slope'] * x_line
-    ax1.plot(x_line, y_line, 'r-', linewidth=2,
-             label=f'HK2 = {heating_curve["baseline"]:.1f} {heating_curve["slope"]:+.2f}×T_out')
-    ax1.set_xlabel('Outdoor Temperature (°C)')
-    ax1.set_ylabel('HK2 Temperature (°C)')
-    ax1.set_title(f'Heating Curve (R²={heating_curve["r2"]:.3f})')
-    ax1.legend()
-    ax1.grid(True, alpha=0.3)
+    if n_sensors == 1:
+        # Single sensor: 1x3 layout
+        fig, axes = plt.subplots(1, 3, figsize=(15, 4))
 
-    # Panels 2-5: Room model fits (actual vs predicted)
-    for i, r in enumerate(results[:4]):
-        ax = fig.add_subplot(2, 3, i + 2)
+        # Panel 1: Heating curve
+        ax1 = axes[0]
+        clean = df[[HK2_COL, OUTDOOR_COL]].dropna()
+        ax1.scatter(clean[OUTDOOR_COL], clean[HK2_COL], alpha=0.2, s=3)
+        x_line = np.linspace(clean[OUTDOOR_COL].min(), clean[OUTDOOR_COL].max(), 100)
+        y_line = heating_curve['baseline'] + heating_curve['slope'] * x_line
+        ax1.plot(x_line, y_line, 'r-', linewidth=2,
+                 label=f'HK2 = {heating_curve["baseline"]:.1f} {heating_curve["slope"]:+.2f}×T_out')
+        ax1.set_xlabel('Outdoor Temperature (°C)')
+        ax1.set_ylabel('HK2 Temperature (°C)')
+        ax1.set_title(f'Heating Curve (R²={heating_curve["r2"]:.3f})')
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
 
-        # Subsample for clarity
+        # Panel 2: Actual vs Predicted scatter
+        r = results[0]
+        ax2 = axes[1]
         n = len(r['y_actual'])
         step = max(1, n // 500)
-
-        ax.scatter(r['y_actual'][::step], r['y_pred'][::step], alpha=0.4, s=10)
-
-        # Perfect fit line
+        ax2.scatter(r['y_actual'][::step], r['y_pred'][::step], alpha=0.4, s=10)
         temp_range = [r['y_actual'].min(), r['y_actual'].max()]
-        ax.plot(temp_range, temp_range, 'r--', linewidth=1.5, label='Perfect fit')
-
+        ax2.plot(temp_range, temp_range, 'r--', linewidth=1.5, label='Perfect fit')
         room_name = r['room'].replace('_temperature', '')
-        ax.set_xlabel('Actual Temperature (°C)')
-        ax.set_ylabel('Predicted Temperature (°C)')
-        ax.set_title(f'{room_name}\nR²={r["r2"]:.3f}, RMSE={r["rmse"]:.2f}°C')
-        ax.legend(fontsize=8)
-        ax.grid(True, alpha=0.3)
+        ax2.set_xlabel('Actual Temperature (°C)')
+        ax2.set_ylabel('Predicted Temperature (°C)')
+        ax2.set_title(f'{room_name}: R²={r["r2"]:.3f}, RMSE={r["rmse"]:.2f}°C')
+        ax2.legend(fontsize=8)
+        ax2.grid(True, alpha=0.3)
 
-    # Panel 6: Time series for best room
-    if results:
+        # Panel 3: Time series (last 2 weeks)
+        ax3 = axes[2]
+        idx = r['index']
+        recent = idx >= idx.max() - pd.Timedelta(days=14)
+        ax3.plot(idx[recent], r['y_actual'][recent], 'b-', alpha=0.7, linewidth=0.8, label='Actual')
+        ax3.plot(idx[recent], r['y_pred'][recent], 'r-', alpha=0.7, linewidth=0.8, label='Predicted')
+        ax3.set_xlabel('Date')
+        ax3.set_ylabel('Temperature (°C)')
+        ax3.set_title(f'{room_name}: Last 2 Weeks')
+        ax3.legend()
+        ax3.grid(True, alpha=0.3)
+        plt.setp(ax3.xaxis.get_majorticklabels(), rotation=45, ha='right')
+
+    else:
+        # Multiple sensors: 2x3 layout
+        fig = plt.figure(figsize=(16, 12))
+
+        # Panel 1: Heating curve
+        ax1 = fig.add_subplot(2, 3, 1)
+        clean = df[[HK2_COL, OUTDOOR_COL]].dropna()
+        ax1.scatter(clean[OUTDOOR_COL], clean[HK2_COL], alpha=0.2, s=3)
+        x_line = np.linspace(clean[OUTDOOR_COL].min(), clean[OUTDOOR_COL].max(), 100)
+        y_line = heating_curve['baseline'] + heating_curve['slope'] * x_line
+        ax1.plot(x_line, y_line, 'r-', linewidth=2,
+                 label=f'HK2 = {heating_curve["baseline"]:.1f} {heating_curve["slope"]:+.2f}×T_out')
+        ax1.set_xlabel('Outdoor Temperature (°C)')
+        ax1.set_ylabel('HK2 Temperature (°C)')
+        ax1.set_title(f'Heating Curve (R²={heating_curve["r2"]:.3f})')
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+
+        # Panels 2-5: Room model fits (actual vs predicted)
+        for i, r in enumerate(results[:4]):
+            ax = fig.add_subplot(2, 3, i + 2)
+            n = len(r['y_actual'])
+            step = max(1, n // 500)
+            ax.scatter(r['y_actual'][::step], r['y_pred'][::step], alpha=0.4, s=10)
+            temp_range = [r['y_actual'].min(), r['y_actual'].max()]
+            ax.plot(temp_range, temp_range, 'r--', linewidth=1.5, label='Perfect fit')
+            room_name = r['room'].replace('_temperature', '')
+            ax.set_xlabel('Actual Temperature (°C)')
+            ax.set_ylabel('Predicted Temperature (°C)')
+            ax.set_title(f'{room_name}\nR²={r["r2"]:.3f}, RMSE={r["rmse"]:.2f}°C')
+            ax.legend(fontsize=8)
+            ax.grid(True, alpha=0.3)
+
+        # Panel 6: Time series for best room
         ax6 = fig.add_subplot(2, 3, 6)
-
-        # Find room with best R²
         best = max(results, key=lambda x: x['r2'])
         idx = best['index']
-
-        # Last 2 weeks
         recent = idx >= idx.max() - pd.Timedelta(days=14)
-
-        ax6.plot(idx[recent], best['y_actual'][recent], 'b-', alpha=0.7,
-                 linewidth=0.8, label='Actual')
-        ax6.plot(idx[recent], best['y_pred'][recent], 'r-', alpha=0.7,
-                 linewidth=0.8, label='Predicted')
-
+        ax6.plot(idx[recent], best['y_actual'][recent], 'b-', alpha=0.7, linewidth=0.8, label='Actual')
+        ax6.plot(idx[recent], best['y_pred'][recent], 'r-', alpha=0.7, linewidth=0.8, label='Predicted')
         room_name = best['room'].replace('_temperature', '')
         ax6.set_xlabel('Date')
         ax6.set_ylabel('Temperature (°C)')
@@ -315,29 +351,22 @@ def plot_thermal_analysis(results: list, heating_curve: dict, df: pd.DataFrame) 
     plt.tight_layout()
     plt.savefig(OUTPUT_DIR / 'fig17_thermal_model.png', dpi=150, bbox_inches='tight')
     plt.close()
-
     print("  Saved: fig17_thermal_model.png")
 
-    # Figure 17b: Time series for all rooms
-    if len(results) >= 2:
-        fig2, axes = plt.subplots(3, 2, figsize=(14, 12))
-        axes = axes.flatten()
+    # Figure 17b: Time series for all rooms (only if multiple sensors)
+    if n_sensors >= 2:
+        n_rows = (n_sensors + 1) // 2
+        fig2, axes = plt.subplots(n_rows, 2, figsize=(14, 4 * n_rows))
+        axes = axes.flatten() if n_sensors > 2 else [axes[0], axes[1]]
 
-        # Sort by weight (highest first)
         sorted_results = sorted(results, key=lambda x: SENSOR_WEIGHTS.get(x['room'], 0), reverse=True)
 
-        for i, r in enumerate(sorted_results[:5]):
+        for i, r in enumerate(sorted_results):
             ax = axes[i]
             idx = r['index']
-
-            # Last 2 weeks
             recent = idx >= idx.max() - pd.Timedelta(days=14)
-
-            ax.plot(idx[recent], r['y_actual'][recent], 'b-', alpha=0.7,
-                    linewidth=0.8, label='Actual')
-            ax.plot(idx[recent], r['y_pred'][recent], 'r-', alpha=0.7,
-                    linewidth=0.8, label='Predicted')
-
+            ax.plot(idx[recent], r['y_actual'][recent], 'b-', alpha=0.7, linewidth=0.8, label='Actual')
+            ax.plot(idx[recent], r['y_pred'][recent], 'r-', alpha=0.7, linewidth=0.8, label='Predicted')
             room_name = r['room'].replace('_temperature', '')
             weight = SENSOR_WEIGHTS.get(r['room'], 0)
             ax.set_xlabel('Date')
@@ -347,15 +376,14 @@ def plot_thermal_analysis(results: list, heating_curve: dict, df: pd.DataFrame) 
             ax.grid(True, alpha=0.3)
             plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
 
-        # Hide unused subplot
-        if len(sorted_results) < 6:
-            axes[5].set_visible(False)
+        # Hide unused subplots
+        for j in range(len(sorted_results), len(axes)):
+            axes[j].set_visible(False)
 
         plt.suptitle('Room Temperature Models: Actual vs Predicted (Last 2 Weeks)', fontsize=14, y=1.02)
         plt.tight_layout()
         plt.savefig(OUTPUT_DIR / 'fig17b_room_timeseries.png', dpi=150, bbox_inches='tight')
         plt.close()
-
         print("  Saved: fig17b_room_timeseries.png")
 
 
@@ -504,18 +532,22 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
 
     <figure>
         <img src="fig17_thermal_model.png" alt="Thermal Model Analysis">
-        <figcaption><strong>Figure 17:</strong> Thermal model: heating curve (top-left),
-        actual vs predicted for each room (top-middle, top-right, bottom-left, bottom-middle),
-        time series validation (bottom-right).</figcaption>
-    </figure>
-
-    <figure>
-        <img src="fig17b_room_timeseries.png" alt="Room Temperature Time Series">
-        <figcaption><strong>Figure 17b:</strong> Actual vs predicted temperature for davis_inside
-        (primary comfort sensor, last 2 weeks).</figcaption>
+        <figcaption><strong>Figure 17:</strong> Thermal model: heating curve (left),
+        actual vs predicted scatter (middle), time series validation (right).</figcaption>
     </figure>
     </section>
     """
+
+    # Add fig17b only if multiple sensors
+    if len(results) >= 2:
+        html = html.replace('</section>', f"""
+    <figure>
+        <img src="fig17b_room_timeseries.png" alt="Room Temperature Time Series">
+        <figcaption><strong>Figure 17b:</strong> Actual vs predicted temperature for all rooms
+        in the weighted temperature objective (last 2 weeks).</figcaption>
+    </figure>
+    </section>
+    """)
 
     return html
 
