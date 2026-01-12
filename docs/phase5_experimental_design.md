@@ -358,23 +358,34 @@ Block quality: [ ] Good  [ ] Usable  [ ] Exclude (reason: ___)
 
 ### 8.4 Weighted Indoor Temperature Definition
 
-The comfort objective uses a single indoor temperature sensor:
+The comfort objective uses weighted indoor temperature:
 
 ```
-T_weighted = davis_inside_temperature
+T_weighted = Σ(weight_i × T_sensor_i)
 ```
+
+**Available sensors:** davis_inside, office1, atelier, studio, simlab
+
+In principle, multiple room sensors can be weighted (configured via `SENSOR_WEIGHTS` dict
+in the code). In practice, only `davis_inside_temperature` is used (100% weight):
 
 | Sensor | Weight | Rationale |
 |--------|--------|-----------|
 | `davis_inside_temperature` | 100% | Primary living area, central location, least noise |
+| `office1_temperature` | 0% | Excluded due to measurement noise |
+| `atelier_temperature` | 0% | Excluded due to measurement noise |
+| `studio_temperature` | 0% | Excluded due to measurement noise |
+| `simlab_temperature` | 0% | Excluded due to measurement noise |
 
 **Rationale for single sensor:**
+- Other room sensors have excessive measurement noise that degrades model performance
+- Single-sensor model achieves R²=0.683 vs R²=0.569 with 5-sensor weighted average
+- davis_inside has lowest measurement noise and central location
 - Simplest model with fewest parameters
-- davis_inside has lowest measurement noise
-- Central location represents primary living space
-- Consistent with Phase 3 thermal modeling
 
-**Missing sensor handling:** If a sensor is temporarily unavailable, its weight is redistributed proportionally among available sensors.
+**Multi-sensor support:** The code supports weighted averaging via `SENSOR_WEIGHTS` dict
+in `src/phase3/01_thermal_model.py` and related files. If sensor quality improves or
+additional sensors are added, weights can be adjusted without code changes.
 
 ---
 

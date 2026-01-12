@@ -326,12 +326,16 @@ python src/phase2/05_weighted_temperature_analysis.py
 - `output/phase2/weighted_temp_sensitivity.csv` - Parameter effects
 - `output/phase2/weighted_temp_report_section.html` - HTML section for report
 
-**Temperature Sensor:**
+**Temperature Formula:**
 ```
-T_weighted = davis_inside_temperature
+T_weighted = Σ(weight_i × T_sensor_i)
 ```
 
-Uses a single sensor (davis_inside) for simplicity and lowest noise.
+The system supports weighted averaging of multiple room sensors (office1, atelier,
+studio, simlab, davis_inside). However, in practice only `davis_inside_temperature`
+is used (100% weight) because other room sensors have excessive measurement noise
+that degrades model performance. Single-sensor model achieves R²=0.683 vs R²=0.569
+with multiple sensors.
 
 **Key Features:**
 - 48-hour (2-day) washout exclusion after each parameter regime change
@@ -624,10 +628,14 @@ Three strategies selected from Pareto-optimal solutions for Phase 5 intervention
 
 **Comfort Objective (T_weighted):**
 
-The comfort objective uses a single indoor temperature sensor:
+The comfort objective uses weighted indoor temperature:
 ```
-T_weighted = davis_inside_temperature
+T_weighted = Σ(weight_i × T_sensor_i)
 ```
+
+In principle, multiple room sensors can be weighted. In practice, only
+`davis_inside_temperature` (100% weight) is used because other sensors
+have too much noise in the data.
 
 **Optimization framework:**
 - **Three objectives**: Maximize avg temp, minimize grid import, minimize net cost
