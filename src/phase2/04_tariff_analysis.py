@@ -436,7 +436,7 @@ def generate_report_section(schedule: pd.DataFrame, flags: pd.DataFrame) -> str:
     <div class="figure">
         <img src="fig14_tariff_timeline.png" alt="Tariff Timeline" style="max-width: 100%;">
         <p class="caption"><strong>Figure 14:</strong> Purchase and feed-in tariff rates over time (2023-2025).
-        Top panel shows grid import rates, bottom panel shows feed-in rates with HKN (excluding base-only rates).</p>
+        Solid lines show grid import rates (high/low), dashed lines show feed-in rates with HKN (excluding base-only rates).</p>
     </div>
 
     <h3>Tariff Time Windows Distribution</h3>
@@ -444,6 +444,14 @@ def generate_report_section(schedule: pd.DataFrame, flags: pd.DataFrame) -> str:
         <img src="fig15_tariff_windows.png" alt="Tariff Windows" style="max-width: 100%;">
         <p class="caption"><strong>Figure 15:</strong> Distribution of high/low tariff periods.
         Shows weekly heatmap, hourly probability, monthly distribution, and summary statistics.</p>
+    </div>
+    <div class="card">
+        <p><strong>Note on "High Tariff Probability":</strong> The heatmap shows the fraction of times each
+        day/hour combination is high tariff across the dataset. Since the tariff schedule is deterministic
+        (Mon-Fri 06:00-21:00, Sat 06:00-12:00 = high tariff), most cells are 0 or 1. However, <em>federal holidays</em>
+        (Jan 1, Good Friday, Easter, Ascension, Whit Monday, Aug 1, Dec 25) are low tariff all day regardless
+        of the day of week. This causes weekday daytime probabilities to be slightly below 1.0 (~0.97),
+        reflecting the occasional holiday override.</p>
     </div>
 
     <h3>Cost Comparison</h3>
