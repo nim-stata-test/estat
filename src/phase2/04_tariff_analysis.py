@@ -101,57 +101,57 @@ def filter_hkn_tariffs(schedule: pd.DataFrame) -> pd.DataFrame:
 
 
 def create_tariff_timeline_figure(schedule: pd.DataFrame) -> plt.Figure:
-    """Create timeline visualization of tariff changes."""
-    fig, axes = plt.subplots(2, 1, figsize=(14, 8), sharex=True)
+    """Create combined timeline visualization of purchase and feed-in tariffs."""
+    fig, ax = plt.subplots(figsize=(14, 6))
 
-    # Purchase tariffs
-    ax1 = axes[0]
+    labels_shown = set()
+
+    # Purchase tariffs (solid lines)
     purchase = schedule[schedule['tariff_type'] == 'purchase']
+    # Note: single tariff not used (energy-only component, excludes network charges)
+    purchase_colors = {'high': '#dc2626', 'low': '#16a34a', 'average_estimate': '#6b7280'}
 
     for _, row in purchase.iterrows():
         rate_type = row['rate_type']
-        color = {'single': '#2563eb', 'high': '#dc2626', 'low': '#16a34a',
-                 'average_estimate': '#6b7280'}.get(rate_type, '#6b7280')
-        label = rate_type.replace('_', ' ').title()
-
-        ax1.hlines(y=row['rate_rp_kwh'], xmin=row['valid_from'], xmax=row['valid_to'],
-                   colors=color, linewidth=3, label=label if rate_type not in [r['rate_type'] for r in purchase.iloc[:_].to_dict('records')] else '')
-
-    ax1.set_ylabel('Rate (Rp/kWh)')
-    ax1.set_title('Purchase Tariffs (Grid Import)')
-    ax1.legend(loc='upper right')
-    ax1.set_ylim(0, max(purchase['rate_rp_kwh'].max() * 1.2, 40))
-    ax1.grid(True, alpha=0.3)
-
-    # Feed-in tariffs (HKN only)
-    ax2 = axes[1]
-    feedin = schedule[schedule['tariff_type'] == 'feedin']
-
-    colors = {'total_standard': '#f59e0b', 'minimum_guarantee': '#ef4444'}
-    labels_shown = set()
-
-    for _, row in feedin.iterrows():
-        rate_type = row['rate_type']
-        color = colors.get(rate_type, '#6b7280')
-        label = 'With HKN' if rate_type == 'total_standard' else 'Minimum Guarantee'
+        color = purchase_colors.get(rate_type, '#6b7280')
+        label = f"Purchase: {rate_type.replace('_', ' ').title()}"
 
         show_label = label not in labels_shown
         if show_label:
             labels_shown.add(label)
 
-        ax2.hlines(y=row['rate_rp_kwh'], xmin=row['valid_from'], xmax=row['valid_to'],
-                   colors=color, linewidth=3, label=label if show_label else '')
+        ax.hlines(y=row['rate_rp_kwh'], xmin=row['valid_from'], xmax=row['valid_to'],
+                  colors=color, linewidth=3, linestyle='-', label=label if show_label else '')
 
-    ax2.set_ylabel('Rate (Rp/kWh)')
-    ax2.set_xlabel('Date')
-    ax2.set_title('Feed-in Tariffs (Grid Export) - With HKN Only')
-    ax2.legend(loc='upper right')
-    ax2.set_ylim(0, max(feedin['rate_rp_kwh'].max() * 1.2, 25))
-    ax2.grid(True, alpha=0.3)
+    # Feed-in tariffs (dashed lines)
+    feedin = schedule[schedule['tariff_type'] == 'feedin']
+    feedin_colors = {'total_standard': '#f59e0b', 'minimum_guarantee': '#ef4444'}
+
+    for _, row in feedin.iterrows():
+        rate_type = row['rate_type']
+        color = feedin_colors.get(rate_type, '#6b7280')
+        label = 'Feed-in: With HKN' if rate_type == 'total_standard' else 'Feed-in: Min Guarantee'
+
+        show_label = label not in labels_shown
+        if show_label:
+            labels_shown.add(label)
+
+        ax.hlines(y=row['rate_rp_kwh'], xmin=row['valid_from'], xmax=row['valid_to'],
+                  colors=color, linewidth=3, linestyle='--', label=label if show_label else '')
+
+    ax.set_ylabel('Rate (Rp/kWh)')
+    ax.set_xlabel('Date')
+    ax.set_title('Electricity Tariffs: Purchase (solid) vs Feed-in (dashed)')
+    ax.legend(loc='upper right', ncol=2)
+
+    # Set y-axis to show full range
+    all_rates = schedule['rate_rp_kwh']
+    ax.set_ylim(0, max(all_rates.max() * 1.15, 40))
+    ax.grid(True, alpha=0.3)
 
     # Format x-axis
-    ax2.xaxis.set_major_formatter(mdates.DateFormatter('%b %Y'))
-    ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %Y'))
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
     plt.xticks(rotation=45)
 
     plt.tight_layout()

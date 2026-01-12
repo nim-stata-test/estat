@@ -204,11 +204,11 @@ python src/phase1/04_preprocess_tariffs.py
 - January 1, Good Friday, Easter Saturday/Monday, Ascension, Whit Monday, August 1, December 25
 
 **Purchase tariffs (Rp/kWh):**
-| Period | Single Rate | Average Estimate | Notes |
-|--------|-------------|------------------|-------|
-| 2023 | — | 31.3 | Peak energy crisis year |
-| 2024 | 16.50 | 32.8 | +4.8% vs 2023 |
-| 2025 | — | 32.6 | -1% vs 2024 |
+| Period | All-in Average | Notes |
+|--------|----------------|-------|
+| 2023 | 31.3 | Peak energy crisis year |
+| 2024 | 32.8 | +4.8% vs 2023 |
+| 2025 | 32.6 | -1% vs 2024 |
 
 **Feed-in tariffs (Rückliefervergütung, Rp/kWh):**
 | Period | Base Rate | With HKN | Notes |

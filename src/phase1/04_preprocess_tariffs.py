@@ -153,16 +153,11 @@ def create_tariff_schedule(source_data: dict) -> pd.DataFrame:
         valid_from = data.get("valid_from", f"{year}-01-01")
         valid_to = data.get("valid_to", f"{year}-12-31")
 
-        # Single tariff
-        if data.get("single_tariff_rp_kwh"):
-            records.append({
-                "valid_from": valid_from,
-                "valid_to": valid_to,
-                "tariff_type": "purchase",
-                "rate_type": "single",
-                "rate_rp_kwh": data["single_tariff_rp_kwh"],
-                "notes": data.get("notes", "")
-            })
+        # NOTE: Single tariff (energy-only component) is not used in this analysis.
+        # We use the all-in average estimate which includes network charges, federal
+        # levies, and other fees that comprise the actual cost to consumers.
+        # The single_tariff_rp_kwh field in the source JSON is preserved for reference
+        # but not processed here.
 
         # High/Low tariffs
         if data.get("high_tariff_rp_kwh"):
