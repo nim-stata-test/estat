@@ -366,35 +366,98 @@ def create_3d_animation(frames, metadata, output_path):
     plt.close()
 
 
+def convert_to_mp4(gif_path, mp4_path, fps=2):
+    """Convert GIF to MP4 for PowerPoint compatibility.
+
+    Uses ffmpeg to create an H.264 encoded MP4 that works in PowerPoint.
+    """
+    import subprocess
+
+    print(f"Converting {gif_path.name} to MP4...")
+
+    # ffmpeg command for PowerPoint-compatible MP4
+    # -y: overwrite output
+    # -i: input file
+    # -movflags faststart: optimize for streaming/PowerPoint
+    # -pix_fmt yuv420p: compatible pixel format
+    # -vf scale: ensure even dimensions (required for H.264)
+    # -c:v libx264: H.264 codec (widely compatible)
+    # -crf 23: quality (lower = better, 18-28 is reasonable)
+    cmd = [
+        'ffmpeg', '-y',
+        '-i', str(gif_path),
+        '-movflags', 'faststart',
+        '-pix_fmt', 'yuv420p',
+        '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
+        '-c:v', 'libx264',
+        '-crf', '23',
+        '-r', str(fps),
+        str(mp4_path)
+    ]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        print(f"  ✓ Created: {mp4_path}")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"  ✗ ffmpeg failed: {e.stderr}")
+        return False
+    except FileNotFoundError:
+        print("  ✗ ffmpeg not found. Install with: brew install ffmpeg")
+        return False
+
+
 def main():
     """Generate animated visualization of Pareto optimization."""
-    print("Loading optimization history...")
-    history, metadata = load_history()
+    import argparse
 
-    if not history:
-        print("ERROR: No optimization history found in archive.")
-        print("Run optimization with history tracking first:")
-        print("  python src/phase4/04_pareto_optimization.py --fresh -g 20")
-        return
+    parser = argparse.ArgumentParser(description='Generate Pareto optimization animations')
+    parser.add_argument('--mp4-only', action='store_true',
+                       help='Only convert existing GIFs to MP4 (skip GIF generation)')
+    parser.add_argument('--fps', type=int, default=2,
+                       help='Frames per second for MP4 (default: 2)')
+    args = parser.parse_args()
 
-    print(f"Found {history['summary']['unique_solutions']} solutions across "
-          f"{history['summary']['total_generations']} generations")
-
-    print("\nPreparing animation data...")
-    frames = prepare_animation_data(history)
-    print(f"Prepared {len(frames)} animation frames")
-
-    # Create 2D animation (2x2 subplots)
     output_2d = OUTPUT_DIR / "pareto_evolution.gif"
-    create_animation(frames, metadata, output_2d)
-
-    # Create 3D animation
     output_3d = OUTPUT_DIR / "pareto_evolution_3d.gif"
-    create_3d_animation(frames, metadata, output_3d)
+    mp4_2d = OUTPUT_DIR / "pareto_evolution.mp4"
+    mp4_3d = OUTPUT_DIR / "pareto_evolution_3d.mp4"
+
+    if not args.mp4_only:
+        print("Loading optimization history...")
+        history, metadata = load_history()
+
+        if not history:
+            print("ERROR: No optimization history found in archive.")
+            print("Run optimization with history tracking first:")
+            print("  python src/phase4/04_pareto_optimization.py --fresh -g 20")
+            return
+
+        print(f"Found {history['summary']['unique_solutions']} solutions across "
+              f"{history['summary']['total_generations']} generations")
+
+        print("\nPreparing animation data...")
+        frames = prepare_animation_data(history)
+        print(f"Prepared {len(frames)} animation frames")
+
+        # Create 2D animation (2x2 subplots)
+        create_animation(frames, metadata, output_2d)
+
+        # Create 3D animation
+        create_3d_animation(frames, metadata, output_3d)
+
+    # Convert GIFs to MP4 for PowerPoint
+    print("\nConverting to PowerPoint-compatible MP4...")
+    if output_2d.exists():
+        convert_to_mp4(output_2d, mp4_2d, fps=args.fps)
+    if output_3d.exists():
+        convert_to_mp4(output_3d, mp4_3d, fps=args.fps)
 
     print("\n✓ Animation complete!")
     print(f"  2D animation: {output_2d}")
     print(f"  3D animation: {output_3d}")
+    print(f"  2D video (PowerPoint): {mp4_2d}")
+    print(f"  3D video (PowerPoint): {mp4_3d}")
 
 
 if __name__ == "__main__":

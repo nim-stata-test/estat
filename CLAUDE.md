@@ -87,7 +87,8 @@ python src/phase4/03_parameter_sets.py             # Phase 4, Step 3
 python src/phase4/04_pareto_optimization.py        # Phase 4, Step 4
 python src/phase4/05_strategy_evaluation.py        # Phase 4, Step 5
 python src/phase4/06_strategy_detailed_analysis.py # Phase 4, Step 6 (Phase 5 strategy details)
-python src/phase4/07_pareto_animation.py           # Phase 4, Step 7 (Pareto evolution GIF)
+python src/phase4/07_pareto_animation.py           # Phase 4, Step 7 (GIF + MP4 animation)
+python src/phase4/07_pareto_animation.py --mp4-only  # Convert existing GIFs to MP4 only
 ```
 
 ## Source Code Structure
@@ -122,7 +123,7 @@ src/
 │   ├── 04_pareto_optimization.py     # NSGA-II multi-objective optimization
 │   ├── 05_strategy_evaluation.py     # Comfort violation analysis + winter predictions
 │   ├── 06_strategy_detailed_analysis.py  # Detailed Phase 5 strategy visualizations
-│   └── 07_pareto_animation.py        # Pareto front evolution GIF generator
+│   └── 07_pareto_animation.py        # Pareto evolution GIF + MP4 for PowerPoint
 └── phase5/              # Intervention Study
     ├── estimate_study_parameters.py  # Data-driven washout/block estimation
     └── generate_schedule.py          # Randomization schedule generator
@@ -526,6 +527,10 @@ output/phase4/
 ├── fig24_pareto_front.png     # 2D projections of Pareto front
 ├── fig25_pareto_strategy_comparison.png # Radar chart comparing strategies
 ├── fig26_pareto_evolution.png # Pareto front evolution frame
+├── pareto_evolution.gif       # 2D animated Pareto evolution
+├── pareto_evolution.mp4       # 2D animation for PowerPoint
+├── pareto_evolution_3d.gif    # 3D animated Pareto evolution
+├── pareto_evolution_3d.mp4    # 3D animation for PowerPoint
 └── pareto_report_section.html # HTML report section
 ```
 
