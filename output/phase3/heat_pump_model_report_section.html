@@ -7,44 +7,44 @@
         <tr><th>Metric</th><th>Value</th><th>Notes</th></tr>
         <tr>
             <td>Mean COP</td>
-            <td><strong>4.01</strong></td>
+            <td><strong>3.91</strong></td>
             <td>Good efficiency for air-source heat pump</td>
         </tr>
         <tr>
             <td>COP Range</td>
-            <td>2.53 – 5.80</td>
+            <td>2.37 – 5.80</td>
             <td>Varies with outdoor/flow temperature</td>
         </tr>
         <tr>
             <td>COP sensitivity to outdoor temp</td>
-            <td>0.2058 COP/°C</td>
+            <td>0.2034 COP/°C</td>
             <td>Increases with warmer outdoor</td>
         </tr>
         <tr>
             <td>COP sensitivity to flow temp</td>
-            <td>-0.2492 COP/°C</td>
+            <td>-0.2592 COP/°C</td>
             <td>Decreases with higher flow temp</td>
         </tr>
     </table>
 
     <h3>COP Model</h3>
     <p>Multi-variable regression model:</p>
-    <pre>COP = 6.52 + 0.1319×T_out + -0.1007×T_flow</pre>
-    <p>R² = 0.950, RMSE = 0.173</p>
+    <pre>COP = 6.14 + 0.1405×T_out + -0.0915×T_flow</pre>
+    <p>R² = 0.956, RMSE = 0.169</p>
 
     <h3>Capacity Analysis</h3>
     <table>
         <tr><th>Metric</th><th>Mean</th><th>Max</th><th>Min</th></tr>
         <tr>
             <td>Daily electricity consumed</td>
-            <td>21.8 kWh</td>
-            <td>53.0 kWh</td>
+            <td>23.5 kWh</td>
+            <td>59.0 kWh</td>
             <td>5.0 kWh</td>
         </tr>
         <tr>
             <td>Daily heat produced</td>
-            <td>78.5 kWh</td>
-            <td>136.0 kWh</td>
+            <td>82.0 kWh</td>
+            <td>140.0 kWh</td>
             <td>29.0 kWh</td>
         </tr>
         <tr>
@@ -58,18 +58,18 @@
     <h3>Buffer Tank Dynamics</h3>
     <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Mean temperature</td><td>35.8°C</td></tr>
+        <tr><td>Mean temperature</td><td>36.0°C</td></tr>
         <tr><td>Temperature range</td><td>22.3 – 55.5°C</td></tr>
-        <tr><td>Temperature variability (std)</td><td>6.00°C</td></tr>
+        <tr><td>Temperature variability (std)</td><td>5.95°C</td></tr>
     </table>
 
     <h3>Implications for Optimization</h3>
     <ul>
         <li><strong>COP optimization</strong>: Lower flow temperatures improve COP.
-            With slope -0.2492, reducing flow by 5°C improves COP by ~1.25.</li>
+            With slope -0.2592, reducing flow by 5°C improves COP by ~1.30.</li>
         <li><strong>Timing strategy</strong>: Run heat pump during warmest outdoor temps (daytime/solar hours)
-            for better COP. Each +1°C outdoor improves COP by ~0.206.</li>
-        <li><strong>Capacity headroom</strong>: Max observed 53 kWh/day
+            for better COP. Each +1°C outdoor improves COP by ~0.203.</li>
+        <li><strong>Capacity headroom</strong>: Max observed 59 kWh/day
             suggests capacity is sufficient for current heating demand.</li>
         <li><strong>Buffer utilization</strong>: Buffer tank (mean 36°C)
             provides thermal storage for load shifting.</li>

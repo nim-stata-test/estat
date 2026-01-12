@@ -263,9 +263,10 @@ def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
 
     # --- Vectorized Energy/Cost Simulation ---
 
-    # Constants
-    BASE_LOAD_KWH = 25.0
-    HEATING_COEF = 2.5
+    # Constants (calibrated from historical data analysis)
+    # Historical: total consumption 39.7 kWh/day, heating ~28 kWh/day, base ~11 kWh/day
+    BASE_LOAD_KWH = 11.0  # Non-heating consumption (appliances, lighting, etc.)
+    THERMAL_COEF = 10.0   # Thermal kWh needed per HDD (before COP division)
     BASE_LOAD_TIMESTEP = BASE_LOAD_KWH / 96
 
     # Extract arrays for vectorized ops
@@ -287,21 +288,21 @@ def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
     T_flow = setpoint + curve_rise * (T_ref - T_outdoor)
     T_flow = np.clip(T_flow, 20, 55)
 
-    # COP at each operating point
+    # COP at each operating point - this is crucial for energy savings
     cop = COP_PARAMS['intercept'] + COP_PARAMS['outdoor_coef'] * T_outdoor + COP_PARAMS['flow_coef'] * T_flow
     cop = np.maximum(cop, 1.5)
 
-    # Mode factor: comfort=1.0, eco depends on setback
+    # Mode factor: comfort=1.0, eco reduces heating effort based on setback
+    # Deeper setback = less heating during eco periods
     setback_range = setpoint_comfort - 12.0
     actual_setback = setpoint_comfort - setpoint_eco
     eco_mode_factor = max(0.1, 1.0 - 0.9 * (actual_setback / setback_range)) if setback_range > 0 else 1.0
     mode_factor = np.where(is_comfort, 1.0, eco_mode_factor)
 
-    # Heat demand weight
-    heat_demand = np.maximum(0, T_flow - T_outdoor)
-    electrical_demand = (heat_demand / cop) * mode_factor
+    # Thermal demand weight at each timestep (before COP)
+    thermal_demand_weight = np.maximum(0, T_flow - T_outdoor) * mode_factor
 
-    # Calculate daily heating energy requirement
+    # Calculate daily heating energy - NOW accounting for COP properly
     unique_dates = np.unique(dates)
     heating_kwh = np.zeros(len(sim_data))
 
@@ -309,20 +310,33 @@ def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
         date_mask = dates == date
         T_outdoor_mean = np.mean(T_outdoor[date_mask])
         hdd = max(0, 18 - T_outdoor_mean)
-        daily_heating_kwh = HEATING_COEF * hdd
 
-        if daily_heating_kwh < 0.1:
+        # Thermal energy needed for this day (independent of COP)
+        daily_thermal_kwh = THERMAL_COEF * hdd
+
+        if daily_thermal_kwh < 0.1:
             continue
 
-        # Normalize weights for this day
-        day_weights = electrical_demand[date_mask]
-        total_weight = np.sum(day_weights)
-        if total_weight > 0.01:
-            normalized_weights = day_weights / total_weight
+        # Calculate average COP for this day (weighted by when heating occurs)
+        day_thermal_weights = thermal_demand_weight[date_mask]
+        day_cops = cop[date_mask]
+
+        total_thermal_weight = np.sum(day_thermal_weights)
+        if total_thermal_weight > 0.01:
+            # Weighted average COP based on when heating demand is highest
+            avg_cop = np.sum(day_cops * day_thermal_weights) / total_thermal_weight
+            # Distribution weights for spreading heating across timesteps
+            normalized_weights = day_thermal_weights / total_thermal_weight
         else:
+            avg_cop = np.mean(day_cops)
             normalized_weights = np.ones(np.sum(date_mask)) / np.sum(date_mask)
 
-        heating_kwh[date_mask] = daily_heating_kwh * normalized_weights
+        # ELECTRICAL heating energy = thermal / COP
+        # This is the key fix: better COP = less electrical consumption
+        daily_electrical_kwh = daily_thermal_kwh / avg_cop
+
+        # Distribute across timesteps based on thermal demand pattern
+        heating_kwh[date_mask] = daily_electrical_kwh * normalized_weights
 
     # Total demand at each timestep
     total_demand = BASE_LOAD_TIMESTEP + heating_kwh

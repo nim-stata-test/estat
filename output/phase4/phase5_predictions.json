@@ -2,38 +2,38 @@
   "baseline": {
     "strategy_name": "Baseline",
     "grid_per_hdd": {
-      "value": 1.84,
+      "value": 2.09,
       "unit": "kWh/HDD",
-      "baseline": 1.84,
+      "baseline": 2.09,
       "reduction_pct": 0.0,
       "measurement": "Sum of external_supply_kwh / Sum of HDD per block"
     },
     "self_sufficiency": {
-      "target": 40.1,
-      "range_min": 35.1,
-      "range_max": 45.1,
+      "target": 37.3,
+      "range_min": 32.3,
+      "range_max": 42.3,
       "unit": "percent",
       "measurement": "(1 - grid_import/total_consumption) \u00d7 100"
     },
     "cop": {
-      "target": 4.07,
-      "range_min": 3.77,
-      "range_max": 4.37,
+      "target": 3.91,
+      "range_min": 3.61,
+      "range_max": 4.21,
       "measurement": "produced_heating / consumed_heating (daily)"
     },
     "comfort_compliance": {
-      "target_pct": 62.4,
+      "target_pct": 62.0,
       "minimum_pct": 95.0,
       "measurement": "Percent of readings within comfort band during occupied hours (08:00-22:00)"
     },
     "cost": {
-      "daily_net_chf": 5.39,
+      "daily_net_chf": 6.5,
       "cost_reduction_pct": 0.0,
       "measurement": "(grid_import \u00d7 purchase_rate - pv_export \u00d7 feedin_rate) / 100"
     },
     "success_criteria": [
-      "Self-sufficiency \u2265 37.1%",
-      "COP \u2265 3.87",
+      "Self-sufficiency \u2265 34.3%",
+      "COP \u2265 3.71",
       "Comfort compliance \u2265 95%",
       "No manual overrides required"
     ]
@@ -41,38 +41,38 @@
   "energy_optimized": {
     "strategy_name": "Energy-Optimized",
     "grid_per_hdd": {
-      "value": 1.84,
+      "value": 2.09,
       "unit": "kWh/HDD",
-      "baseline": 1.84,
+      "baseline": 2.09,
       "reduction_pct": 0.0,
       "measurement": "Sum of external_supply_kwh / Sum of HDD per block"
     },
     "self_sufficiency": {
-      "target": 40.1,
-      "range_min": 35.1,
-      "range_max": 45.1,
+      "target": 37.3,
+      "range_min": 32.3,
+      "range_max": 42.3,
       "unit": "percent",
       "measurement": "(1 - grid_import/total_consumption) \u00d7 100"
     },
     "cop": {
-      "target": 4.36,
-      "range_min": 4.06,
-      "range_max": 4.66,
+      "target": 4.21,
+      "range_min": 3.91,
+      "range_max": 4.51,
       "measurement": "produced_heating / consumed_heating (daily)"
     },
     "comfort_compliance": {
-      "target_pct": 62.4,
+      "target_pct": 62.0,
       "minimum_pct": 95.0,
       "measurement": "Percent of readings within comfort band during occupied hours (08:00-22:00)"
     },
     "cost": {
-      "daily_net_chf": 5.39,
+      "daily_net_chf": 6.5,
       "cost_reduction_pct": 0.0,
       "measurement": "(grid_import \u00d7 purchase_rate - pv_export \u00d7 feedin_rate) / 100"
     },
     "success_criteria": [
-      "Self-sufficiency \u2265 37.1%",
-      "COP \u2265 4.16",
+      "Self-sufficiency \u2265 34.3%",
+      "COP \u2265 4.01",
       "Comfort compliance \u2265 95%",
       "No manual overrides required"
     ]
@@ -80,38 +80,38 @@
   "cost_optimized": {
     "strategy_name": "Cost-Optimized",
     "grid_per_hdd": {
-      "value": 1.84,
+      "value": 2.09,
       "unit": "kWh/HDD",
-      "baseline": 1.84,
+      "baseline": 2.09,
       "reduction_pct": 0.0,
       "measurement": "Sum of external_supply_kwh / Sum of HDD per block"
     },
     "self_sufficiency": {
-      "target": 40.1,
-      "range_min": 35.1,
-      "range_max": 45.1,
+      "target": 37.3,
+      "range_min": 32.3,
+      "range_max": 42.3,
       "unit": "percent",
       "measurement": "(1 - grid_import/total_consumption) \u00d7 100"
     },
     "cop": {
-      "target": 4.4,
-      "range_min": 4.1,
-      "range_max": 4.7,
+      "target": 4.25,
+      "range_min": 3.95,
+      "range_max": 4.55,
       "measurement": "produced_heating / consumed_heating (daily)"
     },
     "comfort_compliance": {
-      "target_pct": 62.4,
+      "target_pct": 62.0,
       "minimum_pct": 95.0,
       "measurement": "Percent of readings within comfort band during occupied hours (08:00-22:00)"
     },
     "cost": {
-      "daily_net_chf": 5.39,
+      "daily_net_chf": 6.5,
       "cost_reduction_pct": 0.0,
       "measurement": "(grid_import \u00d7 purchase_rate - pv_export \u00d7 feedin_rate) / 100"
     },
     "success_criteria": [
-      "Self-sufficiency \u2265 37.1%",
-      "COP \u2265 4.2",
+      "Self-sufficiency \u2265 34.3%",
+      "COP \u2265 4.05",
       "Comfort compliance \u2265 95%",
       "No manual overrides required",
       "Cost reduction \u2265 -10.0% vs baseline"

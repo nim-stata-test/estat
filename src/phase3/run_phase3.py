@@ -137,6 +137,33 @@ def generate_html_report():
             padding: 15px;
             margin: 20px 0;
         }}
+        .table-of-contents {{
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px 30px;
+            margin: 30px 0;
+        }}
+        .table-of-contents h2 {{
+            margin-top: 0;
+            color: #1a5f7a;
+            font-size: 1.3em;
+        }}
+        .table-of-contents ol {{
+            margin: 0;
+            padding-left: 20px;
+        }}
+        .table-of-contents li {{
+            margin: 8px 0;
+        }}
+        .table-of-contents a {{
+            color: #2c3e50;
+            text-decoration: none;
+        }}
+        .table-of-contents a:hover {{
+            color: #1a5f7a;
+            text-decoration: underline;
+        }}
     </style>
 </head>
 <body>
@@ -153,6 +180,19 @@ def generate_html_report():
             <li><strong>Tariff Cost Model</strong>: High-tariff periods account for ~60% of grid costs; potential 15-20% cost reduction through load shifting</li>
         </ul>
     </div>
+
+    <nav class="table-of-contents">
+        <h2>Table of Contents</h2>
+        <ol>
+            <li><a href="#thermal-model">Thermal Model</a></li>
+            <li><a href="#heat-pump-model">Heat Pump Model</a></li>
+            <li><a href="#energy-system-model">Energy System Model</a></li>
+            <li><a href="#tariff-cost-model">Tariff Cost Model</a></li>
+            <li><a href="#model-assumptions">Model Assumptions and Limitations</a></li>
+            <li><a href="#equations">Key Equations</a></li>
+            <li><a href="#conclusions">Conclusions and Next Steps</a></li>
+        </ol>
+    </nav>
 
     {''.join(sections)}
 

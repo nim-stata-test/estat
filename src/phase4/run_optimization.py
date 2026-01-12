@@ -53,6 +53,7 @@ def generate_html_report():
         'parameter_sets_report_section.html',
         'pareto_report_section.html',  # Multi-objective Pareto optimization
         'strategy_evaluation_report.html',  # Comfort violation analysis
+        'strategy_detailed_report.html',  # Detailed Phase 5 strategy analysis
     ]
 
     for section_file in section_files:
@@ -223,14 +224,15 @@ def generate_html_report():
             <li><a href="#parameter-sets">4.3 Parameter Sets for Phase 5</a></li>
             <li><a href="#pareto-optimization">4.4 Pareto Multi-Objective Optimization</a></li>
             <li><a href="#strategy-evaluation">4.5 Strategy Evaluation and Comfort Analysis</a></li>
-            <li><a href="#next-steps">4.6 Next Steps: Phase 5 Preparation</a></li>
+            <li><a href="#strategy-detailed-analysis">4.6 Detailed Strategy Analysis for Phase 5</a></li>
+            <li><a href="#next-steps">4.7 Next Steps: Phase 5 Preparation</a></li>
         </ul>
     </nav>
 
     {''.join(sections)}
 
     <section id="next-steps">
-    <h2>4.6 Next Steps: Phase 5 Preparation</h2>
+    <h2>4.7 Next Steps: Phase 5 Preparation</h2>
 
     <h3>Timeline</h3>
     <ul>
@@ -304,6 +306,7 @@ def main():
     print("  - pareto_archive.json (full Pareto front for warm-starting)")
     print("  - phase5_parameter_sets.json (intervention parameters)")
     print("  - phase5_predictions.json (testable predictions)")
+    print("  - strategy_detailed_stats.csv (detailed strategy statistics)")
     print("\nFigures:")
     print("  - fig21_strategy_comparison.png")
     print("  - fig22_simulation_results.png")
@@ -311,6 +314,9 @@ def main():
     print("  - fig24_pareto_front.png (Pareto optimization)")
     print("  - fig25_pareto_strategy_comparison.png (Pareto strategies)")
     print("  - fig27_strategy_temperature_predictions.png (Comfort evaluation)")
+    print("  - fig28_strategy_detailed_timeseries.png (Detailed time series)")
+    print("  - fig29_strategy_hourly_patterns.png (Hourly patterns)")
+    print("  - fig30_strategy_energy_patterns.png (Energy patterns)")
 
 
 if __name__ == '__main__':

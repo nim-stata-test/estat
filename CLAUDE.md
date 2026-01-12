@@ -86,6 +86,8 @@ python src/phase4/02_strategy_simulation.py        # Phase 4, Step 2
 python src/phase4/03_parameter_sets.py             # Phase 4, Step 3
 python src/phase4/04_pareto_optimization.py        # Phase 4, Step 4
 python src/phase4/05_strategy_evaluation.py        # Phase 4, Step 5
+python src/phase4/06_strategy_detailed_analysis.py # Phase 4, Step 6 (Phase 5 strategy details)
+python src/phase4/07_pareto_animation.py           # Phase 4, Step 7 (Pareto evolution GIF)
 ```
 
 ## Source Code Structure
@@ -118,7 +120,9 @@ src/
 │   ├── 02_strategy_simulation.py     # Validate strategies on historical data
 │   ├── 03_parameter_sets.py          # Generate Phase 5 parameter sets
 │   ├── 04_pareto_optimization.py     # NSGA-II multi-objective optimization
-│   └── 05_strategy_evaluation.py     # Comfort violation analysis + winter predictions
+│   ├── 05_strategy_evaluation.py     # Comfort violation analysis + winter predictions
+│   ├── 06_strategy_detailed_analysis.py  # Detailed Phase 5 strategy visualizations
+│   └── 07_pareto_animation.py        # Pareto front evolution GIF generator
 └── phase5/              # Intervention Study
     ├── estimate_study_parameters.py  # Data-driven washout/block estimation
     └── generate_schedule.py          # Randomization schedule generator
@@ -347,7 +351,7 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
 
 After running `python src/phase4/run_optimization.py`, outputs are saved to `output/phase4/`:
 
-**Figures (fig21-fig27):**
+**Figures (fig21-fig30):**
 - fig21: Strategy comparison (COP by strategy, schedule alignment, expected improvements)
 - fig22: Simulation results (time series, self-sufficiency, hourly COP profiles)
 - fig23: Parameter space (trade-offs, parameter summary table)
@@ -355,6 +359,9 @@ After running `python src/phase4/run_optimization.py`, outputs are saved to `out
 - fig25: Pareto strategy comparison (radar chart comparing strategies)
 - fig26: Pareto evolution (optimization history animation frame)
 - fig27: Strategy temperature predictions (winter 2026/2027, violation analysis)
+- fig28: Detailed time series (T_weighted, outdoor, solar, grid by strategy)
+- fig29: Hourly patterns (temperature heatmaps, PV/grid profiles, comfort windows)
+- fig30: Energy patterns (daily balance, self-sufficiency, temperature distributions)
 
 **Reports:**
 - `phase4_report.html` - Combined optimization report
@@ -371,6 +378,13 @@ After running `python src/phase4/run_optimization.py`, outputs are saved to `out
 - `strategy_violation_analysis.csv` - Comfort violation stats per strategy
 - `strategy_evaluation_report.html` - HTML report with violation analysis
 - `fig27_strategy_temperature_predictions.png` - Winter 2026/2027 predictions
+
+**Detailed Strategy Analysis (Step 6):**
+- `strategy_detailed_stats.csv` - Comprehensive statistics for Phase 5 strategies
+- `strategy_detailed_report.html` - HTML report with time series and energy analysis
+- `fig28_strategy_detailed_timeseries.png` - Full-period temperature and energy time series
+- `fig29_strategy_hourly_patterns.png` - Hourly patterns, heatmaps, and comfort windows
+- `fig30_strategy_energy_patterns.png` - Energy balance, self-sufficiency, temperature distributions
 
 **Heating Curve Model (from Phase 2):**
 ```

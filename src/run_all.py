@@ -82,6 +82,21 @@ def run_phase1_step4():
     module.main()
 
 
+def run_phase1_step5():
+    """Phase 1, Step 5: Generate HTML report."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 1, Step 5 - Generate HTML Report")
+    print("=" * 70)
+    # Import and call the report generation function
+    phase1_dir = SRC_DIR / "phase1"
+    spec = importlib.util.spec_from_file_location(
+        "run_preprocessing", phase1_dir / "run_preprocessing.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.regenerate_report_only()
+
+
 def run_phase2_step1():
     """Phase 2, Step 1: Exploratory Data Analysis."""
     print("\n" + "=" * 70)
@@ -163,6 +178,21 @@ def run_phase3_step4():
     module.main()
 
 
+def run_phase3_step5():
+    """Phase 3, Step 5: Generate HTML report."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 3, Step 5 - Generate HTML Report")
+    print("=" * 70)
+    # Import and call the report generation function
+    phase3_dir = SRC_DIR / "phase3"
+    spec = importlib.util.spec_from_file_location(
+        "run_phase3", phase3_dir / "run_phase3.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.generate_html_report()
+
+
 def run_phase4_step1():
     """Phase 4, Step 1: Rule-Based Strategies."""
     print("\n" + "=" * 70)
@@ -207,11 +237,29 @@ def run_phase4_step4():
 
 
 def run_phase4_step5():
-    """Phase 4, Step 5: Pareto Animation."""
+    """Phase 4, Step 5: Strategy Evaluation."""
     print("\n" + "=" * 70)
-    print("RUNNING: Phase 4, Step 5 - Pareto Animation")
+    print("RUNNING: Phase 4, Step 5 - Strategy Evaluation")
     print("=" * 70)
     module = load_module(4, 5)
+    module.main()
+
+
+def run_phase4_step6():
+    """Phase 4, Step 6: Strategy Detailed Analysis."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 4, Step 6 - Strategy Detailed Analysis")
+    print("=" * 70)
+    module = load_module(4, 6)
+    module.main()
+
+
+def run_phase4_step7():
+    """Phase 4, Step 7: Pareto Animation."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 4, Step 7 - Pareto Animation")
+    print("=" * 70)
+    module = load_module(4, 7)
     module.main()
 
 
@@ -222,6 +270,7 @@ PHASES = {
         2: ("Preprocess Sensors", run_phase1_step2),
         3: ("Integrate Data", run_phase1_step3),
         4: ("Preprocess Tariffs", run_phase1_step4),
+        5: ("Generate HTML Report", run_phase1_step5),
     },
     2: {
         1: ("Exploratory Data Analysis", run_phase2_step1),
@@ -235,13 +284,16 @@ PHASES = {
         2: ("Heat Pump Model", run_phase3_step2),
         3: ("Energy System Model", run_phase3_step3),
         4: ("Tariff Cost Model", run_phase3_step4),
+        5: ("Generate HTML Report", run_phase3_step5),
     },
     4: {
         1: ("Rule-Based Strategies", run_phase4_step1),
         2: ("Strategy Simulation", run_phase4_step2),
         3: ("Parameter Sets", run_phase4_step3),
         4: ("Pareto Optimization", run_phase4_step4),
-        5: ("Pareto Animation", run_phase4_step5),
+        5: ("Strategy Evaluation", run_phase4_step5),
+        6: ("Strategy Detailed Analysis", run_phase4_step6),
+        7: ("Pareto Animation", run_phase4_step7),
     },
 }
 
@@ -279,7 +331,7 @@ def run_phase(phase: int, rerun_optimization: bool = False):
     print(f"{'#' * 70}")
 
     # Steps to skip unless --rerun_optimization is set
-    skip_steps = {4: [4, 5]} if not rerun_optimization else {}
+    skip_steps = {4: [4, 5, 6, 7]} if not rerun_optimization else {}
 
     success = True
     for step in sorted(PHASES[phase].keys()):
