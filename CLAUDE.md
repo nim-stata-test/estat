@@ -372,6 +372,9 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
   should use the same temperature input as the heat pump to accurately predict
   flow temperatures and COP.
 - Range (Nov-Dec 2025): -2.2 to 15.0°C, mean 7.3°C
+- **Sensor comparison (COP prediction):** Stiebel R²=0.793 vs Davis weather station R²=0.718.
+  The heat pump sensor is 10% better at predicting COP, likely because it measures
+  actual air temperature at the evaporator location. See fig05 for visual comparison.
 
 **Key Model Results:**
 - Building time constant: ~14-33 hours (varies by sensor)
