@@ -39,11 +39,11 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 # MODEL CONSTANTS (must match 04_pareto_optimization.py)
 # =============================================================================
 
-# COP model from Phase 3
+# COP model from Phase 3 (uses T_HK2 target, not actual T_flow)
 COP_PARAMS = {
     'intercept': 6.52,
     'outdoor_coef': 0.1319,
-    'flow_coef': -0.1007,
+    't_hk2_coef': -0.1007,
 }
 
 # Heating curve reference temperatures from Phase 2 (loaded from JSON)
@@ -191,14 +191,14 @@ def simulate_strategy_energy(df: pd.DataFrame, params: dict) -> pd.DataFrame:
     # Determine comfort mode
     is_comfort = (hours >= comfort_start) & (hours < comfort_end)
 
-    # Flow temperature from heating curve
+    # T_HK2 target from heating curve
     setpoint = np.where(is_comfort, setpoint_comfort, setpoint_eco)
     T_ref = np.where(is_comfort, HEATING_CURVE_PARAMS['t_ref_comfort'], HEATING_CURVE_PARAMS['t_ref_eco'])
-    T_flow = setpoint + curve_rise * (T_ref - T_outdoor)
-    T_flow = np.clip(T_flow, 20, 55)
+    T_HK2 = setpoint + curve_rise * (T_ref - T_outdoor)
+    T_HK2 = np.clip(T_HK2, 20, 55)
 
     # COP calculation
-    cop = COP_PARAMS['intercept'] + COP_PARAMS['outdoor_coef'] * T_outdoor + COP_PARAMS['flow_coef'] * T_flow
+    cop = COP_PARAMS['intercept'] + COP_PARAMS['outdoor_coef'] * T_outdoor + COP_PARAMS['t_hk2_coef'] * T_HK2
     cop = np.maximum(cop, 1.5)
 
     # Mode factor for eco periods
@@ -208,7 +208,7 @@ def simulate_strategy_energy(df: pd.DataFrame, params: dict) -> pd.DataFrame:
     mode_factor = np.where(is_comfort, 1.0, eco_mode_factor)
 
     # Thermal demand weight
-    thermal_demand_weight = np.maximum(0, T_flow - T_outdoor) * mode_factor
+    thermal_demand_weight = np.maximum(0, T_HK2 - T_outdoor) * mode_factor
 
     # Calculate daily heating energy with COP
     unique_dates = np.unique(dates)
@@ -252,7 +252,7 @@ def simulate_strategy_energy(df: pd.DataFrame, params: dict) -> pd.DataFrame:
         'grid_import': grid_import,
         'grid_export': grid_export,
         'cop': cop,
-        'T_flow': T_flow,
+        'T_HK2': T_HK2,
         'is_comfort': is_comfort,
     }, index=df.index)
 

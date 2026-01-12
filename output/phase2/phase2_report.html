@@ -102,7 +102,7 @@
 <body>
     <div class="container">
         <h1>ESTAT Phase 2: Exploratory Data Analysis Report</h1>
-        <p class="meta">Generated: 2026-01-12 11:30:15</p>
+        <p class="meta">Generated: 2026-01-12 18:55:34</p>
 
         <div class="toc">
             <strong>Contents</strong>
@@ -112,6 +112,7 @@
                 <li><a href="#quality">3. Data Quality Notes</a></li>
                 <li><a href="#energy">4. Energy Patterns</a></li>
                 <li><a href="#heating">5. Heating System</a></li>
+                <li style="margin-left: 1rem;"><a href="#cop-models">5.1 COP Model Specification</a></li>
                 <li><a href="#solar">6. Solar-Heating Correlation</a></li>
                 <li><a href="#summary">7. Summary Statistics</a></li>
                 <li><a href="#heating-curve">8. Heating Curve Analysis</a></li>
@@ -300,6 +301,97 @@
             <div class="figure">
                 <img src="fig07_indoor_outdoor_temp.png" alt="Outdoor vs indoor room temperatures with comfort bounds">
                 <div class="figure-caption">Outdoor vs indoor room temperatures with comfort bounds
+
+        
+        <h2 id="cop-models">5.1 COP Model Specification</h2>
+
+        <div class="card">
+            <h4>Model Overview</h4>
+            <p>COP (Coefficient of Performance) is modeled as a linear function of outdoor temperature and
+            HK2 target temperature (the heating curve setpoint):</p>
+            <pre style="background: var(--card-bg); color: var(--text); padding: 0.5rem;">COP = β₀ + β_outdoor × T_outdoor + β_T_HK2 × T_HK2</pre>
+
+            <h4>Best Model</h4>
+            <p><strong>Stiebel outdoor + T_HK2</strong></p>
+            <pre style="background: var(--card-bg); color: var(--text); padding: 0.5rem;">COP = 4.45 + 0.1184×T_outdoor + -0.0457×T_HK2</pre>
+            <p>R² = 0.795, RMSE = 0.257</p>
+        </div>
+
+        <div class="card">
+            <h4>Model Comparison</h4>
+            <table>
+                <tr>
+                    <th>Model</th>
+                    <th>R²</th>
+                    <th>RMSE</th>
+                    <th>β_outdoor</th>
+                    <th>β_T_HK2</th>
+                    <th>n</th>
+                </tr>
+                
+                <tr>
+                    <td>Stiebel outdoor only</td>
+                    <td><strong>0.793</strong></td>
+                    <td>0.259</td>
+                    <td>0.1584</td>
+                    <td>—</td>
+                    <td>60</td>
+                </tr>
+                <tr>
+                    <td>Davis outdoor only</td>
+                    <td><strong>0.718</strong></td>
+                    <td>0.296</td>
+                    <td>0.1294</td>
+                    <td>—</td>
+                    <td>57</td>
+                </tr>
+                <tr style="background-color: #90EE90;">
+                    <td>Stiebel outdoor + T_HK2</td>
+                    <td><strong>0.795</strong></td>
+                    <td>0.257</td>
+                    <td>0.1184</td>
+                    <td>-0.0457</td>
+                    <td>60</td>
+                </tr>
+                <tr>
+                    <td>Davis outdoor + T_HK2</td>
+                    <td><strong>0.758</strong></td>
+                    <td>0.274</td>
+                    <td>0.0246</td>
+                    <td>-0.1443</td>
+                    <td>57</td>
+                </tr>
+            </table>
+            <p><em>Green row = best model (highest R²)</em></p>
+            
+            <p><strong>Key finding:</strong> Adding T_HK2 (target flow temperature) improves the Stiebel model R² by
+            0.003 (0.3% relative improvement).</p>
+        </div>
+
+        <div class="card">
+            <h4>Interpretation</h4>
+            <ul>
+                <li><strong>β_outdoor (positive):</strong> Higher outdoor temperature → higher COP. Each +1°C outdoor
+                temperature increases COP by approximately 0.118.</li>
+                <li><strong>β_T_HK2 (negative):</strong> Higher target flow temperature → lower COP. Each +1°C in T_HK2
+                decreases COP by approximately 0.046 (multivariate model).</li>
+            </ul>
+            <p>This confirms heat pump thermodynamics: efficiency decreases when the temperature lift
+            (difference between evaporator and condenser) increases.</p>
+        </div>
+
+        <div class="card">
+            <h4>Sensor Comparison</h4>
+            <p>Two outdoor temperature sensors were compared:</p>
+            <ul>
+                <li><strong>Stiebel (heat pump sensor):</strong> Built into the heat pump unit, mounted near the house.
+                This is what the heat pump uses internally for heating curve calculations.</li>
+                <li><strong>Davis (weather station):</strong> External Davis weather station, mounted in a more exposed location.</li>
+            </ul>
+            <p>The Stiebel sensor generally provides better COP prediction (higher R²) because it measures the actual
+            air temperature at the heat pump evaporator location, which directly affects heat pump performance.</p>
+        </div>
+    
 
         <h2 id="solar">6. Solar-Heating Correlation</h2>
 
@@ -585,37 +677,33 @@
 
         <div class="card">
             <h4>Overview</h4>
-            <p>The <strong>weighted indoor temperature (T_weighted)</strong> is the primary comfort objective
-            for the Phase 5 intervention study. It combines readings from five indoor temperature sensors
-            to create a representative whole-building temperature metric.</p>
+            <p>The <strong>indoor temperature (T_weighted)</strong> is the primary comfort objective
+            for the Phase 5 intervention study. It uses the davis_inside sensor as the single
+            reference temperature (least noise, central location).</p>
 
-            <h4>Weighted Temperature Formula</h4>
-            <pre style="background: var(--card-bg); color: var(--text); padding: 0.5rem;">T_weighted = 0.40×davis_inside + 0.30×office1 + 0.10×atelier + 0.10×studio + 0.10×simlab</pre>
+            <h4>Temperature Sensor</h4>
+            <pre style="background: var(--card-bg); color: var(--text); padding: 0.5rem;">T_weighted = davis_inside_temperature</pre>
 
             <table>
                 <tr><th>Sensor</th><th>Weight</th><th>Rationale</th></tr>
-                <tr><td>davis_inside_temperature</td><td>40%</td><td>Primary living area, central location</td></tr>
-                <tr><td>office1_temperature</td><td>30%</td><td>Secondary occupied workspace</td></tr>
-                <tr><td>atelier_temperature</td><td>10%</td><td>Zone coverage - workshop area</td></tr>
-                <tr><td>studio_temperature</td><td>10%</td><td>Zone coverage - studio space</td></tr>
-                <tr><td>simlab_temperature</td><td>10%</td><td>Zone coverage - laboratory area</td></tr>
+                <tr><td>davis_inside_temperature</td><td>100%</td><td>Primary living area, central location, least noise</td></tr>
             </table>
         </div>
 
         <div class="card">
             <h4>Analysis Period Summary</h4>
             <table>
-                <tr><td>Total readings</td><td>6,953</td></tr>
-                <tr><td>Washout periods (48h after parameter changes)</td><td>2,228 (32.0%)</td></tr>
-                <tr><td>Analysis readings (excluding washout)</td><td>4,725 (68.0%)</td></tr>
+                <tr><td>Total readings</td><td>4,168</td></tr>
+                <tr><td>Washout periods (48h after parameter changes)</td><td>1,378 (33.1%)</td></tr>
+                <tr><td>Analysis readings (excluding washout)</td><td>2,790 (66.9%)</td></tr>
             </table>
 
             <h4>Temperature Statistics (Excluding Washout)</h4>
             <table>
-                <tr><td>Mean T_weighted</td><td><strong>18.6°C</strong></td></tr>
+                <tr><td>Mean T_weighted</td><td><strong>19.0°C</strong></td></tr>
                 <tr><td>Std deviation</td><td>0.8°C</td></tr>
-                <tr><td>Range</td><td>16.3°C to 21.5°C</td></tr>
-                <tr><td>Comfort compliance (08:00-22:00, 18.5-22°C)</td><td><strong>61.1%</strong></td></tr>
+                <tr><td>Range</td><td>16.8°C to 21.1°C</td></tr>
+                <tr><td>Comfort compliance (08:00-22:00, 18.5-22°C)</td><td><strong>82.8%</strong></td></tr>
             </table>
         </div>
 
@@ -624,55 +712,55 @@
             <p>A multivariate model predicts T_weighted (during occupied hours) from all controllable parameters simultaneously,
             using daily aggregates to capture parameter effects while controlling for confounding variables.</p>
 
-            <p><strong>Model Performance:</strong> R² = 0.433, Adjusted R² = 0.379, RMSE = 0.55°C, n = 59 days</p>
+            <p><strong>Model Performance:</strong> R² = 0.534, Adjusted R² = 0.490, RMSE = 0.51°C, n = 59 days</p>
             <table>
                 <tr><th>Parameter</th><th>Coefficient</th><th>Std Error</th><th>t-stat</th><th>p-value</th><th>Interpretation</th></tr>
                 <tr>
                     <td>Intercept</td>
-                    <td><strong>-16.552</strong></td>
-                    <td>9.203</td>
-                    <td>-1.80</td>
-                    <td>0.0778 </td>
-                    <td>Baseline: -16.6°C</td>
+                    <td><strong>-16.403</strong></td>
+                    <td>8.656</td>
+                    <td>-1.90</td>
+                    <td>0.0635 </td>
+                    <td>Baseline: -16.4°C</td>
                 </tr>
                 <tr>
                     <td>Comfort Setpoint</td>
-                    <td><strong>1.350</strong></td>
-                    <td>0.352</td>
-                    <td>3.84</td>
-                    <td>0.0003 ***</td>
-                    <td>+1°C setpoint → +1.35°C T_weighted</td>
+                    <td><strong>1.240</strong></td>
+                    <td>0.332</td>
+                    <td>3.74</td>
+                    <td>0.0005 ***</td>
+                    <td>+1°C setpoint → +1.24°C T_weighted</td>
                 </tr>
                 <tr>
                     <td>Eco Setpoint</td>
-                    <td><strong>-0.070</strong></td>
-                    <td>0.038</td>
-                    <td>-1.84</td>
-                    <td>0.0721 </td>
-                    <td>+1°C setpoint → -0.07°C T_weighted</td>
+                    <td><strong>-0.060</strong></td>
+                    <td>0.035</td>
+                    <td>-1.75</td>
+                    <td>0.0865 </td>
+                    <td>+1°C setpoint → -0.06°C T_weighted</td>
                 </tr>
                 <tr>
                     <td>Curve Rise</td>
-                    <td><strong>7.875</strong></td>
-                    <td>2.498</td>
-                    <td>3.15</td>
-                    <td>0.0027 **</td>
-                    <td>+0.1 curve → +0.79°C T_weighted</td>
+                    <td><strong>9.951</strong></td>
+                    <td>2.349</td>
+                    <td>4.24</td>
+                    <td>0.0001 ***</td>
+                    <td>+0.1 curve → +1.00°C T_weighted</td>
                 </tr>
                 <tr>
                     <td>Comfort Hours</td>
-                    <td><strong>0.008</strong></td>
-                    <td>0.025</td>
-                    <td>0.33</td>
-                    <td>0.7446 </td>
-                    <td>+1h comfort → +0.01°C T_weighted</td>
+                    <td><strong>0.031</strong></td>
+                    <td>0.032</td>
+                    <td>0.96</td>
+                    <td>0.3435 </td>
+                    <td>+1h comfort → +0.03°C T_weighted</td>
                 </tr>
                 <tr>
                     <td>Outdoor Temp</td>
-                    <td><strong>0.078</strong></td>
-                    <td>0.027</td>
-                    <td>2.89</td>
-                    <td>0.0056 **</td>
+                    <td><strong>0.077</strong></td>
+                    <td>0.025</td>
+                    <td>3.05</td>
+                    <td>0.0035 **</td>
                     <td>+1°C outdoor → +0.08°C T_weighted</td>
                 </tr>
             </table>
@@ -700,72 +788,72 @@
                     <td>20.5</td>
                     <td>18.3</td>
                     <td>1.14</td>
-                    <td>19.8</td>
-                    <td>233</td>
+                    <td>20.3</td>
+                    <td>122</td>
                 </tr>
                 <tr>
                     <td>2025-11-04</td>
                     <td>20.2</td>
                     <td>18.2</td>
                     <td>1.11</td>
-                    <td>19.4</td>
-                    <td>1,168</td>
+                    <td>19.8</td>
+                    <td>677</td>
                 </tr>
                 <tr>
                     <td>2025-11-19</td>
                     <td>20.2</td>
                     <td>18.2</td>
                     <td>1.07</td>
-                    <td>18.0</td>
-                    <td>431</td>
+                    <td>18.4</td>
+                    <td>243</td>
                 </tr>
                 <tr>
                     <td>2025-11-25</td>
                     <td>20.2</td>
                     <td>18.0</td>
                     <td>1.08</td>
-                    <td>18.0</td>
-                    <td>605</td>
+                    <td>18.5</td>
+                    <td>341</td>
                 </tr>
                 <tr>
                     <td>2025-12-04</td>
                     <td>20.2</td>
                     <td>30.0</td>
                     <td>1.08</td>
-                    <td>17.6</td>
-                    <td>66</td>
+                    <td>18.1</td>
+                    <td>40</td>
                 </tr>
                 <tr>
                     <td>2025-12-07</td>
                     <td>20.2</td>
                     <td>18.0</td>
                     <td>1.08</td>
-                    <td>18.3</td>
-                    <td>448</td>
+                    <td>18.9</td>
+                    <td>268</td>
                 </tr>
                 <tr>
                     <td>2025-12-14</td>
                     <td>20.5</td>
                     <td>18.0</td>
                     <td>1.08</td>
-                    <td>18.3</td>
-                    <td>848</td>
+                    <td>18.8</td>
+                    <td>502</td>
                 </tr>
                 <tr>
                     <td>2025-12-27</td>
                     <td>21.0</td>
                     <td>18.0</td>
                     <td>1.10</td>
-                    <td>19.1</td>
-                    <td>133</td>
+                    <td>19.5</td>
+                    <td>91</td>
                 </tr>
                 <tr>
                     <td>2026-01-01</td>
                     <td>21.0</td>
                     <td>18.0</td>
                     <td>0.97</td>
-                    <td>18.3</td>
-                    <td>792</td>
+                    <td>18.4</td>
+                    <td>505</td>
                 </tr>
             </table>
         </div>
@@ -776,15 +864,15 @@
             Night temperatures (22:00-08:00) are excluded from the comfort objective, allowing energy-saving setback without penalty.</p>
             <table>
                 <tr><th>Metric</th><th>Occupied (08:00-22:00)</th><th>Night (22:00-08:00)</th></tr>
-                <tr><td>Mean T_weighted</td><td><strong>18.8°C</strong></td><td>18.3°C</td></tr>
-                <tr><td>Minimum T_weighted</td><td>16.3°C</td><td>16.5°C</td></tr>
-                <tr><td>Below 18.5°C</td><td>38.9%</td><td>—</td></tr>
-                <tr><td>Below 18.0°C</td><td>—</td><td>40.9%</td></tr>
-                <tr><td>Comfort compliance (18.5-22°C)</td><td><strong>61.1%</strong></td><td>Not evaluated</td></tr>
-                <tr><td>N readings</td><td>2,807</td><td>1,918</td></tr>
+                <tr><td>Mean T_weighted</td><td><strong>19.2°C</strong></td><td>18.5°C</td></tr>
+                <tr><td>Minimum T_weighted</td><td>17.4°C</td><td>16.8°C</td></tr>
+                <tr><td>Below 18.5°C</td><td>17.2%</td><td>—</td></tr>
+                <tr><td>Below 18.0°C</td><td>—</td><td>28.0%</td></tr>
+                <tr><td>Comfort compliance (18.5-22°C)</td><td><strong>82.8%</strong></td><td>Not evaluated</td></tr>
+                <tr><td>N readings</td><td>1,718</td><td>1,072</td></tr>
             </table>
             <p><em>This explains why the overall mean (18.7°C) appears low - night temperatures bring down the average,
-            but comfort compliance during occupied hours (61.1%) is what matters for the intervention study.</em></p>
+            but comfort compliance during occupied hours (82.8%) is what matters for the intervention study.</em></p>
         </div>
 
         <div class="figure">
@@ -1306,6 +1394,22 @@ Loading processed data...
 2.2 HEATING SYSTEM ANALYSIS
 ============================================================
   Saved: fig05_heat_pump_cop.png
+
+  COP Model Comparison:
+  ----------------------------------------------------------------------
+  Model                           R²     RMSE  β_outdoor    β_T_HK2
+  ----------------------------------------------------------------------
+  Stiebel outdoor only         0.793    0.259     0.1584          —
+  Davis outdoor only           0.718    0.296     0.1294          —
+  Stiebel outdoor + T_HK2      0.795    0.257     0.1184    -0.0457
+  Davis outdoor + T_HK2        0.758    0.274     0.0246    -0.1443
+  ----------------------------------------------------------------------
+
+  Best model: Stiebel outdoor + T_HK2
+    COP = 4.45 + 0.1184×T_outdoor + -0.0457×T_HK2
+    R² = 0.795, RMSE = 0.257
+
+  Adding T_HK2 improves Stiebel model R² by 0.003 (0.3%)
   Saved: fig06_temperature_differentials.png
   Saved: fig07_indoor_outdoor_temp.png
 
@@ -1319,6 +1423,8 @@ Loading processed data...
     Mean:   25.7 kWh/day
     Median: 22.5 kWh/day
     Max:    58.0 kWh/day
+
+  Saved COP models to: /Users/stata/workspace/estat/output/phase2/cop_models.json
 
 ============================================================
 2.3 SOLAR-HEATING CORRELATION
@@ -1437,6 +1543,7 @@ Building heating curve model...
     2025-12-30: comfort=20.7°C, eco=18.0°C, RMSE=1.10°C (n=140)
     2025-12-31: comfort=21.0°C, eco=18.0°C, RMSE=1.63°C (n=3,549)
     2026-01-12: comfort=23.0°C, eco=15.0°C, RMSE=1.66°C (n=9)
+  Saved: heating_curve_params.json
 
 Creating visualization...
   Saved: fig12_heating_curve_schedule.png
@@ -1461,14 +1568,10 @@ Loading room sensor data...
   Loaded 87,062 rows, 25 sensors
 
 Computing weighted indoor temperature...
-  davis_inside_temperature: 4,168 valid readings (weight=40%)
-  office1_temperature: 3,232 valid readings (weight=30%)
-  atelier_temperature: 3,223 valid readings (weight=10%)
-  studio_temperature: 3,203 valid readings (weight=10%)
-  simlab_temperature: 3,599 valid readings (weight=10%)
-  Weighted temperature: 6,953 valid readings
-  Range: 16.3°C to 21.6°C
-  Mean: 18.6°C
+  davis_inside_temperature: 4,168 valid readings (weight=100%)
+  Weighted temperature: 4,168 valid readings
+  Range: 16.8°C to 21.8°C
+  Mean: 19.0°C
 
 Detecting parameter regimes...
   Found 32 parameter regimes:
@@ -1489,10 +1592,10 @@ Creating washout mask (48h after each regime change)...
   Analysis periods: 4,965 readings (68.3%)
 
 Building analysis dataset...
-  Dataset: 6,953 rows
+  Dataset: 4,168 rows
   Date range: 2025-10-28 16:15:00+00:00 to 2026-01-12 09:30:00+00:00
-  Washout periods: 2,228 rows
-  Analysis data: 4,725 rows
+  Washout periods: 1,378 rows
+  Analysis data: 2,790 rows
 
 Computing regime statistics...
   Computed statistics for 9 regimes
@@ -1500,21 +1603,21 @@ Computing regime statistics...
 Building multivariate regression model...
   Daily aggregates: 59 days
 
-  Model Results (R² = 0.433, Adj R² = 0.379, RMSE = 0.55°C):
+  Model Results (R² = 0.534, Adj R² = 0.490, RMSE = 0.51°C):
   Parameter                Coef       SE        t        p
   ----------------------------------------------------
-  intercept             -16.552    9.203    -1.80  0.0778 
-  comfort_setpoint        1.350    0.352     3.84  0.0003 ***
-  eco_setpoint           -0.070    0.038    -1.84  0.0721 
-  curve_rise              7.875    2.498     3.15  0.0027 **
-  comfort_hours           0.008    0.025     0.33  0.7446 
-  outdoor_mean            0.078    0.027     2.89  0.0056 **
+  intercept             -16.403    8.656    -1.90  0.0635 
+  comfort_setpoint        1.240    0.332     3.74  0.0005 ***
+  eco_setpoint           -0.060    0.035    -1.75  0.0865 
+  curve_rise              9.951    2.349     4.24  0.0001 ***
+  comfort_hours           0.031    0.032     0.96  0.3435 
+  outdoor_mean            0.077    0.025     3.05  0.0035 **
 
   Interpretation (controlling for other variables):
-    +1°C comfort setpoint → +1.35°C T_weighted
-    +1°C eco setpoint → -0.07°C T_weighted
-    +0.1 curve rise → +0.79°C T_weighted
-    +1h comfort duration → +0.01°C T_weighted
+    +1°C comfort setpoint → +1.24°C T_weighted
+    +1°C eco setpoint → -0.06°C T_weighted
+    +0.1 curve rise → +1.00°C T_weighted
+    +1h comfort duration → +0.03°C T_weighted
     +1°C outdoor temp → +0.08°C T_weighted
 
 Computing simple correlations (for reference)...

@@ -1,0 +1,42 @@
+{
+  "stiebel_univar": {
+    "name": "Stiebel outdoor only",
+    "formula": "COP = 2.63 + 0.1584\u00d7T_outdoor",
+    "intercept": 2.625677234593053,
+    "coef_outdoor": 0.15844617095213606,
+    "coef_thk2": null,
+    "r2": 0.7926947636981423,
+    "rmse": 0.25876221855584564,
+    "n": 60
+  },
+  "davis_univar": {
+    "name": "Davis outdoor only",
+    "formula": "COP = 3.12 + 0.1294\u00d7T_outdoor",
+    "intercept": 3.1241664312313002,
+    "coef_outdoor": 0.12940623106050292,
+    "coef_thk2": null,
+    "r2": 0.7178511961195309,
+    "rmse": 0.2958435676674811,
+    "n": 57
+  },
+  "stiebel_multivar": {
+    "name": "Stiebel outdoor + T_HK2",
+    "formula": "COP = 4.45 + 0.1184\u00d7T_outdoor + -0.0457\u00d7T_HK2",
+    "intercept": 4.450361899058929,
+    "coef_outdoor": 0.11842917610442334,
+    "coef_thk2": -0.04565221048154971,
+    "r2": 0.7954327918259381,
+    "rmse": 0.25704770995554843,
+    "n": 60
+  },
+  "davis_multivar": {
+    "name": "Davis outdoor + T_HK2",
+    "formula": "COP = 8.50 + 0.0246\u00d7T_outdoor + -0.1443\u00d7T_HK2",
+    "intercept": 8.50078271347769,
+    "coef_outdoor": 0.0245625835336567,
+    "coef_thk2": -0.14429658170465226,
+    "r2": 0.7579530643211264,
+    "rmse": 0.2740140418445433,
+    "n": 57
+  }
+}

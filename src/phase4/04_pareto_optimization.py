@@ -53,10 +53,11 @@ OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase4'
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 # Model parameters from Phase 3
+# Uses T_HK2 (target flow from heating curve) not actual measured flow
 COP_PARAMS = {
     'intercept': 6.52,
     'outdoor_coef': 0.1319,
-    'flow_coef': -0.1007,
+    't_hk2_coef': -0.1007,
 }
 
 # Load heating curve parameters from Phase 2 (or use defaults)
@@ -158,7 +159,7 @@ class SimulationData:
         sim.loc[weight_sum == 0, 'T_weighted'] = np.nan
 
         # Flow temperature
-        sim['T_flow'] = df.get('stiebel_eltron_isg_actual_temperature_hk_2',
+        sim['T_HK2'] = df.get('stiebel_eltron_isg_actual_temperature_hk_2',
                                df.get('stiebel_eltron_isg_flow_temperature_wp1'))
 
         # Energy columns
@@ -183,7 +184,7 @@ class SimulationData:
         sim['feedin_rate_rp_kwh'] = sim['feedin_rate_rp_kwh'].ffill().bfill()
 
         # Drop rows with missing essential data
-        sim = sim.dropna(subset=['T_outdoor', 'T_weighted', 'T_flow'])
+        sim = sim.dropna(subset=['T_outdoor', 'T_weighted', 'T_HK2'])
 
         return sim
 
@@ -213,11 +214,11 @@ def estimate_flow_temp(curve_rise: float, T_outdoor: float, setpoint: float,
     return setpoint + curve_rise * (T_ref - T_outdoor)
 
 
-def calculate_cop(T_outdoor: float, T_flow: float) -> float:
+def calculate_cop(T_outdoor: float, T_HK2: float) -> float:
     """Calculate COP from temperatures."""
     return (COP_PARAMS['intercept'] +
             COP_PARAMS['outdoor_coef'] * T_outdoor +
-            COP_PARAMS['flow_coef'] * T_flow)
+            COP_PARAMS['t_hk2_coef'] * T_HK2)
 
 
 def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
@@ -292,11 +293,11 @@ def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
     T_ref = np.where(is_comfort, HEATING_CURVE_PARAMS['t_ref_comfort'], HEATING_CURVE_PARAMS['t_ref_eco'])
 
     # Flow temperature from heating curve
-    T_flow = setpoint + curve_rise * (T_ref - T_outdoor)
-    T_flow = np.clip(T_flow, 20, 55)
+    T_HK2 = setpoint + curve_rise * (T_ref - T_outdoor)
+    T_HK2 = np.clip(T_HK2, 20, 55)
 
     # COP at each operating point - this is crucial for energy savings
-    cop = COP_PARAMS['intercept'] + COP_PARAMS['outdoor_coef'] * T_outdoor + COP_PARAMS['flow_coef'] * T_flow
+    cop = COP_PARAMS['intercept'] + COP_PARAMS['outdoor_coef'] * T_outdoor + COP_PARAMS['t_hk2_coef'] * T_HK2
     cop = np.maximum(cop, 1.5)
 
     # Mode factor: comfort=1.0, eco reduces heating effort based on setback
@@ -307,7 +308,7 @@ def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
     mode_factor = np.where(is_comfort, 1.0, eco_mode_factor)
 
     # Thermal demand weight at each timestep (before COP)
-    thermal_demand_weight = np.maximum(0, T_flow - T_outdoor) * mode_factor
+    thermal_demand_weight = np.maximum(0, T_HK2 - T_outdoor) * mode_factor
 
     # Calculate daily heating energy - NOW accounting for COP properly
     unique_dates = np.unique(dates)

@@ -33,10 +33,11 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 # Model parameters (from Phase 3)
 # COP model from heat pump analysis (R²=0.95)
+# Uses T_HK2 (target flow from heating curve) not actual measured flow
 COP_PARAMS = {
     'intercept': 6.52,
     'outdoor_coef': 0.1319,
-    'flow_coef': -0.1007,
+    't_hk2_coef': -0.1007,
 }
 
 # Thermal model uses transfer function approach with τ_effort for heating response
@@ -126,12 +127,12 @@ def prepare_simulation_data(df: pd.DataFrame, tariff_series: pd.DataFrame = None
 
     print(f"  Weighted T_room: {sim_data['T_room'].notna().sum():,} valid points")
 
-    # Flow temperature
-    flow_col = 'stiebel_eltron_isg_actual_temperature_hk_2'
-    if flow_col in df.columns:
-        sim_data['T_flow'] = df[flow_col]
-    elif 'stiebel_eltron_isg_flow_temperature_wp1' in df.columns:
-        sim_data['T_flow'] = df['stiebel_eltron_isg_flow_temperature_wp1']
+    # T_HK2: target flow temperature from heating curve
+    t_hk2_col = 'stiebel_eltron_isg_target_temperature_hk_2'
+    if t_hk2_col in df.columns:
+        sim_data['T_HK2'] = df[t_hk2_col]
+    elif 'stiebel_eltron_isg_actual_temperature_hk_2' in df.columns:
+        sim_data['T_HK2'] = df['stiebel_eltron_isg_actual_temperature_hk_2']
 
     # Energy columns
     if 'pv_generation_kwh' in df.columns:
@@ -179,7 +180,7 @@ def prepare_simulation_data(df: pd.DataFrame, tariff_series: pd.DataFrame = None
         print(f"  Tariff data merged: {sim_data['is_high_tariff'].notna().sum():,} valid points")
 
     # Drop rows with missing essential data
-    essential = ['T_outdoor', 'T_room', 'T_flow']
+    essential = ['T_outdoor', 'T_room', 'T_HK2']
     sim_data = sim_data.dropna(subset=[c for c in essential if c in sim_data.columns])
 
     print(f"  Simulation data: {len(sim_data):,} rows")
@@ -188,20 +189,20 @@ def prepare_simulation_data(df: pd.DataFrame, tariff_series: pd.DataFrame = None
     return sim_data
 
 
-def calculate_cop(T_outdoor: float, T_flow: float) -> float:
-    """Calculate COP from temperatures."""
+def calculate_cop(T_outdoor: float, T_HK2: float) -> float:
+    """Calculate COP from outdoor temperature and T_HK2 (target flow)."""
     return (COP_PARAMS['intercept'] +
             COP_PARAMS['outdoor_coef'] * T_outdoor +
-            COP_PARAMS['flow_coef'] * T_flow)
+            COP_PARAMS['t_hk2_coef'] * T_HK2)
 
 
-def estimate_flow_temp(curve_rise: float, T_outdoor: float, setpoint: float,
-                       is_comfort: bool = True) -> float:
+def estimate_t_hk2(curve_rise: float, T_outdoor: float, setpoint: float,
+                   is_comfort: bool = True) -> float:
     """
-    Estimate target flow temperature from heating curve.
+    Estimate T_HK2 (target flow temperature) from heating curve.
 
     Heating curve formula (from Phase 2 analysis):
-        T_target = T_setpoint + curve_rise × (T_ref - T_outdoor)
+        T_HK2 = T_setpoint + curve_rise × (T_ref - T_outdoor)
 
     Where T_ref depends on mode:
         - Comfort mode: T_ref = 21.32°C
@@ -235,7 +236,7 @@ def simulate_strategy(sim_data: pd.DataFrame, strategy: dict,
         hour = row['hour']
         T_outdoor = row['T_outdoor']
         T_room_actual = row['T_room']
-        T_flow_actual = row['T_flow']
+        T_HK2_actual = row['T_HK2']
 
         # Determine if in comfort mode
         is_comfort = comfort_start <= hour < comfort_end
@@ -254,13 +255,13 @@ def simulate_strategy(sim_data: pd.DataFrame, strategy: dict,
         effective_curve_rise = curve_rise_grid if is_grid_dependent else curve_rise
 
         # Estimate flow temperature under this strategy
-        T_flow_strategy = estimate_flow_temp(effective_curve_rise, T_outdoor, target_setpoint, is_comfort)
+        T_HK2_strategy = estimate_t_hk2(effective_curve_rise, T_outdoor, target_setpoint, is_comfort)
 
         # Calculate COP for strategy
-        cop_strategy = calculate_cop(T_outdoor, T_flow_strategy)
+        cop_strategy = calculate_cop(T_outdoor, T_HK2_strategy)
 
         # Calculate COP for actual (baseline reference)
-        cop_actual = calculate_cop(T_outdoor, T_flow_actual)
+        cop_actual = calculate_cop(T_outdoor, T_HK2_actual)
 
         # Estimate energy savings from COP improvement
         # If COP improves, less electricity needed for same heat
@@ -295,8 +296,8 @@ def simulate_strategy(sim_data: pd.DataFrame, strategy: dict,
             'hour': hour,
             'T_outdoor': T_outdoor,
             'T_room_actual': T_room_actual,
-            'T_flow_actual': T_flow_actual,
-            'T_flow_strategy': T_flow_strategy,
+            'T_HK2_actual': T_HK2_actual,
+            'T_HK2_strategy': T_HK2_strategy,
             'target_setpoint': target_setpoint,
             'is_comfort': is_comfort,
             'is_pv_available': is_pv_available,

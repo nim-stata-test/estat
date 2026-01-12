@@ -14,7 +14,7 @@ Key model parameters used:
 - Thermal model: Transfer function with τ_effort (heating response) ~8-48h per room
 - Weighted τ_effort: ~12h (for washout calculation)
 - Thermal model sensor: davis_inside (100% - primary living area, least noise)
-- COP model: COP = 6.52 + 0.13*T_outdoor - 0.10*T_flow
+- COP model: COP = 6.52 + 0.13*T_outdoor - 0.10*T_HK2 (target flow from heating curve)
 - Peak PV hours: 10:00-16:00
 - Current self-sufficiency: 58.1%
 """
@@ -48,7 +48,7 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 MODEL_PARAMS = {
     'cop_intercept': 6.52,
     'cop_outdoor_coef': 0.1319,
-    'cop_flow_coef': -0.1007,
+    'cop_t_hk2_coef': -0.1007,  # T_HK2 = target flow temperature from heating curve
     # Weighted τ_effort (heating response time constant) from Phase 3 transfer function model:
     # 0.4×8 + 0.3×8 + 0.1×8 + 0.1×12 + 0.1×48 = 12.4h
     # Note: τ_outdoor (outdoor temp response) is longer (24-120h) but less relevant for optimization
@@ -188,20 +188,20 @@ def define_strategies() -> dict:
     return strategies
 
 
-def calculate_cop_prediction(T_outdoor: float, T_flow: float) -> float:
-    """Calculate predicted COP from outdoor and flow temperatures."""
+def calculate_cop_prediction(T_outdoor: float, T_HK2: float) -> float:
+    """Calculate predicted COP from outdoor temperature and T_HK2 (target flow)."""
     return (MODEL_PARAMS['cop_intercept'] +
             MODEL_PARAMS['cop_outdoor_coef'] * T_outdoor +
-            MODEL_PARAMS['cop_flow_coef'] * T_flow)
+            MODEL_PARAMS['cop_t_hk2_coef'] * T_HK2)
 
 
-def estimate_flow_temperature(curve_rise: float, T_outdoor: float,
-                              T_setpoint: float = 20.0, is_comfort: bool = True) -> float:
+def estimate_t_hk2(curve_rise: float, T_outdoor: float,
+                   T_setpoint: float = 20.0, is_comfort: bool = True) -> float:
     """
-    Estimate target flow temperature from heating curve parameters.
+    Estimate T_HK2 (target flow temperature) from heating curve parameters.
 
     Heating curve formula (from Phase 2 analysis):
-        T_target = T_setpoint + curve_rise × (T_ref - T_outdoor)
+        T_HK2 = T_setpoint + curve_rise × (T_ref - T_outdoor)
 
     Where T_ref depends on mode:
         - Comfort mode: T_ref = 21.32°C
@@ -214,11 +214,11 @@ def estimate_flow_temperature(curve_rise: float, T_outdoor: float,
         is_comfort: True if in comfort mode, False for eco mode
 
     Returns:
-        Target flow temperature in °C
+        T_HK2 target flow temperature in °C
     """
     T_ref = HEATING_CURVE_PARAMS['t_ref_comfort'] if is_comfort else HEATING_CURVE_PARAMS['t_ref_eco']
-    T_flow = T_setpoint + curve_rise * (T_ref - T_outdoor)
-    return T_flow
+    T_HK2 = T_setpoint + curve_rise * (T_ref - T_outdoor)
+    return T_HK2
 
 
 def analyze_strategy_cop_impact(strategies: dict) -> pd.DataFrame:
@@ -238,20 +238,20 @@ def analyze_strategy_cop_impact(strategies: dict) -> pd.DataFrame:
         setpoint_comfort = params.get('setpoint_comfort', BASELINE_SETTINGS['setpoint_comfort'])
 
         for T_out in T_outdoor_range:
-            # Calculate flow temp during comfort mode (main heating period)
-            T_flow = estimate_flow_temperature(curve_rise, T_out, setpoint_comfort, is_comfort=True)
-            cop = calculate_cop_prediction(T_out, T_flow)
+            # Calculate T_HK2 during comfort mode (main heating period)
+            T_HK2 = estimate_t_hk2(curve_rise, T_out, setpoint_comfort, is_comfort=True)
+            cop = calculate_cop_prediction(T_out, T_HK2)
 
             # Also calculate baseline COP for comparison
-            T_flow_baseline = estimate_flow_temperature(
+            T_HK2_baseline = estimate_t_hk2(
                 BASELINE_SETTINGS['curve_rise'], T_out,
                 BASELINE_SETTINGS['setpoint_comfort'], is_comfort=True)
-            cop_baseline = calculate_cop_prediction(T_out, T_flow_baseline)
+            cop_baseline = calculate_cop_prediction(T_out, T_HK2_baseline)
 
             results.append({
                 'strategy': strategy_id,
                 'T_outdoor': T_out,
-                'T_flow': T_flow,
+                'T_HK2': T_HK2,
                 'curve_rise': curve_rise,
                 'COP': cop,
                 'COP_baseline': cop_baseline,
@@ -445,7 +445,7 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
     <h3>Methodology</h3>
     <p>Three heating optimization strategies were developed using Phase 3 model parameters:</p>
     <ul>
-        <li><strong>COP Model</strong>: COP = 6.52 + 0.13×T_outdoor - 0.10×T_flow (R²=0.95)</li>
+        <li><strong>COP Model</strong>: COP = 6.52 + 0.13×T_outdoor - 0.10×T_HK2 (R²=0.95)</li>
         <li><strong>Building Time Constant</strong>: ~19 hours (weighted average from target sensors)</li>
         <li><strong>Target Sensor</strong>: davis_inside (100% - least noise)</li>
         <li><strong>Peak PV Hours</strong>: 10:00-16:00</li>
@@ -511,10 +511,10 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
     </table>
 
     <p><strong>Heating curve formula</strong> (from Phase 2 analysis):<br>
-    <code>T_flow = T_setpoint + curve_rise × (T_ref - T_outdoor)</code><br>
+    <code>T_HK2 = T_setpoint + curve_rise × (T_ref - T_outdoor)</code><br>
     where T_ref = 21.32°C (comfort) or 19.18°C (eco).</p>
 
-    <p>Key insight: Reducing curve_rise from 1.08 to 0.95-0.98 lowers flow temperature by ~1-2°C,
+    <p>Key insight: Reducing curve_rise from 1.08 to 0.95-0.98 lowers T_HK2 (target flow) by ~1-2°C,
     improving COP by ~0.1-0.2 across all outdoor temperatures.</p>
 
     <h3>Schedule Optimization Rationale</h3>

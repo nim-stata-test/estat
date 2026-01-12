@@ -21,16 +21,16 @@
             <td>Increases with warmer outdoor</td>
         </tr>
         <tr>
-            <td>COP sensitivity to flow temp</td>
-            <td>-0.2592 COP/°C</td>
-            <td>Decreases with higher flow temp</td>
+            <td>COP sensitivity to T_HK2</td>
+            <td>-0.2199 COP/°C</td>
+            <td>Decreases with higher T_HK2</td>
         </tr>
     </table>
 
     <h3>COP Model</h3>
     <p>Multi-variable regression model:</p>
-    <pre>COP = 6.14 + 0.1405×T_out + -0.0915×T_flow</pre>
-    <p>R² = 0.956, RMSE = 0.169</p>
+    <pre>COP = 5.93 + 0.1280×T_out + -0.0832×T_HK2</pre>
+    <p>R² = 0.941, RMSE = 0.196</p>
 
     <h3>Capacity Analysis</h3>
     <table>
@@ -65,8 +65,8 @@
 
     <h3>Implications for Optimization</h3>
     <ul>
-        <li><strong>COP optimization</strong>: Lower flow temperatures improve COP.
-            With slope -0.2592, reducing flow by 5°C improves COP by ~1.30.</li>
+        <li><strong>COP optimization</strong>: Lower T_HK2 (target temperature) improves COP.
+            With slope -0.2199, reducing T_HK2 by 5°C improves COP by ~1.10.</li>
         <li><strong>Timing strategy</strong>: Run heat pump during warmest outdoor temps (daytime/solar hours)
             for better COP. Each +1°C outdoor improves COP by ~0.203.</li>
         <li><strong>Capacity headroom</strong>: Max observed 59 kWh/day
@@ -78,7 +78,7 @@
     <figure>
         <img src="fig18_heat_pump_model.png" alt="Heat Pump Model Analysis">
         <figcaption><strong>Figure 18:</strong> Heat pump analysis: COP vs outdoor temperature (top-left),
-        COP vs flow temperature (top-right), daily energy (bottom-left),
+        COP vs T_HK2 (top-right), daily energy (bottom-left),
         buffer tank dynamics (bottom-right).</figcaption>
     </figure>
     </section>

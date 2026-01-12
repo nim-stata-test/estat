@@ -28,10 +28,11 @@ OUTPUT_DIR = PHASE4_DIR
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 # Model parameters from Phase 3
+# Uses T_HK2 (target flow from heating curve) not actual measured flow
 COP_PARAMS = {
     'intercept': 6.52,
     'outdoor_coef': 0.1319,
-    'flow_coef': -0.1007,
+    't_hk2_coef': -0.1007,
 }
 
 # Load heating curve parameters from Phase 2 JSON

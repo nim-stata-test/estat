@@ -69,13 +69,15 @@ def calculate_cop(heating: pd.DataFrame) -> pd.DataFrame:
     consumed_col = 'stiebel_eltron_isg_consumed_heating_today'
     produced_col = 'stiebel_eltron_isg_produced_heating_today'
     outdoor_col = 'stiebel_eltron_isg_outdoor_temperature'
-    flow_col = 'stiebel_eltron_isg_flow_temperature_wp1'
+    # Use T_HK2 target (heating curve setpoint) instead of actual flow temperature
+    # This is the controllable parameter and will vary during the pilot experiment
+    t_hk2_col = 'stiebel_eltron_isg_target_temperature_hk_2'
     buffer_col = 'stiebel_eltron_isg_actual_temperature_buffer'
     compressor_col = 'stiebel_eltron_isg_compressor'
 
     # Check available columns
     available = []
-    for col in [consumed_col, produced_col, outdoor_col, flow_col, buffer_col]:
+    for col in [consumed_col, produced_col, outdoor_col, t_hk2_col, buffer_col]:
         if col in heating.columns:
             available.append(col)
         else:
@@ -96,8 +98,8 @@ def calculate_cop(heating: pd.DataFrame) -> pd.DataFrame:
     if outdoor_col in df.columns:
         daily['T_outdoor'] = df[outdoor_col].resample('D').mean()
 
-    if flow_col in df.columns:
-        daily['T_flow'] = df[flow_col].resample('D').mean()
+    if t_hk2_col in df.columns:
+        daily['T_HK2'] = df[t_hk2_col].resample('D').mean()
 
     if buffer_col in df.columns:
         daily['T_buffer'] = df[buffer_col].resample('D').mean()
@@ -156,33 +158,33 @@ def analyze_cop_relationships(daily: pd.DataFrame) -> dict:
             print(f"    Base COP (at 0°C): {reg.intercept_:.2f}")
             print(f"    R²: {r2_score(y, y_pred):.3f}")
 
-    # COP vs Flow Temperature
-    if 'T_flow' in daily.columns:
-        mask = daily['cop'].notna() & daily['T_flow'].notna()
+    # COP vs T_HK2 (target flow temperature from heating curve)
+    if 'T_HK2' in daily.columns:
+        mask = daily['cop'].notna() & daily['T_HK2'].notna()
         if mask.sum() >= 10:
-            X = daily.loc[mask, 'T_flow'].values.reshape(-1, 1)
+            X = daily.loc[mask, 'T_HK2'].values.reshape(-1, 1)
             y = daily.loc[mask, 'cop'].values
 
             reg = LinearRegression().fit(X, y)
             y_pred = reg.predict(X)
 
-            results['cop_vs_flow'] = {
+            results['cop_vs_t_hk2'] = {
                 'slope': reg.coef_[0],
                 'intercept': reg.intercept_,
                 'r2': r2_score(y, y_pred),
                 'n_points': len(y)
             }
 
-            print(f"  COP vs T_flow:")
+            print(f"  COP vs T_HK2 (target):")
             print(f"    Slope: {reg.coef_[0]:.4f} COP/°C")
             print(f"    Base COP (at 0°C): {reg.intercept_:.2f}")
             print(f"    R²: {r2_score(y, y_pred):.3f}")
 
-    # Multi-variable: COP = f(T_outdoor, T_flow)
-    if 'T_outdoor' in daily.columns and 'T_flow' in daily.columns:
-        mask = daily['cop'].notna() & daily['T_outdoor'].notna() & daily['T_flow'].notna()
+    # Multi-variable: COP = f(T_outdoor, T_HK2)
+    if 'T_outdoor' in daily.columns and 'T_HK2' in daily.columns:
+        mask = daily['cop'].notna() & daily['T_outdoor'].notna() & daily['T_HK2'].notna()
         if mask.sum() >= 15:
-            X = daily.loc[mask, ['T_outdoor', 'T_flow']].values
+            X = daily.loc[mask, ['T_outdoor', 'T_HK2']].values
             y = daily.loc[mask, 'cop'].values
 
             reg = LinearRegression().fit(X, y)
@@ -190,14 +192,14 @@ def analyze_cop_relationships(daily: pd.DataFrame) -> dict:
 
             results['cop_multivar'] = {
                 'outdoor_coef': reg.coef_[0],
-                'flow_coef': reg.coef_[1],
+                't_hk2_coef': reg.coef_[1],
                 'intercept': reg.intercept_,
                 'r2': r2_score(y, y_pred),
                 'rmse': np.sqrt(mean_squared_error(y, y_pred)),
                 'n_points': len(y)
             }
 
-            print(f"  COP = {reg.intercept_:.2f} + {reg.coef_[0]:.4f}×T_outdoor + {reg.coef_[1]:.4f}×T_flow")
+            print(f"  COP = {reg.intercept_:.2f} + {reg.coef_[0]:.4f}×T_outdoor + {reg.coef_[1]:.4f}×T_HK2")
             print(f"    R²: {r2_score(y, y_pred):.3f}")
 
     return results
@@ -362,24 +364,24 @@ def create_heat_pump_plots(daily: pd.DataFrame, heating: pd.DataFrame,
     ax.set_title('COP vs Outdoor Temperature')
     ax.grid(True, alpha=0.3)
 
-    # Panel 2: COP vs Flow Temperature
+    # Panel 2: COP vs T_HK2 (target flow temperature)
     ax = axes[0, 1]
-    if 'T_flow' in daily.columns and daily['cop'].notna().any():
-        mask = daily['cop'].notna() & daily['T_flow'].notna()
-        ax.scatter(daily.loc[mask, 'T_flow'], daily.loc[mask, 'cop'],
+    if 'T_HK2' in daily.columns and daily['cop'].notna().any():
+        mask = daily['cop'].notna() & daily['T_HK2'].notna()
+        ax.scatter(daily.loc[mask, 'T_HK2'], daily.loc[mask, 'cop'],
                    alpha=0.6, s=50, c='green')
 
-        if 'cop_vs_flow' in cop_results:
-            r = cop_results['cop_vs_flow']
-            x_range = np.array([daily['T_flow'].min(), daily['T_flow'].max()])
+        if 'cop_vs_t_hk2' in cop_results:
+            r = cop_results['cop_vs_t_hk2']
+            x_range = np.array([daily['T_HK2'].min(), daily['T_HK2'].max()])
             y_line = r['intercept'] + r['slope'] * x_range
             ax.plot(x_range, y_line, 'r-', linewidth=2,
-                    label=f"COP = {r['intercept']:.2f} + {r['slope']:.3f}×T_flow (R²={r['r2']:.2f})")
+                    label=f"COP = {r['intercept']:.2f} + {r['slope']:.3f}×T_HK2 (R²={r['r2']:.2f})")
             ax.legend()
 
-    ax.set_xlabel('Flow Temperature (°C)')
+    ax.set_xlabel('T_HK2 Target (°C)')
     ax.set_ylabel('COP')
-    ax.set_title('COP vs Flow Temperature')
+    ax.set_title('COP vs T_HK2 (Heating Curve Target)')
     ax.grid(True, alpha=0.3)
 
     # Panel 3: Daily Energy Production
@@ -434,12 +436,12 @@ def generate_report(daily: pd.DataFrame, cop_results: dict,
     cop_range = (daily['cop'].min(), daily['cop'].max()) if 'cop' in daily.columns else (0, 0)
 
     cop_outdoor_slope = cop_results.get('cop_vs_outdoor', {}).get('slope', 0)
-    cop_flow_slope = cop_results.get('cop_vs_flow', {}).get('slope', 0)
+    cop_t_hk2_slope = cop_results.get('cop_vs_t_hk2', {}).get('slope', 0)
 
     multivar = cop_results.get('cop_multivar', {})
     cop_formula = ""
     if multivar:
-        cop_formula = f"COP = {multivar['intercept']:.2f} + {multivar['outdoor_coef']:.4f}×T_out + {multivar['flow_coef']:.4f}×T_flow"
+        cop_formula = f"COP = {multivar['intercept']:.2f} + {multivar['outdoor_coef']:.4f}×T_out + {multivar['t_hk2_coef']:.4f}×T_HK2"
 
     daily_consumed = capacity_results.get('daily_consumed', {})
     daily_produced = capacity_results.get('daily_produced', {})
@@ -470,9 +472,9 @@ def generate_report(daily: pd.DataFrame, cop_results: dict,
             <td>{"Increases" if cop_outdoor_slope > 0 else "Decreases"} with warmer outdoor</td>
         </tr>
         <tr>
-            <td>COP sensitivity to flow temp</td>
-            <td>{cop_flow_slope:.4f} COP/°C</td>
-            <td>{"Increases" if cop_flow_slope > 0 else "Decreases"} with higher flow temp</td>
+            <td>COP sensitivity to T_HK2</td>
+            <td>{cop_t_hk2_slope:.4f} COP/°C</td>
+            <td>{"Increases" if cop_t_hk2_slope > 0 else "Decreases"} with higher T_HK2</td>
         </tr>
     </table>
 
@@ -514,8 +516,8 @@ def generate_report(daily: pd.DataFrame, cop_results: dict,
 
     <h3>Implications for Optimization</h3>
     <ul>
-        <li><strong>COP optimization</strong>: Lower flow temperatures improve COP.
-            With slope {cop_flow_slope:.4f}, reducing flow by 5°C improves COP by ~{abs(cop_flow_slope*5):.2f}.</li>
+        <li><strong>COP optimization</strong>: Lower T_HK2 (target temperature) improves COP.
+            With slope {cop_t_hk2_slope:.4f}, reducing T_HK2 by 5°C improves COP by ~{abs(cop_t_hk2_slope*5):.2f}.</li>
         <li><strong>Timing strategy</strong>: Run heat pump during warmest outdoor temps (daytime/solar hours)
             for better COP. Each +1°C outdoor improves COP by ~{cop_outdoor_slope:.3f}.</li>
         <li><strong>Capacity headroom</strong>: Max observed {daily_consumed.get('max', 0):.0f} kWh/day
@@ -527,7 +529,7 @@ def generate_report(daily: pd.DataFrame, cop_results: dict,
     <figure>
         <img src="fig18_heat_pump_model.png" alt="Heat Pump Model Analysis">
         <figcaption><strong>Figure 18:</strong> Heat pump analysis: COP vs outdoor temperature (top-left),
-        COP vs flow temperature (top-right), daily energy (bottom-left),
+        COP vs T_HK2 (top-right), daily energy (bottom-left),
         buffer tank dynamics (bottom-right).</figcaption>
     </figure>
     </section>
@@ -586,7 +588,7 @@ def main():
     if 'cop_multivar' in cop_results:
         mv = cop_results['cop_multivar']
         print(f"\nCOP Model (R²={mv['r2']:.3f}):")
-        print(f"  COP = {mv['intercept']:.2f} + {mv['outdoor_coef']:.4f}×T_out + {mv['flow_coef']:.4f}×T_flow")
+        print(f"  COP = {mv['intercept']:.2f} + {mv['outdoor_coef']:.4f}×T_out + {mv['t_hk2_coef']:.4f}×T_HK2")
 
     print(f"\nCapacity:")
     if 'daily_produced' in capacity_results:

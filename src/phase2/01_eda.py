@@ -500,9 +500,15 @@ def analyze_heating_system(data):
             daily_davis = weather['davis_outside_temperature'].resample('D').mean()
             daily_heating = daily_heating.join(daily_davis.rename('davis_outdoor_temp'))
 
+        # Get HK2 target temperature for COP multivariate model
+        if 'hk2_target' in hp_data.columns:
+            daily_t_hk2 = hp_data['hk2_target'].resample('D').mean()
+            daily_heating = daily_heating.join(daily_t_hk2.rename('t_hk2_target'))
+
     # --- Figure 5: Heat Pump COP Analysis ---
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    r2_stiebel, r2_davis = None, None  # Track R² for comparison output
+    # Track model results for comparison
+    cop_models = {}  # Store model results for HTML report
 
     if not daily_heating.empty and 'cop' in daily_heating.columns:
         # COP time series
@@ -519,7 +525,7 @@ def analyze_heating_system(data):
         # COP vs outdoor temperature - Compare both sensors
         ax = axes[0, 1]
 
-        # Stiebel heat pump sensor (blue)
+        # --- Model 1: COP = a + b×T_outdoor_stiebel ---
         if 'outdoor_temp' in daily_heating.columns:
             mask = daily_heating['cop'].notna() & daily_heating['outdoor_temp'].notna()
             x_stiebel = daily_heating.loc[mask, 'outdoor_temp'].values
@@ -532,11 +538,22 @@ def analyze_heating_system(data):
                 y_pred = p(x_stiebel)
                 ss_res = np.sum((y_stiebel - y_pred) ** 2)
                 ss_tot = np.sum((y_stiebel - np.mean(y_stiebel)) ** 2)
-                r2_stiebel = 1 - (ss_res / ss_tot)
+                r2 = 1 - (ss_res / ss_tot)
+                rmse = np.sqrt(np.mean((y_stiebel - y_pred) ** 2))
                 x_line = np.linspace(x_stiebel.min(), x_stiebel.max(), 100)
                 ax.plot(x_line, p(x_line), 'b--', linewidth=2)
+                cop_models['stiebel_univar'] = {
+                    'name': 'Stiebel outdoor only',
+                    'formula': f'COP = {z[1]:.2f} + {z[0]:.4f}×T_outdoor',
+                    'intercept': z[1],
+                    'coef_outdoor': z[0],
+                    'coef_thk2': None,
+                    'r2': r2,
+                    'rmse': rmse,
+                    'n': len(x_stiebel)
+                }
 
-        # Davis weather station sensor (orange)
+        # --- Model 2: COP = a + b×T_outdoor_davis ---
         if 'davis_outdoor_temp' in daily_heating.columns:
             mask = daily_heating['cop'].notna() & daily_heating['davis_outdoor_temp'].notna()
             x_davis = daily_heating.loc[mask, 'davis_outdoor_temp'].values
@@ -549,19 +566,84 @@ def analyze_heating_system(data):
                 y_pred = p(x_davis)
                 ss_res = np.sum((y_davis - y_pred) ** 2)
                 ss_tot = np.sum((y_davis - np.mean(y_davis)) ** 2)
-                r2_davis = 1 - (ss_res / ss_tot)
+                r2 = 1 - (ss_res / ss_tot)
+                rmse = np.sqrt(np.mean((y_davis - y_pred) ** 2))
                 x_line = np.linspace(x_davis.min(), x_davis.max(), 100)
                 ax.plot(x_line, p(x_line), color='darkorange', linestyle='--', linewidth=2)
+                cop_models['davis_univar'] = {
+                    'name': 'Davis outdoor only',
+                    'formula': f'COP = {z[1]:.2f} + {z[0]:.4f}×T_outdoor',
+                    'intercept': z[1],
+                    'coef_outdoor': z[0],
+                    'coef_thk2': None,
+                    'r2': r2,
+                    'rmse': rmse,
+                    'n': len(x_davis)
+                }
 
         ax.set_xlabel('Outdoor Temperature (°C)')
         ax.set_ylabel('COP')
-        title = 'COP vs Outdoor Temperature'
-        if r2_stiebel is not None and r2_davis is not None:
-            title += f'\nStiebel R²={r2_stiebel:.3f}, Davis R²={r2_davis:.3f}'
+        title = 'COP vs Outdoor Temperature (Univariate)'
+        if 'stiebel_univar' in cop_models and 'davis_univar' in cop_models:
+            title += f"\nStiebel R²={cop_models['stiebel_univar']['r2']:.3f}, Davis R²={cop_models['davis_univar']['r2']:.3f}"
         ax.set_title(title)
         ax.grid(True, alpha=0.3)
         ax.set_ylim(1, 6)
         ax.legend(loc='lower right')
+
+        # --- Model 3 & 4: Multivariate COP = a + b×T_outdoor + c×T_HK2 ---
+        if 't_hk2_target' in daily_heating.columns:
+            from sklearn.linear_model import LinearRegression
+
+            # Model 3: Stiebel outdoor + T_HK2
+            if 'outdoor_temp' in daily_heating.columns:
+                mask = (daily_heating['cop'].notna() &
+                        daily_heating['outdoor_temp'].notna() &
+                        daily_heating['t_hk2_target'].notna())
+                if mask.sum() >= 10:
+                    X = daily_heating.loc[mask, ['outdoor_temp', 't_hk2_target']].values
+                    y = daily_heating.loc[mask, 'cop'].values
+                    reg = LinearRegression().fit(X, y)
+                    y_pred = reg.predict(X)
+                    ss_res = np.sum((y - y_pred) ** 2)
+                    ss_tot = np.sum((y - np.mean(y)) ** 2)
+                    r2 = 1 - (ss_res / ss_tot)
+                    rmse = np.sqrt(np.mean((y - y_pred) ** 2))
+                    cop_models['stiebel_multivar'] = {
+                        'name': 'Stiebel outdoor + T_HK2',
+                        'formula': f'COP = {reg.intercept_:.2f} + {reg.coef_[0]:.4f}×T_outdoor + {reg.coef_[1]:.4f}×T_HK2',
+                        'intercept': reg.intercept_,
+                        'coef_outdoor': reg.coef_[0],
+                        'coef_thk2': reg.coef_[1],
+                        'r2': r2,
+                        'rmse': rmse,
+                        'n': len(y)
+                    }
+
+            # Model 4: Davis outdoor + T_HK2
+            if 'davis_outdoor_temp' in daily_heating.columns:
+                mask = (daily_heating['cop'].notna() &
+                        daily_heating['davis_outdoor_temp'].notna() &
+                        daily_heating['t_hk2_target'].notna())
+                if mask.sum() >= 10:
+                    X = daily_heating.loc[mask, ['davis_outdoor_temp', 't_hk2_target']].values
+                    y = daily_heating.loc[mask, 'cop'].values
+                    reg = LinearRegression().fit(X, y)
+                    y_pred = reg.predict(X)
+                    ss_res = np.sum((y - y_pred) ** 2)
+                    ss_tot = np.sum((y - np.mean(y)) ** 2)
+                    r2 = 1 - (ss_res / ss_tot)
+                    rmse = np.sqrt(np.mean((y - y_pred) ** 2))
+                    cop_models['davis_multivar'] = {
+                        'name': 'Davis outdoor + T_HK2',
+                        'formula': f'COP = {reg.intercept_:.2f} + {reg.coef_[0]:.4f}×T_outdoor + {reg.coef_[1]:.4f}×T_HK2',
+                        'intercept': reg.intercept_,
+                        'coef_outdoor': reg.coef_[0],
+                        'coef_thk2': reg.coef_[1],
+                        'r2': r2,
+                        'rmse': rmse,
+                        'n': len(y)
+                    }
 
     # Heating energy consumption by outdoor temp
     ax = axes[1, 0]
@@ -575,37 +657,72 @@ def analyze_heating_system(data):
         ax.set_title('Heating Electricity vs Outdoor Temperature')
         ax.grid(True, alpha=0.3)
 
-    # Daily heating production
+    # Model comparison table (replaces histogram)
     ax = axes[1, 1]
-    if not daily_heating.empty and 'produced_delta' in daily_heating.columns:
-        valid = daily_heating['produced_delta'].dropna()
-        valid = valid[valid > 0]
-        ax.hist(valid, bins=30, alpha=0.7, color='orange', edgecolor='black')
-        ax.axvline(x=valid.mean(), color='red', linestyle='--', label=f'Mean: {valid.mean():.1f} kWh')
-        ax.set_xlabel('Heat Produced (kWh/day)')
-        ax.set_ylabel('Frequency')
-        ax.set_title('Distribution of Daily Heat Production')
-        ax.legend()
-        ax.grid(True, alpha=0.3)
+    ax.axis('off')
+    if cop_models:
+        # Build table data
+        headers = ['Model', 'R²', 'RMSE', 'β_outdoor', 'β_T_HK2']
+        rows = []
+        for key in ['stiebel_univar', 'davis_univar', 'stiebel_multivar', 'davis_multivar']:
+            if key in cop_models:
+                m = cop_models[key]
+                thk2_str = f"{m['coef_thk2']:.4f}" if m['coef_thk2'] is not None else '—'
+                rows.append([
+                    m['name'],
+                    f"{m['r2']:.3f}",
+                    f"{m['rmse']:.3f}",
+                    f"{m['coef_outdoor']:.4f}",
+                    thk2_str
+                ])
+
+        table = ax.table(
+            cellText=rows,
+            colLabels=headers,
+            loc='center',
+            cellLoc='center'
+        )
+        table.auto_set_font_size(False)
+        table.set_fontsize(9)
+        table.scale(1.2, 1.5)
+
+        # Highlight best model (highest R²)
+        best_r2 = max(m['r2'] for m in cop_models.values())
+        for i, key in enumerate(['stiebel_univar', 'davis_univar', 'stiebel_multivar', 'davis_multivar']):
+            if key in cop_models and cop_models[key]['r2'] == best_r2:
+                for j in range(len(headers)):
+                    table[(i + 1, j)].set_facecolor('#90EE90')  # Light green
+
+        ax.set_title('COP Model Comparison\n(green = best R²)', fontsize=10, pad=10)
 
     plt.tight_layout()
     plt.savefig(OUTPUT_DIR / 'fig05_heat_pump_cop.png', dpi=150, bbox_inches='tight')
     plt.close()
     print("  Saved: fig05_heat_pump_cop.png")
 
-    # Print outdoor temperature sensor comparison
-    if r2_stiebel is not None and r2_davis is not None:
-        print("\n  Outdoor Temperature Sensor Comparison for COP Prediction:")
-        print(f"    Stiebel (heat pump sensor):  R² = {r2_stiebel:.4f}")
-        print(f"    Davis (weather station):     R² = {r2_davis:.4f}")
-        if r2_davis > r2_stiebel:
-            improvement = (r2_davis - r2_stiebel) / r2_stiebel * 100
-            print(f"    → Davis sensor is better predictor (+{improvement:.1f}% R² improvement)")
-        elif r2_stiebel > r2_davis:
-            improvement = (r2_stiebel - r2_davis) / r2_davis * 100
-            print(f"    → Stiebel sensor is better predictor (+{improvement:.1f}% R² improvement)")
-        else:
-            print("    → Both sensors perform equally")
+    # Print COP model comparison
+    if cop_models:
+        print("\n  COP Model Comparison:")
+        print("  " + "-" * 70)
+        print(f"  {'Model':<25} {'R²':>8} {'RMSE':>8} {'β_outdoor':>10} {'β_T_HK2':>10}")
+        print("  " + "-" * 70)
+        for key in ['stiebel_univar', 'davis_univar', 'stiebel_multivar', 'davis_multivar']:
+            if key in cop_models:
+                m = cop_models[key]
+                thk2_str = f"{m['coef_thk2']:.4f}" if m['coef_thk2'] is not None else '—'
+                print(f"  {m['name']:<25} {m['r2']:>8.3f} {m['rmse']:>8.3f} {m['coef_outdoor']:>10.4f} {thk2_str:>10}")
+        print("  " + "-" * 70)
+
+        # Find best model
+        best_key = max(cop_models, key=lambda k: cop_models[k]['r2'])
+        best = cop_models[best_key]
+        print(f"\n  Best model: {best['name']}")
+        print(f"    {best['formula']}")
+        print(f"    R² = {best['r2']:.3f}, RMSE = {best['rmse']:.3f}")
+
+        if 'stiebel_multivar' in cop_models and 'stiebel_univar' in cop_models:
+            r2_improvement = cop_models['stiebel_multivar']['r2'] - cop_models['stiebel_univar']['r2']
+            print(f"\n  Adding T_HK2 improves Stiebel model R² by {r2_improvement:.3f} ({r2_improvement/cop_models['stiebel_univar']['r2']*100:.1f}%)")
 
     # --- Figure 6: Temperature Differentials ---
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
@@ -735,7 +852,7 @@ def analyze_heating_system(data):
             print(f"    Median: {consumed.median():.1f} kWh/day")
             print(f"    Max:    {consumed.max():.1f} kWh/day")
 
-    return daily_heating
+    return daily_heating, cop_models
 
 
 # =============================================================================
@@ -1109,7 +1226,15 @@ def main():
     energy_patterns = analyze_energy_patterns(data)
 
     # 2.2 Heating System Analysis
-    daily_heating = analyze_heating_system(data)
+    daily_heating, cop_models = analyze_heating_system(data)
+
+    # Save COP models to JSON for HTML report
+    import json
+    if cop_models:
+        cop_models_path = OUTPUT_DIR / 'cop_models.json'
+        with open(cop_models_path, 'w') as f:
+            json.dump(cop_models, f, indent=2)
+        print(f"\n  Saved COP models to: {cop_models_path}")
 
     # 2.3 Solar-Heating Correlation
     analyze_solar_heating_correlation(data)

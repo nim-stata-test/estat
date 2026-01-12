@@ -353,9 +353,114 @@ def load_battery_section() -> str:
     return ""
 
 
+def load_cop_models() -> dict:
+    """Load the COP model comparison from JSON if available."""
+    import json
+    models_path = OUTPUT_DIR / "cop_models.json"
+    if models_path.exists():
+        with open(models_path) as f:
+            return json.load(f)
+    return {}
+
+
+def generate_cop_model_section(cop_models: dict) -> str:
+    """Generate HTML section for COP model specification."""
+    if not cop_models:
+        return ""
+
+    # Find best model
+    best_key = max(cop_models, key=lambda k: cop_models[k]['r2'])
+    best = cop_models[best_key]
+
+    # Build model rows
+    model_rows = ""
+    for key in ['stiebel_univar', 'davis_univar', 'stiebel_multivar', 'davis_multivar']:
+        if key in cop_models:
+            m = cop_models[key]
+            thk2_str = f"{m['coef_thk2']:.4f}" if m['coef_thk2'] is not None else "—"
+            highlight = ' style="background-color: #90EE90;"' if m['r2'] == best['r2'] else ''
+            model_rows += f"""
+                <tr{highlight}>
+                    <td>{m['name']}</td>
+                    <td><strong>{m['r2']:.3f}</strong></td>
+                    <td>{m['rmse']:.3f}</td>
+                    <td>{m['coef_outdoor']:.4f}</td>
+                    <td>{thk2_str}</td>
+                    <td>{m['n']}</td>
+                </tr>"""
+
+    # Calculate improvement if multivariate exists
+    improvement_text = ""
+    if 'stiebel_multivar' in cop_models and 'stiebel_univar' in cop_models:
+        r2_uni = cop_models['stiebel_univar']['r2']
+        r2_multi = cop_models['stiebel_multivar']['r2']
+        r2_improvement = r2_multi - r2_uni
+        pct_improvement = r2_improvement / r2_uni * 100
+        improvement_text = f"""
+            <p><strong>Key finding:</strong> Adding T_HK2 (target flow temperature) improves the Stiebel model R² by
+            {r2_improvement:.3f} ({pct_improvement:.1f}% relative improvement).</p>"""
+
+    return f"""
+        <h2 id="cop-models">5.1 COP Model Specification</h2>
+
+        <div class="card">
+            <h4>Model Overview</h4>
+            <p>COP (Coefficient of Performance) is modeled as a linear function of outdoor temperature and
+            HK2 target temperature (the heating curve setpoint):</p>
+            <pre style="background: var(--card-bg); color: var(--text); padding: 0.5rem;">COP = β₀ + β_outdoor × T_outdoor + β_T_HK2 × T_HK2</pre>
+
+            <h4>Best Model</h4>
+            <p><strong>{best['name']}</strong></p>
+            <pre style="background: var(--card-bg); color: var(--text); padding: 0.5rem;">{best['formula']}</pre>
+            <p>R² = {best['r2']:.3f}, RMSE = {best['rmse']:.3f}</p>
+        </div>
+
+        <div class="card">
+            <h4>Model Comparison</h4>
+            <table>
+                <tr>
+                    <th>Model</th>
+                    <th>R²</th>
+                    <th>RMSE</th>
+                    <th>β_outdoor</th>
+                    <th>β_T_HK2</th>
+                    <th>n</th>
+                </tr>
+                {model_rows}
+            </table>
+            <p><em>Green row = best model (highest R²)</em></p>
+            {improvement_text}
+        </div>
+
+        <div class="card">
+            <h4>Interpretation</h4>
+            <ul>
+                <li><strong>β_outdoor (positive):</strong> Higher outdoor temperature → higher COP. Each +1°C outdoor
+                temperature increases COP by approximately {cop_models.get('stiebel_multivar', cop_models.get('stiebel_univar', {})).get('coef_outdoor', 0):.3f}.</li>
+                <li><strong>β_T_HK2 (negative):</strong> Higher target flow temperature → lower COP. Each +1°C in T_HK2
+                decreases COP by approximately {abs(cop_models.get('stiebel_multivar', {}).get('coef_thk2', 0)):.3f} (multivariate model).</li>
+            </ul>
+            <p>This confirms heat pump thermodynamics: efficiency decreases when the temperature lift
+            (difference between evaporator and condenser) increases.</p>
+        </div>
+
+        <div class="card">
+            <h4>Sensor Comparison</h4>
+            <p>Two outdoor temperature sensors were compared:</p>
+            <ul>
+                <li><strong>Stiebel (heat pump sensor):</strong> Built into the heat pump unit, mounted near the house.
+                This is what the heat pump uses internally for heating curve calculations.</li>
+                <li><strong>Davis (weather station):</strong> External Davis weather station, mounted in a more exposed location.</li>
+            </ul>
+            <p>The Stiebel sensor generally provides better COP prediction (higher R²) because it measures the actual
+            air temperature at the heat pump evaporator location, which directly affects heat pump performance.</p>
+        </div>
+    """
+
+
 def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
                          heating_curve_log: str = "", weighted_temp_log: str = "",
-                         tariff_log: str = "") -> str:
+                         tariff_log: str = "", cop_models: dict = None) -> str:
     """Generate comprehensive HTML EDA report."""
 
     # Helper to format stats with fallback for missing values
@@ -509,6 +614,7 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
                 <li><a href="#quality">3. Data Quality Notes</a></li>
                 <li><a href="#energy">4. Energy Patterns</a></li>
                 <li><a href="#heating">5. Heating System</a></li>
+                <li style="margin-left: 1rem;"><a href="#cop-models">5.1 COP Model Specification</a></li>
                 <li><a href="#solar">6. Solar-Heating Correlation</a></li>
                 <li><a href="#summary">7. Summary Statistics</a></li>
                 <li><a href="#heating-curve">8. Heating Curve Analysis</a></li>
@@ -664,6 +770,8 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
 
         {''.join([f for f in figures_html.split('</div>') if 'fig05' in f or 'fig06' in f or 'fig07' in f])}
 
+        {generate_cop_model_section(cop_models or {})}
+
         <h2 id="solar">6. Solar-Heating Correlation</h2>
 
         <div class="card">
@@ -773,8 +881,9 @@ def main():
 
     figures = collect_figure_info()
     stats = extract_stats_from_log(eda_log)
+    cop_models = load_cop_models()
 
-    html_report = generate_html_report(figures, stats, eda_log, heating_curve_log, weighted_temp_log, tariff_log)
+    html_report = generate_html_report(figures, stats, eda_log, heating_curve_log, weighted_temp_log, tariff_log, cop_models)
     report_path = OUTPUT_DIR / "phase2_report.html"
     report_path.write_text(html_report)
     print(f"Report saved to: {report_path}")
