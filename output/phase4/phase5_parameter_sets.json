@@ -74,7 +74,7 @@
     },
     "expected_outcomes": {
       "cop_mean": 4.21,
-      "cop_vs_baseline": 0.14,
+      "cop_vs_baseline": 0.15,
       "self_sufficiency": 0.368,
       "self_sufficiency_vs_baseline_pp": 0.0,
       "comfort_compliance": 0.842,

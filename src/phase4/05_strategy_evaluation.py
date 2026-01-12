@@ -22,6 +22,7 @@ from datetime import datetime, timedelta
 # Project paths
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 PHASE1_DIR = PROJECT_ROOT / 'output' / 'phase1'
+PHASE2_DIR = PROJECT_ROOT / 'output' / 'phase2'
 PHASE4_DIR = PROJECT_ROOT / 'output' / 'phase4'
 OUTPUT_DIR = PHASE4_DIR
 OUTPUT_DIR.mkdir(exist_ok=True)
@@ -33,11 +34,16 @@ COP_PARAMS = {
     'flow_coef': -0.1007,
 }
 
-# Heating curve reference temperatures from Phase 2
-HEATING_CURVE_PARAMS = {
-    't_ref_comfort': 21.32,
-    't_ref_eco': 19.18,
-}
+# Load heating curve parameters from Phase 2 JSON
+def _load_heating_curve_params():
+    params_file = PHASE2_DIR / 'heating_curve_params.json'
+    if params_file.exists():
+        with open(params_file) as f:
+            params = json.load(f)
+        return {'t_ref_comfort': params['t_ref_comfort'], 't_ref_eco': params['t_ref_eco']}
+    return {'t_ref_comfort': 21.32, 't_ref_eco': 19.18}
+
+HEATING_CURVE_PARAMS = _load_heating_curve_params()
 
 # T_weighted regression coefficients from Phase 2 multivariate analysis
 TEMP_REGRESSION = {

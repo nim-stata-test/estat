@@ -64,12 +64,19 @@ SENSOR_WEIGHTS = {
     'davis_inside_temperature': 1.0,
 }
 
+# Load heating curve parameters from Phase 2 JSON
+def _load_heating_curve_params():
+    """Load parametric heating curve from Phase 2 JSON."""
+    params_file = PHASE2_DIR / 'heating_curve_params.json'
+    if params_file.exists():
+        with open(params_file) as f:
+            params = json.load(f)
+        return {'t_ref_comfort': params['t_ref_comfort'], 't_ref_eco': params['t_ref_eco']}
+    return {'t_ref_comfort': 21.32, 't_ref_eco': 19.18}
+
 # Heating curve reference temperatures from Phase 2 analysis
 # T_target = T_setpoint + curve_rise × (T_ref - T_outdoor)
-HEATING_CURVE_PARAMS = {
-    't_ref_comfort': 21.32,  # Reference temp for comfort mode
-    't_ref_eco': 19.18,      # Reference temp for eco mode
-}
+HEATING_CURVE_PARAMS = _load_heating_curve_params()
 
 # Current baseline settings (from Phase 2 heating curve analysis)
 BASELINE_SETTINGS = {

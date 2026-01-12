@@ -88,17 +88,58 @@ def load_data() -> pd.DataFrame:
     return df
 
 
-def fit_heating_curve(df: pd.DataFrame) -> dict:
+def load_heating_curve_params() -> dict:
     """
-    Fit heating curve: HK2 = baseline + slope × T_outdoor
+    Load parametric heating curve from Phase 2 analysis.
 
-    The heating curve describes how the heat pump adjusts flow temperature
-    based on outdoor temperature. This is a system setting, not learned behavior.
+    The Phase 2 heating curve model accounts for controllable parameters:
+    T_flow = setpoint + curve_rise × (T_ref - T_outdoor)
+
+    Where:
+    - setpoint: comfort or eco temperature setting
+    - curve_rise: heating curve slope setting on heat pump
+    - T_ref: reference temperature (estimated from data)
 
     Returns:
-        dict with baseline, slope, r2
+        dict with t_ref_comfort, t_ref_eco, and model statistics
     """
-    print("\nFitting heating curve...")
+    import json
+
+    params_file = PROCESSED_DIR.parent / 'phase2' / 'heating_curve_params.json'
+
+    if params_file.exists():
+        with open(params_file) as f:
+            params = json.load(f)
+        print(f"\nLoaded Phase 2 heating curve parameters:")
+        print(f"  T_ref (comfort): {params['t_ref_comfort']:.2f}°C")
+        print(f"  T_ref (eco): {params['t_ref_eco']:.2f}°C")
+        print(f"  Model R² (normal): {params['normal_r_squared']:.3f}")
+        print(f"  Model RMSE: {params['normal_rmse']:.2f}°C")
+        return params
+    else:
+        print(f"\nWARNING: Phase 2 heating curve params not found at {params_file}")
+        print("  Run src/phase2/03_heating_curve_analysis.py first")
+        print("  Using default values...")
+        return {
+            't_ref_comfort': 21.32,
+            't_ref_eco': 19.18,
+            'normal_r_squared': 0.98,
+            'normal_rmse': 0.57,
+        }
+
+
+def fit_heating_curve(df: pd.DataFrame) -> dict:
+    """
+    Fit simple heating curve for reference: HK2 = baseline + slope × T_outdoor
+
+    NOTE: This is a simplified model that ignores controllable parameters.
+    For optimization, use the parametric model from Phase 2:
+    T_flow = setpoint + curve_rise × (T_ref - T_outdoor)
+
+    Returns:
+        dict with baseline, slope, r2, and phase2_params
+    """
+    print("\nFitting heating curve (simplified reference model)...")
 
     clean = df[[HK2_COL, OUTDOOR_COL]].dropna()
 
@@ -115,17 +156,22 @@ def fit_heating_curve(df: pd.DataFrame) -> dict:
     y_pred = model.predict(X)
     r2 = r2_score(y, y_pred)
 
+    # Load Phase 2 parametric model for comparison
+    phase2_params = load_heating_curve_params()
+
     result = {
         'baseline': model.intercept_,
         'slope': model.coef_[0],
         'r2': r2,
-        'n_points': len(clean)
+        'n_points': len(clean),
+        'phase2_params': phase2_params,  # Include parametric model
     }
 
-    print(f"  HK2 = {result['baseline']:.1f} + {result['slope']:.3f} × T_outdoor")
-    print(f"  R² = {r2:.3f} ({len(clean):,} points)")
-    print(f"  At T_out=0°C:  HK2 = {result['baseline']:.1f}°C")
-    print(f"  At T_out=10°C: HK2 = {result['baseline'] + 10*result['slope']:.1f}°C")
+    print(f"\n  Simple model: HK2 = {result['baseline']:.1f} + {result['slope']:.3f} × T_outdoor")
+    print(f"  Simple R² = {r2:.3f} ({len(clean):,} points)")
+    print(f"\n  Phase 2 parametric model (R²={phase2_params['normal_r_squared']:.3f}):")
+    print(f"  T_flow = setpoint + curve_rise × (T_ref - T_outdoor)")
+    print(f"  Use this for optimization (accounts for setpoint/curve_rise changes)")
 
     return result
 

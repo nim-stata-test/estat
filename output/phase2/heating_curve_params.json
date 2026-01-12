@@ -1,0 +1,11 @@
+{
+  "t_ref_comfort": 21.32184684684685,
+  "t_ref_eco": 19.164948453608247,
+  "r_squared": 0.931278681157215,
+  "rmse": 1.1471880564399153,
+  "normal_r_squared": 0.9625619895096165,
+  "normal_rmse": 0.80881469344849,
+  "rmse_comfort": 0.39997123141327323,
+  "rmse_eco": 1.147185560070007,
+  "model": "T_flow = setpoint + curve_rise \u00d7 (T_ref - T_outdoor)"
+}

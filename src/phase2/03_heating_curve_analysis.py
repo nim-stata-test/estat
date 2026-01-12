@@ -1018,6 +1018,23 @@ def main():
     # Build model (uses raw data for proper resampling)
     model_results = build_heating_curve_model(heating_raw, regimes_df, setpoint_regimes)
 
+    # Save heating curve parameters to JSON for Phase 3/4 import
+    import json
+    heating_curve_params = {
+        't_ref_comfort': float(model_results['t_ref_comfort']),
+        't_ref_eco': float(model_results['t_ref_eco']),
+        'r_squared': float(model_results['r_squared']),
+        'rmse': float(model_results['rmse']),
+        'normal_r_squared': float(model_results['normal_r_squared']),
+        'normal_rmse': float(model_results['normal_rmse']),
+        'rmse_comfort': float(model_results['rmse_comfort']),
+        'rmse_eco': float(model_results['rmse_eco']),
+        'model': 'T_flow = setpoint + curve_rise × (T_ref - T_outdoor)',
+    }
+    with open(OUTPUT_DIR / 'heating_curve_params.json', 'w') as f:
+        json.dump(heating_curve_params, f, indent=2)
+    print(f"  Saved: heating_curve_params.json")
+
     # Create visualization
     create_visualization(transitions, regimes_df, model_results, setpoint_regimes)
 
