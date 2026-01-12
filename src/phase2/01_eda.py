@@ -381,6 +381,7 @@ def analyze_heating_system(data):
     print("="*60)
 
     heating = data['heating'].copy()
+    weather = data['weather'].copy()  # For Davis outdoor temperature comparison
 
     # Key heating columns
     hp_cols = {
@@ -489,13 +490,19 @@ def analyze_heating_system(data):
         daily_heating.loc[daily_heating['cop'] > 10, 'cop'] = np.nan
         daily_heating.loc[daily_heating['cop'] < 1, 'cop'] = np.nan
 
-        # Get outdoor temperature daily average
+        # Get outdoor temperature daily average (Stiebel heat pump sensor)
         if 'outdoor_temp' in hp_data.columns:
             daily_outdoor = hp_data['outdoor_temp'].resample('D').mean()
             daily_heating = daily_heating.join(daily_outdoor.rename('outdoor_temp'))
 
+        # Get Davis weather station outdoor temperature for comparison
+        if 'davis_outside_temperature' in weather.columns:
+            daily_davis = weather['davis_outside_temperature'].resample('D').mean()
+            daily_heating = daily_heating.join(daily_davis.rename('davis_outdoor_temp'))
+
     # --- Figure 5: Heat Pump COP Analysis ---
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    r2_stiebel, r2_davis = None, None  # Track R² for comparison output
 
     if not daily_heating.empty and 'cop' in daily_heating.columns:
         # COP time series
@@ -509,27 +516,52 @@ def analyze_heating_system(data):
         ax.grid(True, alpha=0.3)
         ax.set_ylim(1, 6)
 
-        # COP vs outdoor temperature
+        # COP vs outdoor temperature - Compare both sensors
         ax = axes[0, 1]
+
+        # Stiebel heat pump sensor (blue)
         if 'outdoor_temp' in daily_heating.columns:
             mask = daily_heating['cop'].notna() & daily_heating['outdoor_temp'].notna()
-            ax.scatter(daily_heating.loc[mask, 'outdoor_temp'],
-                      daily_heating.loc[mask, 'cop'], alpha=0.5)
-            ax.set_xlabel('Outdoor Temperature (C)')
-            ax.set_ylabel('COP')
-            ax.set_title('COP vs Outdoor Temperature')
-            ax.grid(True, alpha=0.3)
-            ax.set_ylim(1, 6)
+            x_stiebel = daily_heating.loc[mask, 'outdoor_temp'].values
+            y_stiebel = daily_heating.loc[mask, 'cop'].values
+            ax.scatter(x_stiebel, y_stiebel, alpha=0.4, color='blue', label='Stiebel (heat pump)', s=30)
 
-            # Add trendline
-            x = daily_heating.loc[mask, 'outdoor_temp'].values
-            y = daily_heating.loc[mask, 'cop'].values
-            if len(x) > 5:
-                z = np.polyfit(x, y, 1)
+            if len(x_stiebel) > 5:
+                z = np.polyfit(x_stiebel, y_stiebel, 1)
                 p = np.poly1d(z)
-                x_line = np.linspace(x.min(), x.max(), 100)
-                ax.plot(x_line, p(x_line), 'r--', label=f'Trend: {z[0]:.3f}x + {z[1]:.2f}')
-                ax.legend()
+                y_pred = p(x_stiebel)
+                ss_res = np.sum((y_stiebel - y_pred) ** 2)
+                ss_tot = np.sum((y_stiebel - np.mean(y_stiebel)) ** 2)
+                r2_stiebel = 1 - (ss_res / ss_tot)
+                x_line = np.linspace(x_stiebel.min(), x_stiebel.max(), 100)
+                ax.plot(x_line, p(x_line), 'b--', linewidth=2)
+
+        # Davis weather station sensor (orange)
+        if 'davis_outdoor_temp' in daily_heating.columns:
+            mask = daily_heating['cop'].notna() & daily_heating['davis_outdoor_temp'].notna()
+            x_davis = daily_heating.loc[mask, 'davis_outdoor_temp'].values
+            y_davis = daily_heating.loc[mask, 'cop'].values
+            ax.scatter(x_davis, y_davis, alpha=0.4, color='orange', label='Davis (weather stn)', s=30, marker='s')
+
+            if len(x_davis) > 5:
+                z = np.polyfit(x_davis, y_davis, 1)
+                p = np.poly1d(z)
+                y_pred = p(x_davis)
+                ss_res = np.sum((y_davis - y_pred) ** 2)
+                ss_tot = np.sum((y_davis - np.mean(y_davis)) ** 2)
+                r2_davis = 1 - (ss_res / ss_tot)
+                x_line = np.linspace(x_davis.min(), x_davis.max(), 100)
+                ax.plot(x_line, p(x_line), color='darkorange', linestyle='--', linewidth=2)
+
+        ax.set_xlabel('Outdoor Temperature (°C)')
+        ax.set_ylabel('COP')
+        title = 'COP vs Outdoor Temperature'
+        if r2_stiebel is not None and r2_davis is not None:
+            title += f'\nStiebel R²={r2_stiebel:.3f}, Davis R²={r2_davis:.3f}'
+        ax.set_title(title)
+        ax.grid(True, alpha=0.3)
+        ax.set_ylim(1, 6)
+        ax.legend(loc='lower right')
 
     # Heating energy consumption by outdoor temp
     ax = axes[1, 0]
@@ -560,6 +592,20 @@ def analyze_heating_system(data):
     plt.savefig(OUTPUT_DIR / 'fig05_heat_pump_cop.png', dpi=150, bbox_inches='tight')
     plt.close()
     print("  Saved: fig05_heat_pump_cop.png")
+
+    # Print outdoor temperature sensor comparison
+    if r2_stiebel is not None and r2_davis is not None:
+        print("\n  Outdoor Temperature Sensor Comparison for COP Prediction:")
+        print(f"    Stiebel (heat pump sensor):  R² = {r2_stiebel:.4f}")
+        print(f"    Davis (weather station):     R² = {r2_davis:.4f}")
+        if r2_davis > r2_stiebel:
+            improvement = (r2_davis - r2_stiebel) / r2_stiebel * 100
+            print(f"    → Davis sensor is better predictor (+{improvement:.1f}% R² improvement)")
+        elif r2_stiebel > r2_davis:
+            improvement = (r2_stiebel - r2_davis) / r2_davis * 100
+            print(f"    → Stiebel sensor is better predictor (+{improvement:.1f}% R² improvement)")
+        else:
+            print("    → Both sensors perform equally")
 
     # --- Figure 6: Temperature Differentials ---
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
