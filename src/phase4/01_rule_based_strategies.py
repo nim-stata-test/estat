@@ -13,7 +13,7 @@ Secondary objective: Minimize energy expenditure
 Key model parameters used:
 - Thermal model: Transfer function with τ_effort (heating response) ~8-48h per room
 - Weighted τ_effort: ~12h (for washout calculation)
-- Thermal model sensors: davis_inside (40%), office1 (30%), atelier/studio/simlab (10% each)
+- Thermal model sensor: davis_inside (100% - primary living area, least noise)
 - COP model: COP = 6.52 + 0.13*T_outdoor - 0.10*T_flow
 - Peak PV hours: 10:00-16:00
 - Current self-sufficiency: 58.1%
@@ -44,7 +44,7 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 # Model parameters from Phase 3
 # COP model from heat pump analysis (R²=0.95)
 # Thermal model uses transfer function approach with τ_effort for heating response
-# Weighted indoor temperature: davis_inside 40%, office1 30%, atelier/studio/simlab 10% each
+# Indoor temperature: davis_inside only (100%)
 MODEL_PARAMS = {
     'cop_intercept': 6.52,
     'cop_outdoor_coef': 0.1319,
@@ -59,13 +59,9 @@ MODEL_PARAMS = {
     'peak_pv_hours': list(range(10, 17)),  # 10:00-16:00
 }
 
-# Target sensors and weights for thermal model
+# Target sensor for thermal model (single sensor)
 SENSOR_WEIGHTS = {
-    'davis_inside_temperature': 0.40,
-    'office1_temperature': 0.30,
-    'atelier_temperature': 0.10,
-    'studio_temperature': 0.10,
-    'simlab_temperature': 0.10,
+    'davis_inside_temperature': 1.0,
 }
 
 # Heating curve reference temperatures from Phase 2 analysis
@@ -444,7 +440,7 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
     <ul>
         <li><strong>COP Model</strong>: COP = 6.52 + 0.13×T_outdoor - 0.10×T_flow (R²=0.95)</li>
         <li><strong>Building Time Constant</strong>: ~19 hours (weighted average from target sensors)</li>
-        <li><strong>Target Sensors</strong>: davis_inside (40%), office1 (30%), atelier/studio/simlab (10% each)</li>
+        <li><strong>Target Sensor</strong>: davis_inside (100% - least noise)</li>
         <li><strong>Peak PV Hours</strong>: 10:00-16:00</li>
         <li><strong>Current Self-Sufficiency</strong>: 58.1%</li>
     </ul>

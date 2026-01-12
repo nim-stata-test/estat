@@ -29,22 +29,14 @@ PROCESSED_DIR = PROJECT_ROOT / 'output' / 'phase1'
 OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase3'
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-# Target sensors for thermal model (weighted combination)
+# Target sensor for thermal model (single sensor for simplicity)
 TARGET_SENSORS = [
-    'davis_inside_temperature',  # 40%
-    'office1_temperature',       # 30%
-    'atelier_temperature',       # 10%
-    'studio_temperature',        # 10%
-    'simlab_temperature',        # 10%
+    'davis_inside_temperature',  # 100% - primary living area, least noise
 ]
 
-# Weights for weighted objective
+# Single sensor for indoor temperature objective
 SENSOR_WEIGHTS = {
-    'davis_inside_temperature': 0.40,
-    'office1_temperature': 0.30,
-    'atelier_temperature': 0.10,
-    'studio_temperature': 0.10,
-    'simlab_temperature': 0.10,
+    'davis_inside_temperature': 1.0,
 }
 
 # Key sensor columns
@@ -519,9 +511,8 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
 
     <figure>
         <img src="fig17b_room_timeseries.png" alt="Room Temperature Time Series">
-        <figcaption><strong>Figure 17b:</strong> Actual vs predicted temperature for all rooms
-        in the weighted temperature objective (last 2 weeks). Rooms ordered by weight:
-        davis_inside (40%), office1 (30%), atelier (10%), studio (10%), simlab (10%).</figcaption>
+        <figcaption><strong>Figure 17b:</strong> Actual vs predicted temperature for davis_inside
+        (primary comfort sensor, last 2 weeks).</figcaption>
     </figure>
     </section>
     """

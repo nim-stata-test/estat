@@ -10,7 +10,7 @@
         <tr><th>Parameter</th><th>Value</th></tr>
         <tr><td>Date Range</td><td>2025-10-28 to 2026-01-11</td></tr>
         <tr><td>Total Days</td><td>76</td></tr>
-        <tr><td>Timesteps</td><td>5,996</td></tr>
+        <tr><td>Timesteps</td><td>3,607</td></tr>
         <tr><td>Comfort Threshold</td><td>18.5°C</td></tr>
         <tr><td>Occupied Hours</td><td>08:00 - 22:00</td></tr>
     </table>
@@ -36,25 +36,25 @@
         <tr>
             <td><strong>Grid-Minimal</strong></td>
             <td>22.0°C</td>
-            <td>12.9°C</td>
-            <td>10:00-16:00</td>
-            <td>0.90</td>
+            <td>14.1°C</td>
+            <td>11:00-16:00</td>
+            <td>0.82</td>
         </tr>
         
         <tr>
             <td><strong>Balanced</strong></td>
             <td>22.0°C</td>
-            <td>13.6°C</td>
-            <td>10:00-16:00</td>
-            <td>0.90</td>
+            <td>14.2°C</td>
+            <td>11:00-16:00</td>
+            <td>0.82</td>
         </tr>
         
         <tr>
             <td><strong>Cost-Minimal</strong></td>
             <td>22.0°C</td>
-            <td>13.6°C</td>
-            <td>11:00-16:00</td>
-            <td>0.90</td>
+            <td>14.2°C</td>
+            <td>12:00-16:00</td>
+            <td>0.82</td>
         </tr>
         </table>
     <h3>Energy Performance Comparison</h3>
@@ -69,34 +69,34 @@
     
         <tr>
             <td><strong>Baseline</strong></td>
-            <td>2615</td>
+            <td>2526</td>
             <td style="">+0.0%</td>
-            <td>2607</td>
-            <td>3.88</td>
+            <td>2616</td>
+            <td>3.84</td>
         </tr>
         
         <tr>
             <td><strong>Grid-Minimal</strong></td>
-            <td>2116</td>
-            <td style="color: green">+19.1%</td>
-            <td>2281</td>
-            <td>4.63</td>
+            <td>2008</td>
+            <td style="color: green">+20.5%</td>
+            <td>2128</td>
+            <td>4.68</td>
         </tr>
         
         <tr>
             <td><strong>Balanced</strong></td>
-            <td>2112</td>
-            <td style="color: green">+19.2%</td>
-            <td>2249</td>
-            <td>4.60</td>
+            <td>2009</td>
+            <td style="color: green">+20.5%</td>
+            <td>2121</td>
+            <td>4.68</td>
         </tr>
         
         <tr>
             <td><strong>Cost-Minimal</strong></td>
-            <td>2115</td>
-            <td style="color: green">+19.1%</td>
-            <td>2239</td>
-            <td>4.61</td>
+            <td>2012</td>
+            <td style="color: green">+20.3%</td>
+            <td>2113</td>
+            <td>4.69</td>
         </tr>
         </table>
     <h3>Temperature Performance (Occupied Hours)</h3>
@@ -111,34 +111,34 @@
     
         <tr>
             <td><strong>Baseline</strong></td>
-            <td>18.8</td>
-            <td>16.3</td>
-            <td>17.5</td>
-            <td style="background-color: #ffcccc">37.8%</td>
+            <td>19.4</td>
+            <td>17.4</td>
+            <td>18.3</td>
+            <td style="background-color: #ffcccc">14.6%</td>
         </tr>
         
         <tr>
             <td><strong>Grid-Minimal</strong></td>
-            <td>20.0</td>
-            <td>17.4</td>
-            <td>18.6</td>
-            <td style="background-color: #ccffcc">3.8%</td>
+            <td>19.6</td>
+            <td>17.7</td>
+            <td>18.5</td>
+            <td style="background-color: #ccffcc">4.7%</td>
         </tr>
         
         <tr>
             <td><strong>Balanced</strong></td>
-            <td>19.9</td>
-            <td>17.3</td>
-            <td>18.6</td>
-            <td style="background-color: #ccffcc">4.3%</td>
+            <td>19.6</td>
+            <td>17.7</td>
+            <td>18.5</td>
+            <td style="background-color: #ccffcc">4.7%</td>
         </tr>
         
         <tr>
             <td><strong>Cost-Minimal</strong></td>
-            <td>19.9</td>
-            <td>17.3</td>
-            <td>18.6</td>
-            <td style="background-color: #ccffcc">4.3%</td>
+            <td>19.6</td>
+            <td>17.7</td>
+            <td>18.5</td>
+            <td style="background-color: #ccffcc">4.7%</td>
         </tr>
         </table>
     <h3>Visualizations</h3>
@@ -167,11 +167,11 @@
     <h3>Key Findings</h3>
     <ul>
     
-        <li><strong>Best grid efficiency:</strong> Balanced saves
-            19.2%
+        <li><strong>Best grid efficiency:</strong> Grid-Minimal saves
+            20.5%
             grid import vs Baseline</li>
-        <li><strong>Best COP:</strong> Grid-Minimal achieves COP 4.63
-            vs Baseline COP 3.88</li>
+        <li><strong>Best COP:</strong> Cost-Minimal achieves COP 4.69
+            vs Baseline COP 3.84</li>
         <li><strong>Energy model calibration:</strong> Uses BASE_LOAD=11.0 kWh/day,
             THERMAL_COEF=10.0 kWh/HDD (electrical = thermal/COP)</li>
     </ul>

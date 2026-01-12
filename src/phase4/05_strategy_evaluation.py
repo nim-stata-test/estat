@@ -58,13 +58,9 @@ BASELINE = {
     'curve_rise': 1.08,
 }
 
-# Sensor weights for weighted temperature
+# Target sensor (single sensor for simplicity)
 SENSOR_WEIGHTS = {
-    'davis_inside_temperature': 0.40,
-    'office1_temperature': 0.30,
-    'atelier_temperature': 0.10,
-    'studio_temperature': 0.10,
-    'simlab_temperature': 0.10,
+    'davis_inside_temperature': 1.0,
 }
 
 # Comfort constraint parameters

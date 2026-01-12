@@ -41,11 +41,7 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 # Sensor weights for weighted indoor temperature (from Phase 3 thermal model)
 SENSOR_WEIGHTS = {
-    'davis_inside_temperature': 0.40,
-    'office1_temperature': 0.30,
-    'atelier_temperature': 0.10,
-    'studio_temperature': 0.10,
-    'simlab_temperature': 0.10,
+    'davis_inside_temperature': 1.0,
 }
 
 # Washout period after parameter changes (hours)
@@ -924,20 +920,16 @@ def generate_report_section(regime_stats: pd.DataFrame, sensitivity: dict, df: p
 
         <div class="card">
             <h4>Overview</h4>
-            <p>The <strong>weighted indoor temperature (T_weighted)</strong> is the primary comfort objective
-            for the Phase 5 intervention study. It combines readings from five indoor temperature sensors
-            to create a representative whole-building temperature metric.</p>
+            <p>The <strong>indoor temperature (T_weighted)</strong> is the primary comfort objective
+            for the Phase 5 intervention study. It uses the davis_inside sensor as the single
+            reference temperature (least noise, central location).</p>
 
-            <h4>Weighted Temperature Formula</h4>
-            <pre style="background: var(--card-bg); color: var(--text); padding: 0.5rem;">T_weighted = 0.40×davis_inside + 0.30×office1 + 0.10×atelier + 0.10×studio + 0.10×simlab</pre>
+            <h4>Temperature Sensor</h4>
+            <pre style="background: var(--card-bg); color: var(--text); padding: 0.5rem;">T_weighted = davis_inside_temperature</pre>
 
             <table>
                 <tr><th>Sensor</th><th>Weight</th><th>Rationale</th></tr>
-                <tr><td>davis_inside_temperature</td><td>40%</td><td>Primary living area, central location</td></tr>
-                <tr><td>office1_temperature</td><td>30%</td><td>Secondary occupied workspace</td></tr>
-                <tr><td>atelier_temperature</td><td>10%</td><td>Zone coverage - workshop area</td></tr>
-                <tr><td>studio_temperature</td><td>10%</td><td>Zone coverage - studio space</td></tr>
-                <tr><td>simlab_temperature</td><td>10%</td><td>Zone coverage - laboratory area</td></tr>
+                <tr><td>davis_inside_temperature</td><td>100%</td><td>Primary living area, central location, least noise</td></tr>
             </table>
         </div>
 

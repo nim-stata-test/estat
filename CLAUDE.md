@@ -297,16 +297,18 @@ python src/phase2/05_weighted_temperature_analysis.py
 - `output/phase2/weighted_temp_sensitivity.csv` - Parameter effects
 - `output/phase2/weighted_temp_report_section.html` - HTML section for report
 
-**Weighted Temperature Formula:**
+**Temperature Sensor:**
 ```
-T_weighted = 0.40×davis_inside + 0.30×office1 + 0.10×atelier + 0.10×studio + 0.10×simlab
+T_weighted = davis_inside_temperature
 ```
+
+Uses a single sensor (davis_inside) for simplicity and lowest noise.
 
 **Key Features:**
 - 48-hour (2-day) washout exclusion after each parameter regime change
 - Sensitivity analysis: ΔT_weighted per unit parameter change
 - Visualizes temperature response to setpoint and curve_rise changes
-- Same weights used in Phase 3 thermal modeling and Phase 5 comfort objective
+- Same sensor used in Phase 3 thermal modeling and Phase 5 comfort objective
 
 ## Phase 3: System Modeling Outputs
 
@@ -325,12 +327,8 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
 - `cost_model_daily_stats.csv` - Daily cost breakdown (grid, feedin, net)
 - `cost_forecast_model.json` - Cost forecasting model coefficients
 
-**Thermal Model Sensors (weighted indoor temperature):**
-- davis_inside_temperature: 40%
-- office1_temperature: 30%
-- atelier_temperature: 10%
-- studio_temperature: 10%
-- simlab_temperature: 10%
+**Thermal Model Sensor:**
+- davis_inside_temperature: 100% (single sensor, least noise)
 
 **Outdoor Temperature Sensor:**
 - Column: `stiebel_eltron_isg_outdoor_temperature`
@@ -343,7 +341,7 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
 
 **Key Model Results:**
 - Building time constant: ~14-33 hours (varies by sensor)
-- davis_inside: tau=14.1h, office1: tau=17.5h, atelier: tau=29.5h
+- davis_inside: tau=24h (primary comfort sensor)
 - COP model (R²=0.95): `COP = 6.52 + 0.13×T_outdoor - 0.10×T_flow`
 - Current self-sufficiency: 58%, potential with optimization: 85%
 
@@ -597,9 +595,9 @@ Three strategies selected from Pareto-optimal solutions for Phase 5 intervention
 
 **Comfort Objective (T_weighted):**
 
-The comfort objective uses a weighted indoor temperature:
+The comfort objective uses a single indoor temperature sensor:
 ```
-T_weighted = 0.40×davis_inside + 0.30×office1 + 0.10×atelier + 0.10×studio + 0.10×simlab
+T_weighted = davis_inside_temperature
 ```
 
 **Optimization framework:**

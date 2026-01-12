@@ -6,8 +6,7 @@ Simulates the four optimization strategies on historical data to validate
 expected improvements before Phase 5 intervention study.
 
 Uses Phase 3 models:
-- Thermal model with weighted indoor temperature (davis_inside 40%, office1 30%,
-  atelier/studio/simlab 10% each)
+- Thermal model with davis_inside temperature (single sensor, least noise)
 - COP model for energy efficiency
 - Energy system model for grid/solar interaction
 
@@ -45,13 +44,9 @@ THERMAL_PARAMS = {
     'tau_effort_h': 12.4,  # Weighted heating response time constant
 }
 
-# Target sensors and weights for thermal model
+# Target sensor for thermal model (single sensor)
 SENSOR_WEIGHTS = {
-    'davis_inside_temperature': 0.40,
-    'office1_temperature': 0.30,
-    'atelier_temperature': 0.10,
-    'studio_temperature': 0.10,
-    'simlab_temperature': 0.10,
+    'davis_inside_temperature': 1.0,
 }
 
 # Heating curve reference temperatures (from Phase 2 analysis)
@@ -108,8 +103,7 @@ def prepare_simulation_data(df: pd.DataFrame, tariff_series: pd.DataFrame = None
         print("  Warning: outdoor temperature not found")
         return pd.DataFrame()
 
-    # Room temperature - compute weighted average from target sensors
-    # Weights: davis_inside (40%), office1 (30%), atelier/studio/simlab (10% each)
+    # Room temperature - use davis_inside directly (single sensor, least noise)
     weighted_sum = pd.Series(0.0, index=df.index)
     weight_sum = pd.Series(0.0, index=df.index)
 

@@ -358,25 +358,21 @@ Block quality: [ ] Good  [ ] Usable  [ ] Exclude (reason: ___)
 
 ### 8.4 Weighted Indoor Temperature Definition
 
-The comfort objective uses a weighted combination of five indoor temperature sensors:
+The comfort objective uses a single indoor temperature sensor:
 
 ```
-T_weighted = 0.40×davis_inside + 0.30×office1 + 0.10×atelier + 0.10×studio + 0.10×simlab
+T_weighted = davis_inside_temperature
 ```
 
 | Sensor | Weight | Rationale |
 |--------|--------|-----------|
-| `davis_inside_temperature` | 40% | Primary living area, central location |
-| `office1_temperature` | 30% | Secondary occupied workspace |
-| `atelier_temperature` | 10% | Zone coverage - workshop area |
-| `studio_temperature` | 10% | Zone coverage - studio space |
-| `simlab_temperature` | 10% | Zone coverage - laboratory area |
+| `davis_inside_temperature` | 100% | Primary living area, central location, least noise |
 
-**Rationale for weighting:**
-- Higher weights for frequently occupied spaces (davis_inside, office1)
-- Lower weights for peripheral zones to capture whole-building response
-- Weights sum to 1.0 for interpretable temperature values
-- Same weights used in Phase 3 thermal modeling for consistency
+**Rationale for single sensor:**
+- Simplest model with fewest parameters
+- davis_inside has lowest measurement noise
+- Central location represents primary living space
+- Consistent with Phase 3 thermal modeling
 
 **Missing sensor handling:** If a sensor is temporarily unavailable, its weight is redistributed proportionally among available sensors.
 
@@ -575,11 +571,7 @@ adequate comfort during cold periods while meeting the 5% violation constraint.
 ### Appendix C: Sensor List
 
 Primary sensors for analysis:
-- `davis_inside_temperature` - Main indoor reference (40% weight)
-- `office1_temperature` - Secondary reference (30% weight)
-- `atelier_temperature` - Zone sensor (10% weight)
-- `studio_temperature` - Zone sensor (10% weight)
-- `simlab_temperature` - Zone sensor (10% weight)
+- `davis_inside_temperature` - Indoor reference (100% - single sensor)
 - `davis_outside_temperature` - Outdoor reference
 - `wp_hk2_ist` - Flow temperature (HK2)
 - `energy_produced_heating` - Heat output
