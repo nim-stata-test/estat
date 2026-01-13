@@ -38,7 +38,9 @@ Optimize heating strategy for a residential building with solar/battery system t
 
 6. **Eco setpoint has minimal daytime impact**: Multivariate regression shows -0.09°C per 1°C eco setpoint change. This allows aggressive eco setbacks (12-14°C) without compromising daytime comfort.
 
-7. **Pareto-optimized strategies selected**: NSGA-II optimization (21 solutions) → Grid-Minimal (-11% grid, eco=13.6°C) and Balanced (-8% grid, eco=12.5°C). All optimal strategies converge to ~4h solar-aligned comfort window (11:00-16:00).
+7. **Pareto-optimized strategies selected**: NSGA-II optimization (60K evaluations, 3040 solutions tracked) → Grid-Minimal (-20% grid, eco=14.1°C) and Balanced strategies. All optimal strategies converge to ~4h solar-aligned comfort window (11:00-16:00), curve_rise=0.82, and 22°C comfort setpoint.
+
+8. **Grey-box thermal model**: New two-state physics-based model (R²=0.992 test, RMSE=0.064°C) captures buffer tank dynamics and enables accurate temperature predictions for strategy evaluation.
 
 ---
 
@@ -165,21 +167,46 @@ Investigation of Feb-Mar 2025 deep-discharge event (faulty inverter).
 
 ### 3.1 Thermal Model ✓
 - [x] Estimate building thermal characteristics:
-  - **Time constant: ~17-31 hours** (varies by room)
+  - **Time constant: ~17-31 hours** (transfer function model)
   - RC model using T_hk2 (heating circuit temp) as heating effort proxy
 - [x] Model room temperature dynamics as function of:
   - Heating effort (T_hk2 - T_room differential)
   - Heat loss (T_room - T_outdoor differential)
   - Solar gain (from PV proxy)
 
-**Key findings**:
+**Key findings (Transfer Function Model)**:
 - Heating runs continuously (38-77% duty cycle, including nights)
 - T_hk2 varies 30°C (night/eco) to 36°C (morning/comfort) - good heating proxy
-- Model R² = 0.10-0.24 (improved with correct heating assumption)
+- Model R² = 0.68 (davis_inside sensor)
 - Heating coefficient: ~0.013 K/(15min)/K
 - Loss coefficient: ~0.014 K/(15min)/K
 
-**Outputs**: `fig13_thermal_model.png`, `thermal_model_results.csv`
+**Outputs**: `fig17_thermal_model.png`, `thermal_model_results.csv`
+
+### 3.1b Grey-Box Thermal Model ✓ (Jan 2026)
+Physics-based two-state discrete-time model with explicit buffer tank dynamics.
+
+**Model Formulation** (Δt = 15 min):
+```
+T_buffer[k+1] = T_buffer[k] + (dt/τ_buf) × [(T_HK2 - T_buffer) - r_emit × (T_buffer - T_room)]
+T_room[k+1] = T_room[k] + (dt/τ_room) × [r_heat × (T_buffer - T_room) - (T_room - T_outdoor)] + k_solar × PV
+```
+
+**Key findings (Grey-Box Model)**:
+| Parameter | Value | Interpretation |
+|-----------|-------|----------------|
+| τ_buffer | 2.3 h | Buffer tank time constant |
+| τ_room | 72 h | Building thermal mass (very high) |
+| r_emit | 0.10 | Buffer-to-room coupling |
+| r_heat | 1.05 | Heat transfer ratio |
+| k_solar | 0.017 K/kWh | Solar gain coefficient |
+
+**Model Performance**:
+- Training R² = 0.995, Test R² = 0.992
+- RMSE = 0.064°C (one-step-ahead prediction)
+- Durbin-Watson = 1.46 (good residual properties)
+
+**Outputs**: `fig17b_greybox_model.png`, `greybox_model_params.json`
 
 ### 3.2 Heat Pump Model ✓ COMPLETED
 - [x] COP as function of outdoor temperature: **+0.13 COP per °C**
@@ -255,9 +282,11 @@ Low tariff: Nights, weekends, holidays
 ### 4.2 Model Parameters for Optimization
 | Parameter | Value | Source |
 |-----------|-------|--------|
-| Building time constant | 17-31 h (avg ~30h) | Thermal model |
-| Heating coefficient | 0.013 K/(15min)/K | Thermal model |
-| Loss coefficient | 0.014 K/(15min)/K | Thermal model |
+| Buffer tank time constant (τ_buf) | 2.3 h | Grey-box model |
+| Building time constant (τ_room) | 72 h | Grey-box model |
+| Buffer-to-room coupling (r_emit) | 0.10 | Grey-box model |
+| Heat transfer ratio (r_heat) | 1.05 | Grey-box model |
+| Solar gain (k_solar) | 0.017 K/kWh | Grey-box model |
 | COP sensitivity (outdoor) | +0.13/°C | Heat pump model |
 | COP sensitivity (flow) | -0.10/°C | Heat pump model |
 | Battery round-trip efficiency | 83.7% | Energy system model |
@@ -273,26 +302,32 @@ daytime comfort (-0.09°C per 1°C change). This allowed extending eco setpoint 
 [12°C, 19°C] instead of [16°C, 19°C], enabling more aggressive energy savings.
 
 **Optimization Setup:**
-- Algorithm: NSGA-II (200 generations, 100 population)
+- Algorithm: NSGA-II (200 generations, 300 population = 60,000 evaluations)
 - Decision variables: setpoint_comfort, setpoint_eco, comfort_start, comfort_end, curve_rise
-- Objectives (4): Mean T_weighted deficit, Min T_weighted deficit, Grid import, Net cost
-- Result: **21 Pareto-optimal solutions** (non-dominated front)
+- Objectives (3): Mean T_weighted (08:00-22:00), Grid import, Net cost
+- Constraint: T_weighted < 18.5°C for ≤5% of daytime hours
+- Result: **3,040 unique solutions tracked**, 10 diverse strategies selected
 
 **Selected Strategies for Phase 5:**
 
-| Strategy | Schedule | Curve Rise | Setpoints | Grid (kWh) | Cost (CHF) |
-|----------|----------|------------|-----------|------------|------------|
-| **A: Baseline** | 06:30-20:00 | 1.08 | 20.2°C / 18.5°C | ~1200 | ~320 |
-| **B: Grid-Minimal** | 11:45-16:00 | 0.81 | 22.0°C / **13.6°C** | **1069** | **279** |
-| **C: Balanced** | 11:45-16:00 | 0.98 | 22.0°C / **12.5°C** | 1104 | 290 |
+| Strategy | Schedule | Curve Rise | Setpoints | Grid (kWh) | Cost (CHF) | Violation |
+|----------|----------|------------|-----------|------------|------------|-----------|
+| **A: Baseline** | 06:30-20:00 | 1.08 | 20.2°C / 18.5°C | ~2,500* | ~750* | — |
+| **B: Grid-Minimal** | 11:30-16:00 | 0.82 | 22.0°C / **14.1°C** | **2,007** | 598 | 2.9% |
+| **C: Balanced** | 11:45-16:00 | 0.82 | 22.0°C / **14.2°C** | 2,007 | **597** | 2.9% |
+| **D: Cost-Minimal** | 12:00-16:00 | 0.82 | 22.0°C / **14.2°C** | 2,011 | 596 | 2.9% |
+| **E: Comfort-First** | 12:00-16:00 | 1.20 | 22.0°C / 12.9°C | 2,418 | 724 | 0.0% |
+
+*Baseline estimated from current operation (not simulated with same methodology)
 
 **Key Insights from Pareto Front:**
 1. All optimal strategies converge to ~4h comfort window (11:00-16:00) aligned with solar peak
 2. Aggressive eco setbacks (12-14°C) are optimal due to minimal daytime impact
 3. Higher comfort setpoint (22°C) during short window compensates for reduced heating hours
-4. Grid-Minimal achieves 11% reduction vs baseline by combining low curve_rise + aggressive eco
+4. Grid-Minimal achieves **20% reduction** vs baseline by combining low curve_rise (0.82) + 14°C eco
+5. All strategies pass the 5% comfort violation limit (constraint satisfied)
 
-**Outputs**: `pareto_archive.json`, `selected_strategies.csv`, `fig19-20_*.png`
+**Outputs**: `pareto_archive.json`, `selected_strategies.json`, `fig24-26_*.png`
 
 ### 4.4 Rule-Based Heuristics ✓ COMPLETED
 - [x] Pre-heat during solar hours (shift comfort start to 10:00-11:00)
@@ -341,13 +376,14 @@ Validated strategies on 64 days of historical data:
 - **Statistical power**: >95% to detect +0.30 COP change
 
 ### 5.2 Parameter Sets to Compare (Pareto-Optimized)
-Three strategies selected from Pareto optimization:
+Four strategies selected from Pareto optimization (300 pop × 200 gen):
 
-| Strategy | Schedule | Curve Rise | Eco Setpoint | Key Focus |
-|----------|----------|------------|--------------|-----------|
-| **A: Baseline** | 06:30-20:00 | 1.08 | 18.5°C | Control (current settings) |
-| **B: Grid-Minimal** | 11:45-16:00 | 0.81 | 13.6°C | Minimize grid consumption |
-| **C: Balanced** | 11:45-16:00 | 0.98 | 12.5°C | Balance comfort and efficiency |
+| Strategy | Schedule | Curve Rise | Comfort/Eco | Key Focus |
+|----------|----------|------------|-------------|-----------|
+| **A: Baseline** | 06:30-20:00 | 1.08 | 20.2°C / 18.5°C | Control (current settings) |
+| **B: Grid-Minimal** | 11:30-16:00 | 0.82 | 22.0°C / 14.1°C | Minimize grid consumption |
+| **C: Balanced** | 11:45-16:00 | 0.82 | 22.0°C / 14.2°C | Balance comfort and efficiency |
+| **D: Comfort-First** | 12:00-16:00 | 1.20 | 22.0°C / 12.9°C | Maximize comfort (0% violation) |
 
 See `selected_strategies.json` for exact parameter values from Pareto optimization.
 
