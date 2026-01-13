@@ -421,12 +421,12 @@ def generate_html_protocol(df: pd.DataFrame, seed: int, output_path: Path) -> No
                     <div class="param-value">{row['comfort_start']} - {row['comfort_end']}</div>
                 </div>
                 <div class="param-item">
-                    <div class="param-label">Washout Until</div>
-                    <div class="param-value">{row['washout_end']}</div>
+                    <div class="param-label">Comfort Hours</div>
+                    <div class="param-value">{row['comfort_hours']:.0f}h</div>
                 </div>
                 <div class="param-item">
-                    <div class="param-label">Measurement From</div>
-                    <div class="param-value">{row['measurement_start']}</div>
+                    <div class="param-label">Duration</div>
+                    <div class="param-value">7 days</div>
                 </div>
             </div>
         </div>
