@@ -635,9 +635,15 @@ Historical data limitations:
 |--------|-------|
 | **Type** | T_HK2-targeted design (optimizes flow temp spread) |
 | **Duration** | 10 weeks (January 13 - March 23, 2026) |
-| **Block length** | 7 days (2-day washout + 5-day measurement) |
+| **Block length** | 7 days (all data used with dynamical analysis) |
 | **Total blocks** | 10 |
 | **Randomization** | Random sequence assignment |
+| **Analysis** | Dynamical (preferred) or RSM (comparison) |
+
+**Note on Washout Periods:** With the dynamical (grey-box) analysis approach,
+washout periods are unnecessary. The model explicitly handles non-equilibrium
+states, and transitions between parameter settings are treated as informative
+step response experiments. All 7 days of each block are used for analysis.
 
 ### E.3 T_HK2 Spread (Reference T_outdoor = 5°C)
 
@@ -669,6 +675,35 @@ baseline settings restored.
 
 ### E.6 Analysis Plan
 
+Two analysis approaches are available:
+
+#### E.6.1 Dynamical Analysis (Preferred)
+
+Uses the grey-box state-space model on continuous 15-min data. No washout exclusion.
+
+**Model equations:**
+```
+T_buffer[k+1] = T_buffer[k] + (dt/τ_buf) × [(T_HK2[k] - T_buffer[k]) - r_emit×(T_buffer[k] - T_room[k])]
+T_room[k+1] = T_room[k] + (dt/τ_room) × [r_heat×(T_buffer[k] - T_room[k]) - (T_room[k] - T_outdoor[k])] + k_solar×PV[k]
+```
+
+**Why preferred:**
+- Uses ALL data (~6,700 points vs 10 block averages)
+- Transitions are informative step responses, not noise to discard
+- Estimates physical parameters (τ_buf, τ_room, r_heat, r_emit)
+- Computes steady-state gain: ∂T_room/∂T_HK2
+- Validates model on held-out blocks
+
+**Key outputs:**
+- `dynamical_model_params.json` - Fitted grey-box parameters
+- `step_response_analysis.csv` - Metrics at each parameter transition
+- `fig_dynamical_model.png` - Model fit visualization
+- `fig_step_responses.png` - Step response characteristics
+
+#### E.6.2 RSM Analysis (Comparison)
+
+Uses Response Surface Methodology on block-averaged metrics. Traditional approach with washout.
+
 **Primary Model (T_HK2-based):**
 ```
 T_indoor = b0 + b1×T_HK2_comfort + b2×T_HK2_eco + b3×comfort_hours + b4×T_outdoor
@@ -679,10 +714,12 @@ T_indoor = b0 + b1×T_HK2_comfort + b2×T_HK2_eco + b3×comfort_hours + b4×T_ou
 T_indoor = b0 + b1×comfort_sp + b2×eco_sp + b3×curve_rise + b4×hours + b5×T_outdoor
 ```
 
-Key questions to answer:
+#### E.6.3 Key Questions
+
 1. What is the thermal transfer function (T_indoor response to T_HK2)?
-2. Is there a difference between comfort T_HK2 and eco T_HK2 effects?
-3. Does schedule duration matter independently of T_HK2?
+2. What are the building time constants (τ_buf, τ_room)?
+3. How accurately can we predict T_room trajectories during transitions?
+4. Does schedule duration matter independently of T_HK2?
 
 ### E.7 Commands
 
@@ -693,24 +730,58 @@ python src/phase5_pilot/run_pilot.py
 # Use different reference outdoor temperature
 python src/phase5_pilot/run_pilot.py --ref-outdoor 3
 
-# Analyze after each completed block
-python src/phase5_pilot/03_pilot_analysis.py
-python src/phase5_pilot/03_pilot_analysis.py --block 5  # Through block 5
+# Run analysis (after collecting pilot data)
+python src/phase5_pilot/run_pilot.py --analyze       # Dynamical analysis (preferred)
+python src/phase5_pilot/run_pilot.py --analyze-rsm   # RSM analysis (comparison)
 
-# View schedule
+# Run analysis scripts directly
+python src/phase5_pilot/04_dynamical_analysis.py     # Grey-box model on continuous data
+python src/phase5_pilot/03_pilot_analysis.py         # RSM on block averages
+python src/phase5_pilot/03_pilot_analysis.py --block 5  # RSM through block 5 only
+
+# View schedule and reports
 open output/phase5_pilot/pilot_protocol.html
+open output/phase5_pilot/dynamical_analysis_report.html
 ```
 
 ### E.8 Expected Outcomes
 
-1. **Thermal transfer function**: Quantify T_indoor response to T_HK2 changes
-2. **Validated model**: Compare T_HK2-based vs raw parameter model fit (R²)
-3. **Schedule independence**: Verify comfort_hours effect is orthogonal to T_HK2
-4. **Informed Phase 5 design**: Update strategy definitions based on pilot learnings
+1. **Validated grey-box model**: Confirm the state-space model predicts T_room accurately
+   - Target: R² > 0.95 on continuous data
+   - Validate on held-out blocks (forward simulation test)
+
+2. **Physical parameter estimates**: Refine time constants from pilot data
+   - τ_buf (buffer tank): expected 1-4 hours
+   - τ_room (building): expected 20-80 hours
+   - Compare with Phase 3 historical estimates
+
+3. **Steady-state gain**: Quantify ∂T_room/∂T_HK2
+   - How much does room temperature change per degree of flow temperature?
+   - Use for strategy optimization
+
+4. **Step response characteristics**: Analyze transitions between settings
+   - Empirical time constants from step responses
+   - Prediction accuracy at each transition
+   - Validate that transitions provide useful information (not noise)
+
+5. **Informed Phase 5 design**:
+   - If model validates well: use dynamical analysis for main study too
+   - If model struggles: fall back to traditional washout + block averages
+   - Update strategy definitions based on pilot learnings
+
+### E.9 Implications for Main Phase 5 Study
+
+| If Pilot Shows... | Then Main Study Should... |
+|-------------------|---------------------------|
+| Grey-box R² > 0.95 | Use dynamical analysis on all data |
+| Good step response predictions | Reduce or eliminate washout periods |
+| τ_room < 24h | Shorten block length to 5 days |
+| τ_room > 48h | Keep 7-day blocks, may extend |
+| Model fails at transitions | Keep traditional 3-day washout |
 
 ---
 
-*Document version: 2.3*
+*Document version: 2.4*
 *Created: January 2026*
-*Updated: January 2026 (T_HK2-targeted design in Appendix E)*
+*Updated: January 2026 (Added dynamical analysis approach in Appendix E)*
 *Author: ESTAT Project*

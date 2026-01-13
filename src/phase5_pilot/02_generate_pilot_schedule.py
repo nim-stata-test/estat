@@ -30,8 +30,8 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Block structure
 BLOCK_DAYS = 7
-WASHOUT_DAYS = 2
-MEASUREMENT_DAYS = 5
+WASHOUT_DAYS = 2  # For RSM analysis only; dynamical analysis uses all data
+MEASUREMENT_DAYS = 5  # For RSM analysis only
 
 # Safety constraints
 SAFETY = {
@@ -280,14 +280,17 @@ def generate_html_protocol(df: pd.DataFrame, seed: int, output_path: Path) -> No
                 <div class="label">Days/Block</div>
             </div>
             <div class="stat-box">
-                <div class="value">{WASHOUT_DAYS}</div>
-                <div class="label">Washout Days</div>
+                <div class="value">All</div>
+                <div class="label">Data Used*</div>
             </div>
             <div class="stat-box">
-                <div class="value">{MEASUREMENT_DAYS}</div>
-                <div class="label">Measurement Days</div>
+                <div class="value">2</div>
+                <div class="label">Analysis Methods</div>
             </div>
         </div>
+        <p style="color: #666; font-size: 0.85rem; margin-top: 0.5rem;">
+            *Dynamical analysis uses all 7 days. RSM analysis uses days 3-7 (excludes 2-day washout).
+        </p>
 
         <div class="card">
             <h3>Study Period</h3>
@@ -302,14 +305,28 @@ def generate_html_protocol(df: pd.DataFrame, seed: int, output_path: Path) -> No
             <h3>Purpose</h3>
             <p>This pilot experiment explores the heating parameter space using a <strong>T_HK2-targeted design</strong>.
             The design maximizes spread in flow temperature (T_HK2) rather than raw parameters, because
-            T_HK2 is what drives the thermal response we need to learn.
-            The goal is to estimate the effect of T_HK2 history on:</p>
-            <ul style="margin: 1rem 0 0 1.5rem;">
-                <li>Indoor comfort temperature (T_weighted)</li>
-                <li>Heat pump efficiency (COP)</li>
-                <li>Grid electricity consumption</li>
-                <li>Net electricity costs</li>
-            </ul>
+            T_HK2 is what drives the thermal response we need to learn.</p>
+
+            <h4 style="margin-top: 1rem;">Two Analysis Approaches</h4>
+            <table style="margin: 0.5rem 0;">
+                <tr>
+                    <th>Approach</th>
+                    <th>Data Used</th>
+                    <th>Best For</th>
+                </tr>
+                <tr>
+                    <td><strong>Dynamical</strong> (preferred)</td>
+                    <td>All 7 days (~6,700 points)</td>
+                    <td>Learning dynamics, model validation</td>
+                </tr>
+                <tr>
+                    <td>RSM</td>
+                    <td>Days 3-7 (10 block means)</td>
+                    <td>Simple parameter effects</td>
+                </tr>
+            </table>
+            <p style="margin-top: 0.5rem;">The <strong>dynamical analysis</strong> uses the grey-box state-space model
+            and treats transitions between settings as informative step responses (no washout needed).</p>
         </div>
 
         <div class="warning">
@@ -472,6 +489,49 @@ def generate_html_protocol(df: pd.DataFrame, seed: int, output_path: Path) -> No
                     <td>Curve Rise (Steilheit)</td>
                     <td>Heating curve menu</td>
                     <td>Heat pump control panel</td>
+                </tr>
+            </table>
+        </div>
+
+        <h2>6. Running Analysis</h2>
+
+        <div class="card">
+            <h3>After Collecting Data</h3>
+            <p>Run analysis after each completed block or at the end of the pilot:</p>
+            <pre style="background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto;">
+# Dynamical analysis (preferred) - uses grey-box model on all data
+python src/phase5_pilot/run_pilot.py --analyze
+
+# RSM analysis (comparison) - uses block averages with washout
+python src/phase5_pilot/run_pilot.py --analyze-rsm
+
+# View results
+open output/phase5_pilot/dynamical_analysis_report.html
+            </pre>
+        </div>
+
+        <div class="card">
+            <h3>Key Outputs</h3>
+            <table>
+                <tr>
+                    <th>File</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td><code>dynamical_model_params.json</code></td>
+                    <td>Grey-box model parameters (τ_buf, τ_room, etc.)</td>
+                </tr>
+                <tr>
+                    <td><code>step_response_analysis.csv</code></td>
+                    <td>Metrics at each parameter transition</td>
+                </tr>
+                <tr>
+                    <td><code>fig_dynamical_model.png</code></td>
+                    <td>Model fit visualization</td>
+                </tr>
+                <tr>
+                    <td><code>fig_step_responses.png</code></td>
+                    <td>Step response characteristics</td>
                 </tr>
             </table>
         </div>

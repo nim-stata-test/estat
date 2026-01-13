@@ -96,7 +96,10 @@ python src/phase5_pilot/run_pilot.py               # Generate T_HK2 design + sch
 python src/phase5_pilot/run_pilot.py --ref-outdoor 3   # Use different reference temp
 python src/phase5_pilot/run_pilot.py --design-only # Generate design only
 python src/phase5_pilot/run_pilot.py --schedule-only # Generate schedule from existing design
-python src/phase5_pilot/03_pilot_analysis.py       # Analyze pilot data (run after each block)
+python src/phase5_pilot/run_pilot.py --analyze     # Dynamical analysis (preferred, uses grey-box model)
+python src/phase5_pilot/run_pilot.py --analyze-rsm # RSM block-averaged analysis (comparison)
+python src/phase5_pilot/04_dynamical_analysis.py   # Run dynamical analysis directly
+python src/phase5_pilot/03_pilot_analysis.py       # RSM analysis (run after each block)
 python src/phase5_pilot/03_pilot_analysis.py --block 5  # Analyze through block 5 only
 ```
 
@@ -138,10 +141,11 @@ src/
 │   ├── estimate_study_parameters.py  # Data-driven washout/block estimation
 │   └── generate_schedule.py          # Randomization schedule generator
 └── phase5_pilot/        # Pilot Experiment (Jan-Mar 2026)
-    ├── run_pilot.py                  # Main runner: design + schedule
+    ├── run_pilot.py                  # Main runner: design + schedule + analysis
     ├── 01_generate_thk2_design.py    # T_HK2-targeted design generation
     ├── 02_generate_pilot_schedule.py # Dated block schedule
-    └── 03_pilot_analysis.py          # T_HK2-based thermal response analysis
+    ├── 03_pilot_analysis.py          # RSM block-averaged analysis (comparison)
+    └── 04_dynamical_analysis.py      # Grey-box dynamical analysis (preferred)
 ```
 
 ## Output Directory Structure
@@ -670,15 +674,17 @@ python src/phase5_pilot/run_pilot.py
 # Use different reference outdoor temperature for T_HK2 calculation
 python src/phase5_pilot/run_pilot.py --ref-outdoor 3
 
-# Analyze data after each completed block
-python src/phase5_pilot/03_pilot_analysis.py
-python src/phase5_pilot/03_pilot_analysis.py --block 5  # Analyze through block 5
+# Analyze data - two approaches available:
+python src/phase5_pilot/run_pilot.py --analyze     # Dynamical (preferred)
+python src/phase5_pilot/run_pilot.py --analyze-rsm # RSM block-averaged (comparison)
+python src/phase5_pilot/04_dynamical_analysis.py   # Dynamical analysis directly
+python src/phase5_pilot/03_pilot_analysis.py --block 5  # RSM through block 5
 ```
 
 **Design:**
 - Type: T_HK2-targeted (optimizes for flow temperature spread)
 - Blocks: 10 (70 days = 10 weeks)
-- Block length: 7 days (2-day washout + 5-day measurement)
+- Block length: 7 days (washout period optional with dynamical analysis)
 - Period: Jan 13 - Mar 23, 2026
 
 **T_HK2 Spread (at reference T_outdoor = 5°C):**
@@ -710,26 +716,53 @@ output/phase5_pilot/
 ├── pilot_schedule.csv          # Dated block schedule
 ├── pilot_schedule.json         # Machine-readable schedule
 ├── pilot_protocol.html         # Human-readable protocol with T_HK2 values
+# RSM analysis outputs (03_pilot_analysis.py):
 ├── pilot_analysis_results.csv  # Block-level metrics
-├── pilot_model_coefficients.json # T_HK2-based model results
-└── pilot_analysis_report.html  # Analysis report with dual model comparison
+├── pilot_model_coefficients.json # T_HK2-based RSM model results
+├── pilot_analysis_report.html  # RSM analysis report
+# Dynamical analysis outputs (04_dynamical_analysis.py):
+├── dynamical_model_params.json # Grey-box model parameters from pilot
+├── step_response_analysis.csv  # Transition analysis at parameter changes
+├── model_validation.csv        # Holdout block validation metrics
+├── fig_dynamical_model.png     # Model fit visualization
+├── fig_step_responses.png      # Step response analysis
+└── dynamical_analysis_report.html # Dynamical analysis report
 ```
 
-**Analysis Models:**
+**Two Analysis Approaches:**
 
-Primary (T_HK2-based):
+| Approach | Script | Uses Washout | Data Points | Best For |
+|----------|--------|--------------|-------------|----------|
+| **Dynamical** (preferred) | `04_dynamical_analysis.py` | No | ~6,700 (15-min) | Learning dynamics, model validation |
+| RSM (comparison) | `03_pilot_analysis.py` | Yes | 10 (block means) | Simple parameter effects |
+
+**Why Dynamical Analysis is Preferred:**
+
+With the grey-box state-space model, washout periods are unnecessary because:
+1. The model explicitly handles non-equilibrium states
+2. Transitions between settings are **informative step responses**
+3. All 15-min data points are used (not just block averages)
+4. Better estimates of time constants (τ_buf, τ_room)
+
+**Dynamical Model (Grey-Box State-Space):**
+```
+T_buffer[k+1] = T_buffer[k] + (dt/τ_buf) × [(T_HK2[k] - T_buffer[k]) - r_emit×(T_buffer[k] - T_room[k])]
+T_room[k+1] = T_room[k] + (dt/τ_room) × [r_heat×(T_buffer[k] - T_room[k]) - (T_room[k] - T_outdoor[k])] + k_solar×PV[k]
+```
+
+**Key Outputs from Dynamical Analysis:**
+- Steady-state gain: ∂T_room/∂T_HK2 (how much room warms per degree of flow temp)
+- Response time: time to reach 63% of new equilibrium after parameter change
+- Step response metrics: prediction accuracy at each transition
+
+**RSM Model (Block-Averaged, for comparison):**
 ```
 T_indoor = b0 + b1×T_HK2_comfort + b2×T_HK2_eco + b3×comfort_hours + b4×T_outdoor
 ```
 
-Comparison (raw parameters):
-```
-T_indoor = b0 + b1×comfort_sp + b2×eco_sp + b3×curve_rise + b4×hours + b5×T_outdoor
-```
-
 **Expected Outcome:** Learn the thermal transfer function - how T_indoor responds
-to T_HK2 levels. This enables accurate prediction of indoor comfort for any
-combination of heating parameters.
+to T_HK2 levels. The dynamical analysis validates whether the grey-box model
+can predict temperature trajectories during the main Phase 5 study.
 
 ## Phase 5: Intervention Study
 

@@ -82,6 +82,16 @@ Examples:
         action='store_true',
         help='Only generate schedule (assumes design exists)',
     )
+    parser.add_argument(
+        '--analyze',
+        action='store_true',
+        help='Run dynamical analysis (requires pilot data)',
+    )
+    parser.add_argument(
+        '--analyze-rsm',
+        action='store_true',
+        help='Run RSM block-averaged analysis (original method)',
+    )
 
     args = parser.parse_args()
 
@@ -101,7 +111,7 @@ Examples:
             return rc
 
     # Step 2: Generate schedule
-    if not args.design_only:
+    if not args.design_only and not args.analyze and not args.analyze_rsm:
         rc = run_step(
             '02_generate_pilot_schedule.py',
             ['--start', args.start, '--seed', str(args.seed)]
@@ -110,19 +120,55 @@ Examples:
             print(f"\nError: Schedule generation failed with code {rc}")
             return rc
 
+    # Step 3: Run analysis (if requested)
+    if args.analyze:
+        rc = run_step(
+            '04_dynamical_analysis.py',
+            ['--seed', str(args.seed)]
+        )
+        if rc != 0:
+            print(f"\nError: Dynamical analysis failed with code {rc}")
+            return rc
+
+    if args.analyze_rsm:
+        rc = run_step(
+            '03_pilot_analysis.py',
+            []
+        )
+        if rc != 0:
+            print(f"\nError: RSM analysis failed with code {rc}")
+            return rc
+
     # Print summary
     print(f"\n{'='*60}")
-    print("PILOT GENERATION COMPLETE")
+    if args.analyze or args.analyze_rsm:
+        print("PILOT ANALYSIS COMPLETE")
+    else:
+        print("PILOT GENERATION COMPLETE")
     print(f"{'='*60}")
-    print(f"\nOutputs in output/phase5_pilot/:")
-    print(f"  - thk2_design.csv         (T_HK2-targeted design matrix)")
-    print(f"  - pilot_schedule.csv      (dated schedule)")
-    print(f"  - pilot_protocol.html     (human-readable protocol)")
-    print(f"\nNext steps:")
-    print(f"  1. Review pilot_protocol.html")
-    print(f"  2. Start Block 1 on {args.start}")
-    print(f"  3. Update parameters weekly per schedule")
-    print(f"  4. Run analysis after each block with 03_pilot_analysis.py")
+
+    if args.analyze:
+        print(f"\nDynamical analysis outputs in output/phase5_pilot/:")
+        print(f"  - dynamical_model_params.json  (grey-box model parameters)")
+        print(f"  - step_response_analysis.csv   (transition analysis)")
+        print(f"  - dynamical_analysis_report.html")
+    elif args.analyze_rsm:
+        print(f"\nRSM analysis outputs in output/phase5_pilot/:")
+        print(f"  - pilot_analysis_results.csv   (block metrics)")
+        print(f"  - pilot_model_coefficients.json")
+        print(f"  - pilot_analysis_report.html")
+    else:
+        print(f"\nOutputs in output/phase5_pilot/:")
+        print(f"  - thk2_design.csv         (T_HK2-targeted design matrix)")
+        print(f"  - pilot_schedule.csv      (dated schedule)")
+        print(f"  - pilot_protocol.html     (human-readable protocol)")
+        print(f"\nNext steps:")
+        print(f"  1. Review pilot_protocol.html")
+        print(f"  2. Start Block 1 on {args.start}")
+        print(f"  3. Update parameters weekly per schedule")
+        print(f"  4. Run analysis:")
+        print(f"     - Dynamical (preferred): python src/phase5_pilot/run_pilot.py --analyze")
+        print(f"     - RSM (comparison):      python src/phase5_pilot/run_pilot.py --analyze-rsm")
 
     return 0
 
