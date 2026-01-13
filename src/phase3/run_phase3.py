@@ -52,6 +52,10 @@ def generate_html_report():
     if thermal_path.exists():
         sections.append(thermal_path.read_text())
 
+    greybox_path = OUTPUT_DIR / 'greybox_report_section.html'
+    if greybox_path.exists():
+        sections.append(greybox_path.read_text())
+
     heat_pump_path = OUTPUT_DIR / 'heat_pump_model_report_section.html'
     if heat_pump_path.exists():
         sections.append(heat_pump_path.read_text())
@@ -184,7 +188,8 @@ def generate_html_report():
     <nav class="table-of-contents">
         <h2>Table of Contents</h2>
         <ol>
-            <li><a href="#thermal-model">Thermal Model</a></li>
+            <li><a href="#thermal-model">Thermal Model (Transfer Function)</a></li>
+            <li><a href="#greybox-thermal-model">Thermal Model (Grey-Box)</a></li>
             <li><a href="#heat-pump-model">Heat Pump Model</a></li>
             <li><a href="#energy-system-model">Energy System Model</a></li>
             <li><a href="#tariff-cost-model">Tariff Cost Model</a></li>
@@ -326,6 +331,7 @@ def main():
     # Run each modeling script
     scripts = [
         '01_thermal_model.py',
+        '01b_greybox_thermal_model.py',
         '02_heat_pump_model.py',
         '03_energy_system_model.py',
         '04_tariff_cost_model.py'
@@ -348,6 +354,7 @@ def main():
     print(f"\nOutputs saved to: {OUTPUT_DIR}")
     print("\nKey outputs:")
     print("  - fig17_thermal_model.png")
+    print("  - fig17b_greybox_model.png")
     print("  - fig18_heat_pump_model.png")
     print("  - fig19_energy_system_model.png")
     print("  - fig20_tariff_cost_model.png")

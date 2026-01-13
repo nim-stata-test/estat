@@ -79,6 +79,7 @@ python src/phase1/04_preprocess_tariffs.py         # Phase 1, Step 4 (tariffs)
 python src/phase2/01_eda.py                        # Phase 2, Step 1
 python src/phase2/04_tariff_analysis.py            # Phase 2, Step 4 (tariff EDA)
 python src/phase3/01_thermal_model.py              # Phase 3, Step 1
+python src/phase3/01b_greybox_thermal_model.py     # Phase 3, Step 1b (grey-box)
 python src/phase3/02_heat_pump_model.py            # Phase 3, Step 2
 python src/phase3/03_energy_system_model.py        # Phase 3, Step 3
 python src/phase4/01_rule_based_strategies.py      # Phase 4, Step 1
@@ -119,6 +120,7 @@ src/
 ├── phase3/              # System Modeling
 │   ├── run_phase3.py                 # Wrapper: runs all models + HTML report
 │   ├── 01_thermal_model.py           # Building thermal characteristics
+│   ├── 01b_greybox_thermal_model.py  # Grey-box state-space model
 │   ├── 02_heat_pump_model.py         # COP relationships, buffer tank
 │   ├── 03_energy_system_model.py     # PV patterns, battery, self-sufficiency
 │   └── 04_tariff_cost_model.py       # Electricity cost analysis + forecasting
@@ -364,13 +366,16 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
 
 **Figures (fig17-fig20):**
 - fig17: Thermal model (temperature simulation, decay analysis)
+- fig17b: Grey-box model (state trajectories, residuals, model comparison)
 - fig18: Heat pump model (COP vs temperature, capacity, buffer tank)
 - fig19: Energy system (daily profiles, battery patterns, self-sufficiency)
 - fig20: Tariff cost model (cost breakdown, high/low tariff, forecasting)
 
 **Reports:**
 - `phase3_report.html` - Combined modeling report
-- `thermal_model_results.csv` - Per-room thermal parameters
+- `thermal_model_results.csv` - Per-room thermal parameters (transfer function)
+- `greybox_model_params.json` - Grey-box model parameters and fit statistics
+- `greybox_model_results.csv` - Grey-box predictions and residuals
 - `heat_pump_daily_stats.csv` - Daily COP and energy statistics
 - `cost_model_daily_stats.csv` - Daily cost breakdown (grid, feedin, net)
 - `cost_forecast_model.json` - Cost forecasting model coefficients
@@ -395,6 +400,52 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
 - davis_inside: tau=24h (primary comfort sensor)
 - COP model (R²=0.94): `COP = 5.93 + 0.13×T_outdoor - 0.08×T_HK2`
 - Current self-sufficiency: 58%, potential with optimization: 85%
+
+## Grey-Box Thermal Model
+
+Physics-based two-state discrete-time model for room temperature prediction.
+Improves on the transfer function model by explicitly modeling buffer tank dynamics.
+
+**Command:**
+```bash
+python src/phase3/01b_greybox_thermal_model.py
+```
+
+**Model Formulation (Δt = 15 min):**
+```
+T_buffer[k+1] = T_buffer[k] + (dt/tau_buf) × [(T_HK2[k] - T_buffer[k]) - r_emit × (T_buffer[k] - T_room[k])]
+
+T_room[k+1] = T_room[k] + (dt/tau_room) × [r_heat × (T_buffer[k] - T_room[k]) - (T_room[k] - T_out[k])] + k_solar × PV[k]
+```
+
+**Physical Parameters:**
+| Parameter | Description | Expected Range |
+|-----------|-------------|----------------|
+| `tau_buf` | Buffer tank time constant | 0.5-4 hours |
+| `tau_room` | Building time constant | 12-72 hours |
+| `r_emit` | Emitter/HP coupling ratio | 0.1-3.0 |
+| `r_heat` | Heat transfer ratio | 0.1-3.0 |
+| `k_solar` | Solar gain coefficient | 0-2 K/kWh |
+| `c_offset` | Temperature offset | -3 to +3 K |
+
+**Sensors Used:**
+- `stiebel_eltron_isg_actual_temperature_buffer` - Buffer tank
+- `davis_inside_temperature` - Room temperature
+- `wp_anlage_hk2_ist` - Flow temperature (T_HK2)
+- `stiebel_eltron_isg_outdoor_temperature` - Outdoor
+- `pv_generation_kwh` - Solar proxy
+
+**Outputs:**
+- `output/phase3/greybox_model_params.json` - Fitted parameters with confidence intervals
+- `output/phase3/greybox_model_results.csv` - Predictions and residuals
+- `output/phase3/fig17b_greybox_model.png` - 4-panel visualization
+- `output/phase3/greybox_report_section.html` - HTML report section
+
+**Advantages over Transfer Function Model:**
+- Explicit buffer tank state captures intermediate thermal storage
+- Physical parameters with clear interpretation (time constants, heat transfer ratios)
+- Constrained estimation ensures physical plausibility
+- Better foundation for forward simulation and control
 
 ## Phase 4: Optimization Strategy Outputs
 

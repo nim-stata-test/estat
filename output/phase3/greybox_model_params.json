@@ -1,0 +1,74 @@
+{
+  "params": {
+    "tau_buf": 2.276186187080637,
+    "tau_room": 71.9999999997567,
+    "r_emit": 0.10000000000000002,
+    "r_heat": 1.0465322886742878,
+    "k_solar": 0.016539924577142488,
+    "c_offset": -0.0852421490774589
+  },
+  "param_std": {
+    "tau_buf": 0.11851782867573517,
+    "tau_room": 44.87472960817075,
+    "r_emit": 0.020635085197383166,
+    "r_heat": 0.6008568868938363,
+    "k_solar": 0.020517859379981296,
+    "c_offset": 0.11312889901534123
+  },
+  "param_bounds": {
+    "tau_buf": [
+      0.5,
+      4.0
+    ],
+    "tau_room": [
+      12.0,
+      72.0
+    ],
+    "r_emit": [
+      0.1,
+      3.0
+    ],
+    "r_heat": [
+      0.1,
+      3.0
+    ],
+    "k_solar": [
+      0.0,
+      2.0
+    ],
+    "c_offset": [
+      -3.0,
+      3.0
+    ]
+  },
+  "fit_stats": {
+    "r2_buffer": 0.7907337293990896,
+    "r2_room": 0.9947021914767084,
+    "rmse_buffer": 2.734946514453404,
+    "rmse_room": 0.06370476251818781,
+    "mae_buffer": 2.248646021583164,
+    "mae_room": 0.04533841395180775,
+    "bias_buffer": -0.5361570413949369,
+    "bias_room": -8.773820226438666e-15,
+    "n_points": 6862
+  },
+  "validation": {
+    "r2_buffer_test": 0.7035223961524553,
+    "r2_room_test": 0.9920686626768207,
+    "rmse_buffer_test": 2.8686986979305757,
+    "rmse_room_test": 0.07017007788631928
+  },
+  "diagnostics": {
+    "durbin_watson": 1.4618622433789266,
+    "decorr_lag_hours": 1.25,
+    "residual_std": 0.06370012049810528
+  },
+  "sensors": {
+    "buffer": "stiebel_eltron_isg_actual_temperature_buffer",
+    "room": "davis_inside_temperature",
+    "hk2": "wp_anlage_hk2_ist",
+    "outdoor": "stiebel_eltron_isg_outdoor_temperature",
+    "pv": "pv_generation_kwh"
+  },
+  "time_step_hours": 0.25
+}

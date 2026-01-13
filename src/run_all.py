@@ -151,6 +151,18 @@ def run_phase3_step1():
     module.main()
 
 
+def run_phase3_step1b():
+    """Phase 3, Step 1b: Grey-Box Thermal Model."""
+    print("\n" + "=" * 70)
+    print("RUNNING: Phase 3, Step 1b - Grey-Box Thermal Model")
+    print("=" * 70)
+    script_path = SRC_DIR / "phase3" / "01b_greybox_thermal_model.py"
+    spec = importlib.util.spec_from_file_location("phase3_step1b", script_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.main()
+
+
 def run_phase3_step2():
     """Phase 3, Step 2: Heat Pump Model."""
     print("\n" + "=" * 70)
@@ -280,7 +292,8 @@ PHASES = {
         5: ("Weighted Temperature", run_phase2_step5),
     },
     3: {
-        1: ("Thermal Model", run_phase3_step1),
+        1: ("Thermal Model (Transfer Function)", run_phase3_step1),
+        "1b": ("Thermal Model (Grey-Box)", run_phase3_step1b),
         2: ("Heat Pump Model", run_phase3_step2),
         3: ("Energy System Model", run_phase3_step3),
         4: ("Tariff Cost Model", run_phase3_step4),
@@ -298,8 +311,13 @@ PHASES = {
 }
 
 
-def run_step(phase: int, step: int):
-    """Run a specific step."""
+def run_step(phase: int, step):
+    """Run a specific step.
+
+    Args:
+        phase: Phase number (int)
+        step: Step identifier (int or str like "1b")
+    """
     if phase not in PHASES:
         print(f"Error: Phase {phase} not found")
         return False
@@ -320,6 +338,18 @@ def run_step(phase: int, step: int):
         return False
 
 
+def step_sort_key(step):
+    """Sort key for steps that handles mixed int/str like 1, '1b', 2."""
+    if isinstance(step, int):
+        return (step, '')
+    # String step like '1b' -> (1, 'b')
+    import re
+    match = re.match(r'(\d+)(\w*)', str(step))
+    if match:
+        return (int(match.group(1)), match.group(2))
+    return (999, str(step))
+
+
 def run_phase(phase: int, rerun_optimization: bool = False):
     """Run all steps in a phase."""
     if phase not in PHASES:
@@ -334,7 +364,7 @@ def run_phase(phase: int, rerun_optimization: bool = False):
     skip_steps = {4: [4, 5, 6, 7]} if not rerun_optimization else {}
 
     success = True
-    for step in sorted(PHASES[phase].keys()):
+    for step in sorted(PHASES[phase].keys(), key=step_sort_key):
         if phase in skip_steps and step in skip_steps[phase]:
             name, _ = PHASES[phase][step]
             print(f"\n[SKIP] Phase {phase}, Step {step} ({name}) - use --rerun_optimization to include")
@@ -379,6 +409,7 @@ Examples:
   python src/run_all.py --phase 4    # Run Phase 4 only (skips Pareto)
   python src/run_all.py --phase 4 --rerun_optimization  # Phase 4 with Pareto
   python src/run_all.py --step 1.2   # Run Phase 1, Step 2 only
+  python src/run_all.py --step 3.1b  # Run Grey-Box Thermal Model only
   python src/run_all.py --step 4.4   # Run Pareto optimization only
   python src/run_all.py --list       # List all available phases and steps
         """
@@ -397,16 +428,21 @@ Examples:
         print("-" * 50)
         for phase in sorted(PHASES.keys()):
             print(f"\nPhase {phase}:")
-            for step, (name, _) in sorted(PHASES[phase].items()):
+            for step in sorted(PHASES[phase].keys(), key=step_sort_key):
+                name, _ = PHASES[phase][step]
                 print(f"  {phase}.{step}: {name}")
         return
 
     if args.step:
         try:
-            phase, step = map(int, args.step.split("."))
+            parts = args.step.split(".")
+            phase = int(parts[0])
+            # Step can be int (e.g., "2") or string (e.g., "1b")
+            step_str = parts[1]
+            step = int(step_str) if step_str.isdigit() else step_str
             run_step(phase, step)
-        except ValueError:
-            print(f"Error: Invalid step format '{args.step}'. Use 'phase.step' (e.g., '1.2')")
+        except (ValueError, IndexError):
+            print(f"Error: Invalid step format '{args.step}'. Use 'phase.step' (e.g., '1.2' or '3.1b')")
             sys.exit(1)
     elif args.phase:
         run_phase(args.phase, rerun_optimization=args.rerun_optimization)
