@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESTAT - Energy System Analysis Report</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--bg);
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        #toc {
+            background: var(--card-bg);
+            padding: 1.5rem 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        #toc h2 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--text-muted);
+        }
+
+        #toc ol {
+            columns: 2;
+            column-gap: 2rem;
+            padding-left: 1.5rem;
+        }
+
+        #toc li {
+            margin-bottom: 0.5rem;
+        }
+
+        #toc a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        #toc a:hover {
+            text-decoration: underline;
+        }
+
+        section {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        section p {
+            margin-bottom: 1rem;
+        }
+
+        section ul {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        section li {
+            margin-bottom: 0.25rem;
+        }
+
+        h4 {
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin: 1.5rem 0 0.75rem 0;
+        }
+
+        code {
+            background: #f1f5f9;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        .figure-gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .thumbnail {
+            flex: 1 1 200px;
+            max-width: 280px;
+            text-align: center;
+        }
+
+        .thumbnail img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            transition: transform 0.2s;
+        }
+
+        .thumbnail img:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .thumbnail p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .report-link {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .button {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .button:hover {
+            background: var(--primary-dark);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            #toc ol {
+                columns: 1;
+            }
+
+            .figure-gallery {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>ESTAT Analysis Report</h1>
+        <p>Energy System Optimization for Solar/Heat Pump Integration</p>
+        <p><small>Generated: 2026-01-15 17:28</small></p>
+    </header>
+
+    
+    <nav id="toc">
+        <h2>Table of Contents</h2>
+        <ol>
+            <li><a href="#phase1">Phase 1: Data Preprocessing</a></li><li><a href="#phase2">Phase 2: Exploratory Data Analysis</a></li><li><a href="#phase3">Phase 3: System Modeling</a></li><li><a href="#phase4">Phase 4: Optimization</a></li><li><a href="#phase5_pilot">Phase 5 Pilot: Parameter Exploration</a></li><li><a href="#phase5">Phase 5: Intervention Study (Future)</a></li>
+        </ol>
+    </nav>
+    
+
+    <main>
+        
+    <section id="phase1">
+        <h2>Phase 1: Data Preprocessing</h2>
+        
+            <p>Data preprocessing pipeline for energy balance and sensor data.</p>
+            <ul>
+                <li>Energy balance data: 15-min intervals from 2023-03 to present</li>
+                <li>Sensor data: 96 heating sensors, 27 weather sensors, room temperatures</li>
+                <li>Tariff data: Primeo Energie rates with high/low tariff windows</li>
+                <li>Output: Cleaned parquet files with integrated dataset</li>
+            </ul>
+        
+        <h4>Key Outputs</h4><ul><li><code>integrated_dataset.parquet</code>: Merged energy + sensor data</li><li><code>tariff_schedule.csv</code>: Electricity tariff rates</li></ul>
+        
+        <p class="report-link">
+            <a href="phase1/phase1_report.html" class="button">View Full Report &rarr;</a>
+        </p>
+    </section>
+    
+
+    <section id="phase2">
+        <h2>Phase 2: Exploratory Data Analysis</h2>
+        
+            <p>Comprehensive analysis of energy patterns, heating system, and solar correlation.</p>
+            <ul>
+                <li>Energy: 55.9 kWh/day PV generation, 44% self-sufficiency</li>
+                <li>Heat pump: COP 3.55 average, heating curve model R²=0.96</li>
+                <li>Solar-heating overlap: Only 4.7% forced grid consumption</li>
+                <li>Battery degradation: 5-11pp efficiency drop after deep discharge event</li>
+            </ul>
+        
+        <h4>Key Outputs</h4><ul><li><code>fig01-fig11</code>: Energy and heating analysis</li><li><code>fig12</code>: Heating curve schedule detection</li><li><code>fig13</code>: Weighted temperature response</li><li><code>fig14-fig16</code>: Tariff analysis</li><li><code>fig17</code>: HK2 target vs actual temperature</li></ul>
+        <div class="figure-gallery">
+                <div class="thumbnail">
+                    <a href="phase2/fig01_daily_energy_timeseries.png">
+                        <img src="phase2/fig01_daily_energy_timeseries.png" alt="Daily Energy Time Series">
+                    </a>
+                    <p>Daily Energy Time Series</p>
+                </div>
+            
+                <div class="thumbnail">
+                    <a href="phase2/fig05_heat_pump_cop.png">
+                        <img src="phase2/fig05_heat_pump_cop.png" alt="Heat Pump COP Analysis">
+                    </a>
+                    <p>Heat Pump COP Analysis</p>
+                </div>
+            
+                <div class="thumbnail">
+                    <a href="phase2/fig12_heating_curve_schedule.png">
+                        <img src="phase2/fig12_heating_curve_schedule.png" alt="Heating Curve Schedule">
+                    </a>
+                    <p>Heating Curve Schedule</p>
+                </div>
+            
+                <div class="thumbnail">
+                    <a href="phase2/fig17_hk2_target_actual.png">
+                        <img src="phase2/fig17_hk2_target_actual.png" alt="HK2 Target vs Actual">
+                    </a>
+                    <p>HK2 Target vs Actual</p>
+                </div>
+            </div>
+        <p class="report-link">
+            <a href="phase2/phase2_report.html" class="button">View Full Report &rarr;</a>
+        </p>
+    </section>
+    
+
+    <section id="phase3">
+        <h2>Phase 3: System Modeling</h2>
+        
+            <p>Physics-based models for thermal dynamics, heat pump, and energy system.</p>
+            <ul>
+                <li>Thermal model: R²=0.68, building time constant ~24h</li>
+                <li>Grey-box model: Two-state (buffer + room) with physical parameters</li>
+                <li>COP model: COP = 5.93 + 0.13×T_outdoor - 0.08×T_HK2 (R²=0.94)</li>
+                <li>Self-sufficiency potential: 57% → 84% with optimization</li>
+            </ul>
+        
+        <h4>Key Outputs</h4><ul><li><code>fig18</code>: Transfer function thermal model</li><li><code>fig18b</code>: Grey-box thermal model</li><li><code>fig19</code>: Heat pump COP model</li><li><code>fig20</code>: Energy system analysis</li><li><code>fig21</code>: Tariff cost model</li></ul>
+        <div class="figure-gallery">
+                <div class="thumbnail">
+                    <a href="phase3/fig18_thermal_model.png">
+                        <img src="phase3/fig18_thermal_model.png" alt="Thermal Model">
+                    </a>
+                    <p>Thermal Model</p>
+                </div>
+            
+                <div class="thumbnail">
+                    <a href="phase3/fig18b_greybox_model.png">
+                        <img src="phase3/fig18b_greybox_model.png" alt="Grey-Box Model">
+                    </a>
+                    <p>Grey-Box Model</p>
+                </div>
+            
+                <div class="thumbnail">
+                    <a href="phase3/fig19_heat_pump_model.png">
+                        <img src="phase3/fig19_heat_pump_model.png" alt="Heat Pump Model">
+                    </a>
+                    <p>Heat Pump Model</p>
+                </div>
+            </div>
+        <p class="report-link">
+            <a href="phase3/phase3_report.html" class="button">View Full Report &rarr;</a>
+        </p>
+    </section>
+    
+
+    <section id="phase4">
+        <h2>Phase 4: Optimization</h2>
+        
+            <p>Multi-objective optimization using NSGA-II for heating strategies.</p>
+            <ul>
+                <li>Three objectives: Maximize comfort, minimize grid, minimize cost</li>
+                <li>Pareto-optimal strategies with 2.9% comfort violation (≤5% target)</li>
+                <li>Key levers: comfort schedule, setpoint, curve rise</li>
+                <li>Grid-minimal strategy: 10% reduction in grid import</li>
+            </ul>
+        
+        <h4>Key Outputs</h4><ul><li><code>fig22-fig24</code>: Strategy comparison and simulation</li><li><code>fig25-fig27</code>: Pareto optimization results</li><li><code>fig28-fig31</code>: Detailed strategy analysis</li><li><code>selected_strategies.json</code>: Pareto-optimal parameters</li></ul>
+        <div class="figure-gallery">
+                <div class="thumbnail">
+                    <a href="phase4/fig25_pareto_front.png">
+                        <img src="phase4/fig25_pareto_front.png" alt="Pareto Front">
+                    </a>
+                    <p>Pareto Front</p>
+                </div>
+            
+                <div class="thumbnail">
+                    <a href="phase4/fig28_strategy_temperature_predictions.png">
+                        <img src="phase4/fig28_strategy_temperature_predictions.png" alt="Temperature Predictions">
+                    </a>
+                    <p>Temperature Predictions</p>
+                </div>
+            </div>
+        <p class="report-link">
+            <a href="phase4/phase4_report.html" class="button">View Full Report &rarr;</a>
+        </p>
+    </section>
+    
+
+    <section id="phase5_pilot">
+        <h2>Phase 5 Pilot: Parameter Exploration</h2>
+        
+            <p>T_HK2-targeted pilot experiment (Jan-Mar 2026) to learn thermal response.</p>
+            <ul>
+                <li>10 blocks × 7 days with varied heating parameters</li>
+                <li>T_HK2 spread: 9.5°C (comfort), 10.7°C (eco)</li>
+                <li>Dynamical analysis using grey-box model (no washout needed)</li>
+                <li>Goal: Learn T_indoor = f(T_HK2 history, T_outdoor, thermal_mass)</li>
+            </ul>
+        
+        <h4>Key Outputs</h4><ul><li><code>pilot_schedule.json</code>: Block schedule with parameters</li><li><code>thk2_design.csv</code>: T_HK2-targeted design matrix</li></ul>
+        
+        <p class="report-link">
+            <a href="phase5_pilot/pilot_protocol.html" class="button">View Full Report &rarr;</a>
+        </p>
+    </section>
+    
+
+    <section id="phase5">
+        <h2>Phase 5: Intervention Study (Future)</h2>
+        
+            <p>Planned randomized crossover study for winter 2027-2028.</p>
+            <ul>
+                <li>20 weeks with 3 strategies (Baseline, Grid-Minimal, Balanced)</li>
+                <li>7-day blocks with 3-day washout + 4-day measurement</li>
+                <li>Statistical power: 97% to detect +0.30 COP change</li>
+            </ul>
+        
+        <h4>Key Outputs</h4><ul><li><code>experimental_protocol.html</code>: Full study protocol</li></ul>
+        
+        <p class="report-link">
+            <a href="phase5/experimental_protocol.html" class="button">View Full Report &rarr;</a>
+        </p>
+    </section>
+    
+    </main>
+
+    <footer>
+        <p>ESTAT - Energy Balance Data Repository</p>
+        <p>Report generated automatically from analysis pipeline</p>
+    </footer>
+</body>
+</html>

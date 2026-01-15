@@ -376,6 +376,20 @@ def run_phase(phase: int, rerun_optimization: bool = False):
     return success
 
 
+def generate_main_report():
+    """Generate the main index.html report."""
+    print("\n" + "=" * 70)
+    print("Generating Main Report (output/index.html)")
+    print("=" * 70)
+
+    spec = importlib.util.spec_from_file_location(
+        "generate_main_report", SRC_DIR / "generate_main_report.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.generate_main_report()
+
+
 def run_all(rerun_optimization: bool = False):
     """Run all phases and steps."""
     print("=" * 70)
@@ -388,6 +402,9 @@ def run_all(rerun_optimization: bool = False):
         if not run_phase(phase, rerun_optimization=rerun_optimization):
             print(f"\nPipeline stopped due to error in Phase {phase}")
             return False
+
+    # Generate main report at the end
+    generate_main_report()
 
     elapsed = time.time() - start
     print(f"\n{'=' * 70}")
@@ -412,12 +429,14 @@ Examples:
   python src/run_all.py --step 3.1b  # Run Grey-Box Thermal Model only
   python src/run_all.py --step 4.4   # Run Pareto optimization only
   python src/run_all.py --list       # List all available phases and steps
+  python src/run_all.py --report     # Regenerate main report only
         """
     )
 
     parser.add_argument("--phase", type=int, help="Run specific phase (1, 2, ...)")
     parser.add_argument("--step", type=str, help="Run specific step (e.g., '1.2' for Phase 1 Step 2)")
     parser.add_argument("--list", action="store_true", help="List all available phases and steps")
+    parser.add_argument("--report", action="store_true", help="Regenerate main report (output/index.html) only")
     parser.add_argument("--rerun_optimization", action="store_true",
                         help="Include Pareto optimization (steps 4.4, 4.5) which are skipped by default")
 
@@ -431,6 +450,10 @@ Examples:
             for step in sorted(PHASES[phase].keys(), key=step_sort_key):
                 name, _ = PHASES[phase][step]
                 print(f"  {phase}.{step}: {name}")
+        return
+
+    if args.report:
+        generate_main_report()
         return
 
     if args.step:

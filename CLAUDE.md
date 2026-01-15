@@ -70,6 +70,8 @@ python src/run_all.py --phase 4 --rerun_optimization  # Phase 4 with Pareto
 python src/run_all.py --step 1.2   # Run specific step
 python src/run_all.py --step 4.4   # Run Pareto optimization only
 python src/run_all.py --list       # List all steps
+python src/run_all.py --report     # Regenerate main report only
+python src/generate_main_report.py # Generate output/index.html directly
 
 # Run individual scripts
 python src/phase1/01_preprocess_energy_balance.py  # Phase 1, Step 1
@@ -152,6 +154,7 @@ src/
 
 ```
 output/
+├── index.html    # Main report with TOC linking to all phase reports
 ├── phase1/       # Preprocessing outputs (parquet files, reports)
 ├── phase2/       # EDA outputs (figures, HTML reports)
 ├── phase3/       # System modeling outputs (figures, model results)
