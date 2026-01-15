@@ -13,6 +13,17 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 from pathlib import Path
 from datetime import datetime
 
+# Import epsilon-dominance functions from optimization script
+from importlib import import_module
+import sys
+sys.path.insert(0, str(Path(__file__).parent))
+from importlib import import_module
+
+# Import EPSILON and epsilon_nondominated_sort from optimization script
+_opt_module = import_module('04_pareto_optimization')
+EPSILON = _opt_module.EPSILON
+epsilon_nondominated_sort = _opt_module.epsilon_nondominated_sort
+
 # Paths
 OUTPUT_DIR = Path(__file__).parent.parent.parent / "output" / "phase4"
 ARCHIVE_PATH = OUTPUT_DIR / "pareto_archive.json"
@@ -30,6 +41,8 @@ def prepare_animation_data(history, dominated_threshold=3):
 
     Solutions dominated for `dominated_threshold` consecutive generations
     are hidden from the visualization (but remain in the archive).
+
+    Uses ε-dominance to determine Pareto status (same as final output).
     """
     generations = history.get('generations', [])
     all_solutions = history.get('all_solutions', [])
@@ -46,7 +59,8 @@ def prepare_animation_data(history, dominated_threshold=3):
         }
 
     frames = []
-    cumulative_hashes = set()
+    cumulative_hashes = []  # Use list to preserve order for indexing
+    cumulative_set = set()  # For fast lookup
     dominated_streak = {}  # Track consecutive dominated generations per solution
 
     for gen_data in generations:
@@ -56,24 +70,38 @@ def prepare_animation_data(history, dominated_threshold=3):
         new_hashes = set()
         for sol in gen_data['solutions']:
             sol_hash = sol['hash']
-            if sol_hash not in cumulative_hashes:
+            if sol_hash not in cumulative_set:
                 new_hashes.add(sol_hash)
-                cumulative_hashes.add(sol_hash)
+                cumulative_hashes.append(sol_hash)
+                cumulative_set.add(sol_hash)
                 dominated_streak[sol_hash] = 0
+
+        # Build objective matrix for epsilon-dominance calculation
+        # F matrix: [neg_mean_temp, grid_kwh, cost_chf] (all minimized)
+        F = np.array([
+            [-solution_lookup[h]['objectives']['mean_temp'],
+             solution_lookup[h]['objectives']['grid_kwh'],
+             solution_lookup[h]['objectives']['cost_chf']]
+            for h in cumulative_hashes
+        ])
+
+        # Compute ε-Pareto indices using epsilon-dominance
+        epsilon_pareto_indices = set(epsilon_nondominated_sort(F, EPSILON))
 
         # Build frame data from all cumulative solutions
         frame = {
             'generation': gen,
             'solutions': [],
-            'n_pareto': gen_data['n_pareto']
+            'n_pareto': len(epsilon_pareto_indices),
+            'cumulative_total': len(cumulative_hashes)  # Total unique solutions evaluated so far
         }
 
-        for sol_hash in list(cumulative_hashes):
+        for i, sol_hash in enumerate(cumulative_hashes):
             lookup = solution_lookup.get(sol_hash)
             if lookup is None:
                 continue
 
-            is_pareto = gen in lookup['pareto_gens']
+            is_pareto = i in epsilon_pareto_indices  # Use ε-dominance status
             is_new = sol_hash in new_hashes
 
             # Update dominated streak
@@ -131,8 +159,8 @@ def create_animation(frames, metadata, output_path):
     ax1.set_ylim(grid_range)
     ax1.set_title('Temperature vs Grid Import')
     scatter_plots['temp_grid_dom'] = ax1.scatter([], [], c='lightgray', s=20, alpha=0.5, label='Dominated')
-    scatter_plots['temp_grid_pareto'] = ax1.scatter([], [], c='#2ecc71', s=60, alpha=0.9, label='Pareto-optimal')
-    scatter_plots['temp_grid_new'] = ax1.scatter([], [], c='#e74c3c', s=40, marker='*', alpha=1.0, label='New this gen')
+    scatter_plots['temp_grid_pareto'] = ax1.scatter([], [], c='#2ecc71', s=100, alpha=0.9, label='ε-Pareto')
+    scatter_plots['temp_grid_new'] = ax1.scatter([], [], c='#e74c3c', s=25, marker='*', alpha=1.0, label='New this gen')
     ax1.legend(loc='upper right', fontsize=8)
 
     # Subplot 2: Temperature vs Cost (top-right)
@@ -143,8 +171,8 @@ def create_animation(frames, metadata, output_path):
     ax2.set_ylim(cost_range)
     ax2.set_title('Temperature vs Cost')
     scatter_plots['temp_cost_dom'] = ax2.scatter([], [], c='lightgray', s=20, alpha=0.5)
-    scatter_plots['temp_cost_pareto'] = ax2.scatter([], [], c='#2ecc71', s=60, alpha=0.9)
-    scatter_plots['temp_cost_new'] = ax2.scatter([], [], c='#e74c3c', s=40, marker='*', alpha=1.0)
+    scatter_plots['temp_cost_pareto'] = ax2.scatter([], [], c='#2ecc71', s=100, alpha=0.9)
+    scatter_plots['temp_cost_new'] = ax2.scatter([], [], c='#e74c3c', s=25, marker='*', alpha=1.0)
 
     # Subplot 3: Grid vs Cost (bottom-left)
     ax3 = axes[1, 0]
@@ -154,8 +182,8 @@ def create_animation(frames, metadata, output_path):
     ax3.set_ylim(cost_range)
     ax3.set_title('Grid Import vs Cost')
     scatter_plots['grid_cost_dom'] = ax3.scatter([], [], c='lightgray', s=20, alpha=0.5)
-    scatter_plots['grid_cost_pareto'] = ax3.scatter([], [], c='#2ecc71', s=60, alpha=0.9)
-    scatter_plots['grid_cost_new'] = ax3.scatter([], [], c='#e74c3c', s=40, marker='*', alpha=1.0)
+    scatter_plots['grid_cost_pareto'] = ax3.scatter([], [], c='#2ecc71', s=100, alpha=0.9)
+    scatter_plots['grid_cost_new'] = ax3.scatter([], [], c='#e74c3c', s=25, marker='*', alpha=1.0)
 
     # Subplot 4: Progress metrics (bottom-right)
     ax4 = axes[1, 1]
@@ -163,9 +191,10 @@ def create_animation(frames, metadata, output_path):
     ax4.set_ylabel('Count')
     ax4.set_xlim(0, len(frames) + 1)
     ax4.set_yscale('log')
-    ax4.set_ylim(1, max(len(f['solutions']) for f in frames) * 1.5)
+    max_total = max(f.get('cumulative_total', len(f['solutions'])) for f in frames)
+    ax4.set_ylim(1, max_total * 1.5)
     ax4.set_title('Optimization Progress')
-    line_total, = ax4.plot([], [], 'b-', linewidth=2, label='Total solutions')
+    line_total, = ax4.plot([], [], 'b-', linewidth=2, label='Total evaluated')
     line_pareto, = ax4.plot([], [], 'g-', linewidth=2, label='Pareto-optimal')
     ax4.legend(loc='upper left', fontsize=8)
     ax4.grid(True, alpha=0.3, which='both')
@@ -248,7 +277,8 @@ def create_animation(frames, metadata, output_path):
 
         # Update progress plot
         progress_gens.append(gen)
-        progress_total.append(len(frame['solutions']))
+        cumulative_total = frame.get('cumulative_total', len(frame['solutions']))
+        progress_total.append(cumulative_total)
         progress_pareto.append(frame['n_pareto'])
 
         line_total.set_data(progress_gens, progress_total)
@@ -257,7 +287,7 @@ def create_animation(frames, metadata, output_path):
         # Update generation text
         n_new = len(new['temp'])
         gen_text.set_text(f'Generation {gen}/{len(frames)} | '
-                         f'Total: {len(frame["solutions"])} | '
+                         f'Total evaluated: {cumulative_total} | '
                          f'Pareto: {frame["n_pareto"]} | '
                          f'New: {n_new}')
 
@@ -315,8 +345,8 @@ def create_3d_animation(frames, metadata, output_path):
 
     # Initialize scatter plots
     scatter_dom = ax.scatter([], [], [], c='lightgray', s=15, alpha=0.4, label='Dominated')
-    scatter_pareto = ax.scatter([], [], [], c='#2ecc71', s=50, alpha=0.9, label='Pareto-optimal')
-    scatter_new = ax.scatter([], [], [], c='#e74c3c', s=30, marker='*', alpha=1.0, label='New')
+    scatter_pareto = ax.scatter([], [], [], c='#2ecc71', s=80, alpha=0.9, label='ε-Pareto')
+    scatter_new = ax.scatter([], [], [], c='#e74c3c', s=20, marker='*', alpha=1.0, label='New')
 
     ax.legend(loc='upper left', fontsize=9)
     title = ax.set_title('', fontsize=12, fontweight='bold')
@@ -345,7 +375,8 @@ def create_3d_animation(frames, metadata, output_path):
         # Rotate view slightly each frame
         ax.view_init(elev=20, azim=30 + frame_idx * 3)
 
-        title.set_text(f'Generation {gen}/{len(frames)} | Pareto: {frame["n_pareto"]} | Total: {len(frame["solutions"])}')
+        cumulative_total = frame.get('cumulative_total', len(frame['solutions']))
+        title.set_text(f'Generation {gen}/{len(frames)} | Pareto: {frame["n_pareto"]} | Total evaluated: {cumulative_total}')
 
         return scatter_dom, scatter_pareto, scatter_new, title
 

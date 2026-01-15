@@ -547,6 +547,29 @@ python src/phase4/04_pareto_optimization.py -g 100 -p 150 -n 15 --seed 123
 - Auto-detects `pareto_archive.json` and uses it for warm start
 - Runs 200 generations (full optimization)
 - Use `--fresh` to start from scratch
+- Uses ε-dominance to filter meaningfully different solutions (default: enabled)
+
+**ε-Dominance Filtering:**
+
+Standard Pareto optimization produces many solutions that differ by negligible amounts
+(e.g., 0.01°C temperature difference). ε-dominance keeps only solutions that are
+meaningfully different by snapping objectives to an epsilon grid before dominance comparison.
+
+| Objective | Epsilon | Description |
+|-----------|---------|-------------|
+| Temperature | **0.1°C** | Comfort differences below this are imperceptible |
+| Grid import | **100 kWh** | ~5% of typical total range |
+| Cost | **10 CHF** | Fine-grained cost differences |
+
+Effect: Reduces hundreds of solutions → ~3-5 meaningfully different solutions.
+
+```bash
+# Disable ε-dominance (keep all Pareto solutions)
+python src/phase4/04_pareto_optimization.py --no-epsilon
+
+# Custom epsilon values (more conservative filtering)
+python src/phase4/04_pareto_optimization.py --eps-temp 0.3 --eps-grid 30 --eps-cost 10
+```
 
 **Decision Variables (5):**
 | Variable | Range | Description |

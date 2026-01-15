@@ -124,6 +124,105 @@ SENSOR_WEIGHTS = {
 OCCUPIED_START = 8   # 08:00
 OCCUPIED_END = 22    # 22:00
 
+# Epsilon values for ε-dominance filtering
+# Solutions must differ by at least these amounts to be considered meaningfully different
+EPSILON = {
+    'mean_temp': 0.1,   # °C - below this, comfort difference is imperceptible
+    'grid_kwh': 100.0,  # kWh - ~5% of typical total range
+    'cost_chf': 10.0,   # CHF - fine-grained cost differences
+}
+
+
+def snap_to_epsilon_grid(F: np.ndarray, epsilon: dict = None) -> np.ndarray:
+    """
+    Snap objective values to epsilon grid for ε-dominance comparison.
+
+    Args:
+        F: Array of shape (n_solutions, 3) with objectives [neg_mean_temp, grid_kwh, cost_chf]
+        epsilon: Dict with epsilon values for each objective (default: EPSILON)
+
+    Returns:
+        F_snapped: Array with objectives rounded to epsilon precision
+    """
+    if epsilon is None:
+        epsilon = EPSILON
+
+    F_snapped = F.copy()
+    # Objective 0: neg_mean_temp (negative, so use epsilon for mean_temp)
+    F_snapped[:, 0] = np.round(F[:, 0] / epsilon['mean_temp']) * epsilon['mean_temp']
+    # Objective 1: grid_kwh
+    F_snapped[:, 1] = np.round(F[:, 1] / epsilon['grid_kwh']) * epsilon['grid_kwh']
+    # Objective 2: cost_chf
+    F_snapped[:, 2] = np.round(F[:, 2] / epsilon['cost_chf']) * epsilon['cost_chf']
+
+    return F_snapped
+
+
+def epsilon_nondominated_sort(F: np.ndarray, epsilon: dict = None) -> list:
+    """
+    Perform non-dominated sorting with ε-dominance.
+
+    Uses ε-box dominance: solutions are mapped to grid cells of size epsilon,
+    and dominance is determined by grid cell positions. Solutions in the same
+    grid cell are considered equivalent.
+
+    Args:
+        F: Array of shape (n_solutions, 3) with objectives (all minimized)
+        epsilon: Dict with epsilon values for each objective
+
+    Returns:
+        List of indices of ε-non-dominated solutions
+    """
+    if epsilon is None:
+        epsilon = EPSILON
+
+    n = len(F)
+    if n == 0:
+        return []
+
+    # Snap to epsilon grid
+    F_snapped = snap_to_epsilon_grid(F, epsilon)
+
+    # Find unique grid cells and their best representatives
+    # For each unique grid cell, keep the solution with best average rank
+    grid_to_solutions = {}
+    for i in range(n):
+        key = tuple(F_snapped[i])
+        if key not in grid_to_solutions:
+            grid_to_solutions[key] = []
+        grid_to_solutions[key].append(i)
+
+    # For each grid cell, pick representative (first one, or best actual values)
+    representatives = []
+    for key, indices in grid_to_solutions.items():
+        # Pick the solution with best sum of actual objective values
+        best_idx = min(indices, key=lambda i: sum(F[i]))
+        representatives.append(best_idx)
+
+    # Now do standard non-dominated sorting on representatives' snapped values
+    rep_F = F_snapped[representatives]
+
+    # Standard non-dominated sorting
+    is_dominated = np.zeros(len(representatives), dtype=bool)
+    for i in range(len(representatives)):
+        if is_dominated[i]:
+            continue
+        for j in range(len(representatives)):
+            if i == j or is_dominated[j]:
+                continue
+            # Check if i dominates j (all <= and at least one <)
+            if np.all(rep_F[i] <= rep_F[j]) and np.any(rep_F[i] < rep_F[j]):
+                is_dominated[j] = True
+            # Check if j dominates i
+            elif np.all(rep_F[j] <= rep_F[i]) and np.any(rep_F[j] < rep_F[i]):
+                is_dominated[i] = True
+                break
+
+    # Return original indices of non-dominated representatives
+    pareto_indices = [representatives[i] for i in range(len(representatives)) if not is_dominated[i]]
+
+    return pareto_indices
+
 
 class SimulationData:
     """Container for preloaded simulation data and thermal simulator."""
@@ -735,15 +834,30 @@ def run_optimization(sim_data: SimulationData,
     }
 
 
-def extract_pareto_front(result: dict) -> list:
-    """Extract non-dominated solutions from optimization result."""
+def extract_pareto_front(result: dict, use_epsilon: bool = True, epsilon: dict = None) -> list:
+    """
+    Extract non-dominated solutions from optimization result.
+
+    Args:
+        result: Optimization result dict with 'X' and 'F' arrays
+        use_epsilon: If True, use ε-dominance to filter meaningfully different solutions
+        epsilon: Custom epsilon values (default: EPSILON)
+
+    Returns:
+        List of Pareto-optimal solution dicts
+    """
     X = result['X']
     F = result['F']
 
-    # Non-dominated sorting
-    nds = NonDominatedSorting()
-    fronts = nds.do(F)
-    pareto_idx = fronts[0]  # First front is Pareto-optimal
+    if use_epsilon:
+        # ε-dominance: keep only meaningfully different solutions
+        pareto_idx = epsilon_nondominated_sort(F, epsilon)
+        print(f"  ε-dominance filtering: {len(F)} → {len(pareto_idx)} solutions")
+    else:
+        # Standard non-dominated sorting
+        nds = NonDominatedSorting()
+        fronts = nds.do(F)
+        pareto_idx = fronts[0]  # First front is Pareto-optimal
 
     solutions = []
     for i, idx in enumerate(pareto_idx):
@@ -1112,11 +1226,34 @@ def main():
     parser.add_argument('--warm-start', '-w', type=str, help='Path to previous archive (default: auto-detect)')
     parser.add_argument('--fresh', '-f', action='store_true', help='Start fresh, ignore existing archive')
     parser.add_argument('--n-select', '-n', type=int, default=10, help='Number of strategies to select')
+    parser.add_argument('--no-epsilon', action='store_true', help='Disable ε-dominance filtering (keep all Pareto solutions)')
+    parser.add_argument('--eps-temp', type=float, default=EPSILON['mean_temp'],
+                        help=f'Epsilon for temperature (default: {EPSILON["mean_temp"]}°C)')
+    parser.add_argument('--eps-grid', type=float, default=EPSILON['grid_kwh'],
+                        help=f'Epsilon for grid import (default: {EPSILON["grid_kwh"]} kWh)')
+    parser.add_argument('--eps-cost', type=float, default=EPSILON['cost_chf'],
+                        help=f'Epsilon for cost (default: {EPSILON["cost_chf"]} CHF)')
     args = parser.parse_args()
+
+    # Build custom epsilon dict if provided
+    epsilon = {
+        'mean_temp': args.eps_temp,
+        'grid_kwh': args.eps_grid,
+        'cost_chf': args.eps_cost,
+    }
+    use_epsilon = not args.no_epsilon
 
     print("="*60)
     print("Phase 4, Step 4: Multi-Objective Pareto Optimization")
     print("="*60)
+
+    if use_epsilon:
+        print(f"\nε-dominance enabled:")
+        print(f"  Temperature: {epsilon['mean_temp']}°C")
+        print(f"  Grid import: {epsilon['grid_kwh']} kWh")
+        print(f"  Cost: {epsilon['cost_chf']} CHF")
+    else:
+        print("\nε-dominance disabled (keeping all Pareto solutions)")
 
     if not HAS_PYMOO:
         print("\nERROR: pymoo not installed. Run: pip install pymoo>=0.6.0")
@@ -1146,10 +1283,10 @@ def main():
     )
 
     # Extract Pareto front from new optimization
-    new_solutions = extract_pareto_front(result)
-    print(f"\nExtracted {len(new_solutions)} Pareto-optimal solutions from this run")
+    new_solutions = extract_pareto_front(result, use_epsilon=use_epsilon, epsilon=epsilon)
+    print(f"\nExtracted {len(new_solutions)} ε-Pareto solutions from this run")
 
-    # Merge with existing archive to keep ALL Pareto-optimal solutions
+    # Merge with existing archive to keep ε-Pareto-optimal solutions
     if warm_start_path and Path(warm_start_path).exists():
         existing_archive = load_archive(warm_start_path)
         if existing_archive and existing_archive.get('solutions'):
@@ -1159,7 +1296,7 @@ def main():
             # Combine all solutions
             all_solutions = existing_solutions + new_solutions
 
-            # Re-compute Pareto front on combined set
+            # Re-compute Pareto front on combined set using ε-dominance
             # Use negative mean_temp so lower values are better for Pareto sorting
             all_F = np.array([
                 [-s['objectives']['mean_temp'],
@@ -1168,10 +1305,15 @@ def main():
                 for s in all_solutions
             ])
 
-            # Non-dominated sorting on combined set
-            nds = NonDominatedSorting()
-            fronts = nds.do(all_F)
-            pareto_idx = fronts[0]
+            if use_epsilon:
+                # ε-dominance sorting on combined set
+                pareto_idx = epsilon_nondominated_sort(all_F, epsilon)
+                print(f"  ε-dominance merge: {len(all_solutions)} → {len(pareto_idx)} solutions")
+            else:
+                # Standard non-dominated sorting on combined set
+                nds = NonDominatedSorting()
+                fronts = nds.do(all_F)
+                pareto_idx = fronts[0]
 
             # Keep only Pareto-optimal solutions
             solutions = []
@@ -1183,13 +1325,13 @@ def main():
 
             # Sort by grid_kwh for consistent ordering
             solutions.sort(key=lambda x: x['objectives']['grid_kwh'])
-            print(f"Combined Pareto front: {len(solutions)} non-dominated solutions")
+            print(f"Combined ε-Pareto front: {len(solutions)} solutions")
         else:
             solutions = new_solutions
     else:
         solutions = new_solutions
 
-    print(f"Total Pareto-optimal solutions: {len(solutions)}")
+    print(f"Total ε-Pareto solutions: {len(solutions)}")
 
     # Select diverse strategies
     selected = select_diverse_strategies(solutions, n_select=args.n_select)
@@ -1200,6 +1342,8 @@ def main():
         'n_gen': args.generations,
         'pop_size': args.population,
         'seed': args.seed,
+        'use_epsilon': use_epsilon,
+        'epsilon': epsilon if use_epsilon else None,
     }
 
     # Get optimization history from this run
