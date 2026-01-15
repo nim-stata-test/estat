@@ -546,10 +546,10 @@ def plot_simulation_results(simulation_results: pd.DataFrame, daily_metrics: pd.
     ax.set_xticks(range(0, 25, 4))
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig22_simulation_results.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig23_simulation_results.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig22_simulation_results.png")
+    print("  Saved: fig23_simulation_results.png")
 
 
 def generate_report(comparison: pd.DataFrame, daily_metrics: pd.DataFrame,
@@ -696,8 +696,8 @@ def generate_report(comparison: pd.DataFrame, daily_metrics: pd.DataFrame,
     Night temperatures are excluded from the comfort objective. Full-season validation in Phase 5 will provide more robust estimates.</em></p>
 
     <figure>
-        <img src="fig22_simulation_results.png" alt="Simulation Results">
-        <figcaption><strong>Figure 22:</strong> Simulation results: example week COP (top-left), daily self-sufficiency (top-right),
+        <img src="fig23_simulation_results.png" alt="Simulation Results">
+        <figcaption><strong>Figure 23:</strong> Simulation results: example week COP (top-left), daily self-sufficiency (top-right),
         strategy comparison bars (bottom-left), hourly COP profile with PV availability (bottom-right).</figcaption>
     </figure>
     </section>

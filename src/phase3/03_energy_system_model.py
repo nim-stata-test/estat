@@ -457,10 +457,10 @@ def create_energy_system_plots(energy_15min: pd.DataFrame, pv_results: dict,
     ax.grid(True, alpha=0.3, axis='y')
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig19_energy_system_model.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig20_energy_system_model.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig19_energy_system_model.png")
+    print("  Saved: fig20_energy_system_model.png")
 
 
 def generate_report(pv_results: dict, battery_results: dict,
@@ -490,22 +490,22 @@ def generate_report(pv_results: dict, battery_results: dict,
 
     <h3>PV Generation Patterns</h3>
     <table>
-        <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Mean daily generation</td><td><strong>{daily_pv:.1f} kWh</strong></td></tr>
-        <tr><td>Peak daily generation</td><td>{daily_pv_max:.1f} kWh</td></tr>
-        <tr><td>Peak generation hours</td><td>{peak_hours[0] if peak_hours else 'N/A'}:00 - {peak_hours[-1] if peak_hours else 'N/A'}:00</td></tr>
+        <tr><th>Metric</th><th>Symbol</th><th>Value</th></tr>
+        <tr><td>Mean daily generation</td><td>$\\bar{{P}}_{{pv}}$</td><td><strong>{daily_pv:.1f} kWh</strong></td></tr>
+        <tr><td>Peak daily generation</td><td>$P_{{pv,max}}$</td><td>{daily_pv_max:.1f} kWh</td></tr>
+        <tr><td>Peak generation hours</td><td>—</td><td>{peak_hours[0] if peak_hours else 'N/A'}:00 - {peak_hours[-1] if peak_hours else 'N/A'}:00</td></tr>
     </table>
 
     <h3>Battery Performance</h3>
     <table>
         <tr><th>Metric</th><th>Value</th><th>Notes</th></tr>
         <tr>
-            <td>Round-trip efficiency</td>
+            <td>Round-trip efficiency ($\\eta_{{bat}}$)</td>
             <td><strong>{battery_eff:.1f}%</strong></td>
             <td>{"Below expected (degraded)" if battery_eff < 82 else "Within normal range"}</td>
         </tr>
         <tr>
-            <td>Mean daily discharge</td>
+            <td>Mean daily discharge ($E_{{discharge}}$)</td>
             <td>{daily_discharge:.1f} kWh</td>
             <td>Energy supplied to home from battery</td>
         </tr>
@@ -514,11 +514,15 @@ def generate_report(pv_results: dict, battery_results: dict,
     <h3>Grid Interaction</h3>
     <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Mean daily import</td><td>{daily_import:.1f} kWh</td></tr>
-        <tr><td>Mean daily export</td><td>{daily_export:.1f} kWh</td></tr>
+        <tr><td>Mean daily import ($E_{{import}}$)</td><td>{daily_import:.1f} kWh</td></tr>
+        <tr><td>Mean daily export ($E_{{export}}$)</td><td>{daily_export:.1f} kWh</td></tr>
         <tr><td>Net export</td><td>{daily_export - daily_import:.1f} kWh/day</td></tr>
-        <tr><td>Current self-sufficiency</td><td><strong>{self_suff:.1f}%</strong></td></tr>
+        <tr><td>Current self-sufficiency ($\\eta_{{ss}}$)</td><td><strong>{self_suff:.1f}%</strong></td></tr>
     </table>
+    <p>Self-sufficiency definition:</p>
+    <div class="equation-box">
+    $$\\eta_{{ss}} = 1 - \\frac{{E_{{import}}}}{{E_{{consumption}}}} = \\frac{{E_{{direct}} + E_{{battery}}}}{{E_{{consumption}}}}$$
+    </div>
 
     <h3>Self-Sufficiency Optimization Scenarios</h3>
     <table>
@@ -564,8 +568,8 @@ def generate_report(pv_results: dict, battery_results: dict,
     </ul>
 
     <figure>
-        <img src="fig19_energy_system_model.png" alt="Energy System Model">
-        <figcaption><strong>Figure 19:</strong> Energy system analysis: daily profile (top-left),
+        <img src="fig20_energy_system_model.png" alt="Energy System Model">
+        <figcaption><strong>Figure 20:</strong> Energy system analysis: daily profile (top-left),
         battery patterns (top-right), monthly grid balance (bottom-left),
         self-sufficiency scenarios (bottom-right).</figcaption>
     </figure>

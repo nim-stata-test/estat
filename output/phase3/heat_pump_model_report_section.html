@@ -13,61 +13,64 @@
         <tr>
             <td>COP Range</td>
             <td>2.37 – 5.80</td>
-            <td>Varies with outdoor/flow temperature</td>
+            <td>Varies with $T_{out}$ and $T_{HK2}$</td>
         </tr>
         <tr>
-            <td>COP sensitivity to outdoor temp</td>
+            <td>$\partial \text{COP} / \partial T_{out}$</td>
             <td>0.2034 COP/°C</td>
             <td>Increases with warmer outdoor</td>
         </tr>
         <tr>
-            <td>COP sensitivity to T_HK2</td>
+            <td>$\partial \text{COP} / \partial T_{HK2}$</td>
             <td>-0.2199 COP/°C</td>
-            <td>Decreases with higher T_HK2</td>
+            <td>Decreases with higher flow temp</td>
         </tr>
     </table>
 
     <h3>COP Model</h3>
     <p>Multi-variable regression model:</p>
-    <pre>COP = 5.93 + 0.1280×T_out + -0.0832×T_HK2</pre>
-    <p>R² = 0.941, RMSE = 0.196</p>
+    <div class="equation-box">
+    $$\text{COP} = 5.93 + 0.1280 \cdot T_{out} + -0.0832 \cdot T_{HK2}$$
+    </div>
+    <p>$R^2 = 0.941$, $\text{RMSE} = 0.196$</p>
 
     <h3>Capacity Analysis</h3>
     <table>
         <tr><th>Metric</th><th>Mean</th><th>Max</th><th>Min</th></tr>
         <tr>
-            <td>Daily electricity consumed</td>
+            <td>Daily electricity consumed ($E_{elec}$)</td>
             <td>23.5 kWh</td>
             <td>59.0 kWh</td>
             <td>5.0 kWh</td>
         </tr>
         <tr>
-            <td>Daily heat produced</td>
+            <td>Daily heat produced ($Q_{heat}$)</td>
             <td>82.0 kWh</td>
             <td>140.0 kWh</td>
             <td>29.0 kWh</td>
         </tr>
         <tr>
-            <td>Compressor runtime</td>
+            <td>Compressor runtime ($t_{comp}$)</td>
             <td>2.1 h/day</td>
             <td>2.8 h/day</td>
             <td>—</td>
         </tr>
     </table>
+    <p>Relationship: $Q_{heat} = \text{COP} \times E_{elec}$</p>
 
     <h3>Buffer Tank Dynamics</h3>
     <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Mean temperature</td><td>36.0°C</td></tr>
-        <tr><td>Temperature range</td><td>22.3 – 55.5°C</td></tr>
-        <tr><td>Temperature variability (std)</td><td>5.95°C</td></tr>
+        <tr><td>Mean $T_{buf}$</td><td>36.0°C</td></tr>
+        <tr><td>Range</td><td>22.3 – 55.5°C</td></tr>
+        <tr><td>Variability ($\sigma$)</td><td>5.95°C</td></tr>
     </table>
 
     <h3>Implications for Optimization</h3>
     <ul>
-        <li><strong>COP optimization</strong>: Lower T_HK2 (target temperature) improves COP.
-            With slope -0.2199, reducing T_HK2 by 5°C improves COP by ~1.10.</li>
-        <li><strong>Timing strategy</strong>: Run heat pump during warmest outdoor temps (daytime/solar hours)
+        <li><strong>COP optimization</strong>: Lower $T_{HK2}$ improves COP.
+            With $\partial \text{COP}/\partial T_{HK2} = -0.2199$, reducing $T_{HK2}$ by 5°C improves COP by ~1.10.</li>
+        <li><strong>Timing strategy</strong>: Run heat pump during warmest $T_{out}$ (daytime/solar hours)
             for better COP. Each +1°C outdoor improves COP by ~0.203.</li>
         <li><strong>Capacity headroom</strong>: Max observed 59 kWh/day
             suggests capacity is sufficient for current heating demand.</li>
@@ -76,10 +79,10 @@
     </ul>
 
     <figure>
-        <img src="fig18_heat_pump_model.png" alt="Heat Pump Model Analysis">
-        <figcaption><strong>Figure 18:</strong> Heat pump analysis: COP vs outdoor temperature (top-left),
-        COP vs T_HK2 (top-right), daily energy (bottom-left),
-        buffer tank dynamics (bottom-right).</figcaption>
+        <img src="fig19_heat_pump_model.png" alt="Heat Pump Model Analysis">
+        <figcaption><strong>Figure 19:</strong> Heat pump analysis: COP vs outdoor temperature (top-left),
+        COP vs T_HK2 (top-right), 3D COP surface with regression plane (bottom-left),
+        daily energy with outdoor temperature overlay (bottom-right).</figcaption>
     </figure>
     </section>
     

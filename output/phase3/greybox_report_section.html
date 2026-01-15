@@ -2,70 +2,80 @@
     <section id="greybox-thermal-model">
     <h2>3.1b Grey-Box Thermal Model</h2>
 
+    <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+        
+        <strong>⚠️ Reference Model Only:</strong> Forward simulation diverges (R² = -3.19).
+        This model is kept for reference but is <strong>not used for Phase 4 optimization</strong>.
+        The transfer function model (Section 3.1) with R² = 0.68 is used instead.
+        
+    </div>
+
     <h3>Model Formulation</h3>
     <p>A physics-based discrete-time state-space model with two states:</p>
 
     <h4>State Variables</h4>
-    <ul>
-        <li><strong>T_buffer</strong>: Buffer tank temperature (intermediate thermal storage)</li>
-        <li><strong>T_room</strong>: Room/indoor temperature (comfort objective)</li>
-    </ul>
+    <table>
+        <tr><th>Symbol</th><th>Variable</th><th>Description</th></tr>
+        <tr><td>$T_{buf}$</td><td>Buffer tank temperature</td><td>Intermediate thermal storage (°C)</td></tr>
+        <tr><td>$T_{room}$</td><td>Room temperature</td><td>Indoor/comfort objective (°C)</td></tr>
+    </table>
 
-    <h4>Discrete-Time Equations (dt = 15 min)</h4>
-    <pre>
-T_buffer[k+1] = T_buffer[k] + (dt/tau_buf) × [(T_HK2[k] - T_buffer[k]) - r_emit × (T_buffer[k] - T_room[k])]
-
-T_room[k+1] = T_room[k] + (dt/tau_room) × [r_heat × (T_buffer[k] - T_room[k]) - (T_room[k] - T_outdoor[k])] + k_solar × PV[k]
-    </pre>
+    <h4>Discrete-Time Equations ($\Delta t = 0.25$ h)</h4>
+    <div class="equation-box">
+    $$T_{buf}[k+1] = T_{buf}[k] + \frac{\Delta t}{\tau_{buf}} \left[ (T_{HK2}[k] - T_{buf}[k]) - r_{emit} \cdot (T_{buf}[k] - T_{room}[k]) \right]$$
+    </div>
+    <div class="equation-box">
+    $$T_{room}[k+1] = T_{room}[k] + \frac{\Delta t}{\tau_{room}} \left[ r_{heat} \cdot (T_{buf}[k] - T_{room}[k]) - (T_{room}[k] - T_{out}[k]) \right] + k_{solar} \cdot P_{pv}[k]$$
+    </div>
 
     <h3>Estimated Parameters</h3>
     <table>
         <tr>
-            <th>Parameter</th>
+            <th>Symbol</th>
             <th>Value</th>
             <th>Std Error</th>
             <th>Bounds</th>
         </tr>
         
         <tr>
-            <td><code>tau_buf</code></td>
-            <td>2.276</td>
-            <td>+/- 0.119</td>
+            <td>$\tau_{buf}$</td>
+            <td>2.580 h</td>
+            <td>±0.125</td>
             <td>[0.5, 4.0]</td>
         </tr>
         
         <tr>
-            <td><code>tau_room</code></td>
-            <td>72.000</td>
-            <td>+/- 44.875</td>
+            <td>$\tau_{room}$</td>
+            <td>72.000 h</td>
+            <td>±45.691</td>
             <td>[12.0, 72.0]</td>
         </tr>
         
         <tr>
-            <td><code>r_emit</code></td>
-            <td>0.100</td>
-            <td>+/- 0.021</td>
+            <td>$r_{emit}$</td>
+            <td>0.100 —</td>
+            <td>±0.019</td>
             <td>[0.1, 3.0]</td>
         </tr>
         
         <tr>
-            <td><code>r_heat</code></td>
-            <td>1.047</td>
-            <td>+/- 0.601</td>
+            <td>$r_{heat}$</td>
+            <td>1.051 —</td>
+            <td>±0.613</td>
             <td>[0.1, 3.0]</td>
         </tr>
         
         <tr>
-            <td><code>k_solar</code></td>
-            <td>0.017</td>
-            <td>+/- 0.021</td>
+            <td>$k_{solar}$</td>
+            <td>0.017 K/kWh</td>
+            <td>±0.021</td>
             <td>[0.0, 2.0]</td>
         </tr>
         
         <tr>
-            <td><code>c_offset</code></td>
-            <td>-0.085</td>
-            <td>+/- 0.113</td>
+            <td>$c_{offset}$</td>
+            <td>-0.086 K/h</td>
+            <td>±0.115</td>
             <td>[-3.0, 3.0]</td>
         </tr>
         
@@ -73,78 +83,61 @@ T_room[k+1] = T_room[k] + (dt/tau_room) × [r_heat × (T_buffer[k] - T_room[k]) 
 
     <h3>Physical Interpretation</h3>
     <ul>
-        <li><strong>tau_buf = 2.28h</strong>: Buffer tank responds to heat pump input
-            with time constant of ~137 minutes</li>
-        <li><strong>tau_room = 72.0h</strong>: Building thermal mass gives
-            ~72-hour time constant for room temperature</li>
-        <li><strong>r_emit = 0.10</strong>: Ratio of heat transfer from buffer to room
-            vs heat input from heat pump</li>
-        <li><strong>r_heat = 1.05</strong>: Ratio of heat transfer from buffer to room
-            vs heat loss to outdoors</li>
-        <li><strong>k_solar = 0.017 K/kWh</strong>: Room gains 0.02°C
-            per kWh of PV generation (proxy for solar irradiance)</li>
+        <li>$\tau_{buf} = 2.58$ h: Buffer tank time constant (~155 min)</li>
+        <li>$\tau_{room} = 72.0$ h: Building thermal mass time constant (~72 hours)</li>
+        <li>$r_{emit} = 0.10$: Heat transfer ratio (buffer→room vs HP→buffer)</li>
+        <li>$r_{heat} = 1.05$: Heat transfer ratio (buffer→room vs room→outdoor)</li>
+        <li>$k_{solar} = 0.017$ K/kWh: Solar gain coefficient</li>
     </ul>
 
-    <h3>Fit Statistics (Training Set)</h3>
+    <h3>Forward Simulation Performance (Actual Model Quality)</h3>
+    <p>Forward simulation runs the model recursively from initial conditions—the true test of predictive ability.</p>
     <table>
         <tr>
             <th>Metric</th>
-            <th>Buffer Tank</th>
-            <th>Room</th>
+            <th>Value</th>
+            <th>Interpretation</th>
         </tr>
-        <tr>
-            <td>R²</td>
-            <td>0.791</td>
-            <td><strong>0.995</strong></td>
+        <tr style="background-color: #f8d7da;">
+            <td><strong>$R^2$</strong></td>
+            <td><strong>-3.191</strong></td>
+            <td>⚠️ Negative = model diverges, worse than predicting mean</td>
         </tr>
         <tr>
             <td>RMSE</td>
-            <td>2.73°C</td>
-            <td><strong>0.06°C</strong></td>
-        </tr>
-        <tr>
-            <td>MAE</td>
-            <td>2.25°C</td>
-            <td>0.05°C</td>
-        </tr>
-        <tr>
-            <td>Bias</td>
-            <td>-0.536°C</td>
-            <td>-0.000°C</td>
+            <td>1.79°C</td>
+            <td>Model error accumulates over time</td>
         </tr>
     </table>
 
-    <h3>Validation (Test Set)</h3>
+    <h3>One-Step Prediction (Misleading Metric)</h3>
+    <p><em>Note: One-step $R^2 \approx 0.99$ is artificially high because temperature is highly autocorrelated.
+    Predicting "$T[k+1] \approx T[k]$" trivially achieves $R^2 > 0.95$. These metrics are shown for reference only.</em></p>
     <table>
         <tr>
             <th>Metric</th>
-            <th>Buffer Tank</th>
-            <th>Room</th>
+            <th>$T_{buf}$</th>
+            <th>$T_{room}$</th>
         </tr>
         <tr>
-            <td>R²</td>
-            <td>0.704</td>
-            <td><strong>0.992</strong></td>
+            <td>$R^2$ (one-step)</td>
+            <td>0.784</td>
+            <td>0.995 <em>(inflated)</em></td>
         </tr>
         <tr>
-            <td>RMSE</td>
-            <td>2.87°C</td>
-            <td><strong>0.07°C</strong></td>
-        </tr>
-        <tr>
-            <td>Bias</td>
-            <td>—</td>
-            <td>-0.008°C</td>
+            <td>RMSE (one-step)</td>
+            <td>2.77°C</td>
+            <td>0.06°C</td>
         </tr>
     </table>
 
     <h3>Residual Diagnostics</h3>
     <ul>
         <li><strong>Durbin-Watson</strong>: 1.46
-            (ideal = 2.0; &lt;1.5 indicates positive autocorrelation)</li>
+            (ideal = 2.0; $< 1.5$ indicates positive autocorrelation)</li>
         <li><strong>Decorrelation lag</strong>: 1.2 hours
             (residuals become uncorrelated after this time)</li>
-        <li><strong>Residual std</strong>: 0.064°C</li>
+        <li><strong>Residual $\sigma$</strong>: 0.064°C</li>
     </ul>
 
     <h3>Comparison with Transfer Function Model</h3>
@@ -156,8 +149,8 @@ T_room[k+1] = T_room[k] + (dt/tau_room) × [r_heat × (T_buffer[k] - T_room[k]) 
     </ul>
 
     <figure>
-        <img src="fig17b_greybox_model.png" alt="Grey-Box Thermal Model Results">
-        <figcaption><strong>Figure 17b:</strong> Grey-box thermal model: state trajectories (top-left),
+        <img src="fig18b_greybox_model.png" alt="Grey-Box Thermal Model Results">
+        <figcaption><strong>Figure 18b:</strong> Grey-box thermal model: state trajectories (top-left),
         actual vs predicted scatter (top-right), residual distribution (bottom-left),
         model comparison (bottom-right).</figcaption>
     </figure>

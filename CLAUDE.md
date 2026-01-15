@@ -368,12 +368,12 @@ with multiple sensors.
 
 After running `python src/phase3/run_phase3.py`, outputs are saved to `output/phase3/`:
 
-**Figures (fig17-fig20):**
-- fig17: Thermal model (temperature simulation, decay analysis)
-- fig17b: Grey-box model (state trajectories, residuals, model comparison)
-- fig18: Heat pump model (COP vs temperature, capacity, buffer tank)
-- fig19: Energy system (daily profiles, battery patterns, self-sufficiency)
-- fig20: Tariff cost model (cost breakdown, high/low tariff, forecasting)
+**Figures (fig18-fig21):**
+- fig18: Thermal model (temperature simulation, decay analysis)
+- fig18b: Grey-box model (state trajectories, residuals, model comparison)
+- fig19: Heat pump model (COP vs temperature, capacity, buffer tank)
+- fig20: Energy system (daily profiles, battery patterns, self-sufficiency)
+- fig21: Tariff cost model (cost breakdown, high/low tariff, forecasting)
 
 **Reports:**
 - `phase3_report.html` - Combined modeling report
@@ -442,7 +442,7 @@ T_room[k+1] = T_room[k] + (dt/tau_room) × [r_heat × (T_buffer[k] - T_room[k]) 
 **Outputs:**
 - `output/phase3/greybox_model_params.json` - Fitted parameters with confidence intervals
 - `output/phase3/greybox_model_results.csv` - Predictions and residuals
-- `output/phase3/fig17b_greybox_model.png` - 4-panel visualization
+- `output/phase3/fig18b_greybox_model.png` - 4-panel visualization
 - `output/phase3/greybox_report_section.html` - HTML report section
 
 **Advantages over Transfer Function Model:**
@@ -455,17 +455,17 @@ T_room[k+1] = T_room[k] + (dt/tau_room) × [r_heat × (T_buffer[k] - T_room[k]) 
 
 After running `python src/phase4/run_optimization.py`, outputs are saved to `output/phase4/`:
 
-**Figures (fig21-fig30):**
-- fig21: Strategy comparison (COP by strategy, schedule alignment, expected improvements)
-- fig22: Simulation results (time series, self-sufficiency, hourly COP profiles)
-- fig23: Parameter space (trade-offs, parameter summary table)
-- fig24: Pareto front (2D projections of Pareto-optimal solutions)
-- fig25: Pareto strategy comparison (radar chart comparing strategies)
-- fig26: Pareto evolution (optimization history animation frame)
-- fig27: Strategy temperature predictions (winter 2026/2027, violation analysis)
-- fig28: Detailed time series (T_weighted, outdoor, solar, grid by strategy)
-- fig29: Hourly patterns (temperature heatmaps, PV/grid profiles, comfort windows)
-- fig30: Energy patterns (daily balance, self-sufficiency, temperature distributions)
+**Figures (fig22-fig31):**
+- fig22: Strategy comparison (COP by strategy, schedule alignment, expected improvements)
+- fig23: Simulation results (time series, self-sufficiency, hourly COP profiles)
+- fig24: Parameter space (trade-offs, parameter summary table)
+- fig25: Pareto front (2D projections of Pareto-optimal solutions)
+- fig26: Pareto strategy comparison (radar chart comparing strategies)
+- fig27: Pareto evolution (optimization history animation frame)
+- fig28: Strategy temperature predictions (winter 2026/2027, violation analysis)
+- fig29: Detailed time series (T_weighted, outdoor, solar, grid by strategy)
+- fig30: Hourly patterns (temperature heatmaps, PV/grid profiles, comfort windows)
+- fig31: Energy patterns (daily balance, self-sufficiency, temperature distributions)
 
 **Reports:**
 - `phase4_report.html` - Combined optimization report
@@ -481,14 +481,14 @@ After running `python src/phase4/run_optimization.py`, outputs are saved to `out
 **Strategy Evaluation (Step 5):**
 - `strategy_violation_analysis.csv` - Comfort violation stats per strategy
 - `strategy_evaluation_report.html` - HTML report with violation analysis
-- `fig27_strategy_temperature_predictions.png` - Winter 2026/2027 predictions
+- `fig28_strategy_temperature_predictions.png` - Winter 2026/2027 predictions
 
 **Detailed Strategy Analysis (Step 6):**
 - `strategy_detailed_stats.csv` - Comprehensive statistics for Phase 5 strategies
 - `strategy_detailed_report.html` - HTML report with time series and energy analysis
-- `fig28_strategy_detailed_timeseries.png` - Full-period temperature and energy time series
-- `fig29_strategy_hourly_patterns.png` - Hourly patterns, heatmaps, and comfort windows
-- `fig30_strategy_energy_patterns.png` - Energy balance, self-sufficiency, temperature distributions
+- `fig29_strategy_detailed_timeseries.png` - Full-period temperature and energy time series
+- `fig30_strategy_hourly_patterns.png` - Hourly patterns, heatmaps, and comfort windows
+- `fig31_strategy_energy_patterns.png` - Energy balance, self-sufficiency, temperature distributions
 
 **Heating Curve Model (from Phase 2):**
 ```
@@ -597,9 +597,9 @@ output/phase4/
 ├── pareto_front.csv           # All Pareto-optimal solutions
 ├── selected_strategies.csv    # 10 diverse strategies selected
 ├── selected_strategies.json   # Machine-readable format
-├── fig24_pareto_front.png     # 2D projections of Pareto front
-├── fig25_pareto_strategy_comparison.png # Radar chart comparing strategies
-├── fig26_pareto_evolution.png # Pareto front evolution frame
+├── fig25_pareto_front.png     # 2D projections of Pareto front
+├── fig26_pareto_strategy_comparison.png # Radar chart comparing strategies
+├── fig27_pareto_evolution.png # Pareto front evolution frame
 ├── pareto_evolution.gif       # 2D animated Pareto evolution
 ├── pareto_evolution.mp4       # 2D animation for PowerPoint
 ├── pareto_evolution_3d.gif    # 3D animated Pareto evolution
@@ -647,7 +647,7 @@ python src/phase4/05_strategy_evaluation.py
 **Outputs:**
 ```
 output/phase4/
-├── fig27_strategy_temperature_predictions.png  # Winter 2026/2027 predictions
+├── fig28_strategy_temperature_predictions.png  # Winter 2026/2027 predictions
 ├── strategy_violation_analysis.csv             # Detailed violation stats
 └── strategy_evaluation_report.html             # HTML report section
 ```

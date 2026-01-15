@@ -168,7 +168,28 @@ def generate_html_report():
             color: #1a5f7a;
             text-decoration: underline;
         }}
+        /* MathJax equation styling */
+        .MathJax {{ font-size: 1.1em !important; }}
+        .equation-box {{
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }}
     </style>
+    <!-- MathJax for LaTeX rendering -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {{
+            tex: {{
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }}
+        }};
+    </script>
 </head>
 <body>
     <h1>Phase 3: System Modeling Report</h1>
@@ -353,11 +374,11 @@ def main():
     print(f"\nScripts completed: {success_count}/{len(scripts)}")
     print(f"\nOutputs saved to: {OUTPUT_DIR}")
     print("\nKey outputs:")
-    print("  - fig17_thermal_model.png")
-    print("  - fig17b_greybox_model.png")
-    print("  - fig18_heat_pump_model.png")
-    print("  - fig19_energy_system_model.png")
-    print("  - fig20_tariff_cost_model.png")
+    print("  - fig18_thermal_model.png")
+    print("  - fig18b_greybox_model.png")
+    print("  - fig19_heat_pump_model.png")
+    print("  - fig20_energy_system_model.png")
+    print("  - fig21_tariff_cost_model.png")
     print("  - phase3_report.html")
 
 

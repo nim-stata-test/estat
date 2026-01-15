@@ -8,8 +8,8 @@ Estimates building thermal characteristics using a transfer function approach:
 3. Model room temps: T_room = f(outdoor_smooth, effort_smooth, pv_smooth)
 
 Each room has individual parameters for:
-- τ_outdoor: Time constant for outdoor temperature response
-- τ_effort: Time constant for heating effort response
+- τ_out: Time constant for outdoor temperature response
+- τ_eff: Time constant for heating effort response
 - τ_pv: Time constant for solar gain response
 - gain_outdoor, gain_effort, gain_pv: Response magnitudes
 """
@@ -40,7 +40,9 @@ SENSOR_WEIGHTS = {
 }
 
 # Key sensor columns
-HK2_COL = 'wp_anlage_hk2_ist'
+HK2_ACTUAL_COL = 'wp_anlage_hk2_ist'
+HK2_TARGET_COL = 'stiebel_eltron_isg_target_temperature_hk_2'
+HK2_COL = HK2_TARGET_COL  # Use TARGET for optimization (we control this)
 OUTDOOR_COL = 'stiebel_eltron_isg_outdoor_temperature'
 PV_COL = 'pv_generation_kwh'
 
@@ -178,12 +180,17 @@ def fit_heating_curve(df: pd.DataFrame) -> dict:
 
 def compute_heating_effort(df: pd.DataFrame, heating_curve: dict) -> pd.Series:
     """
-    Compute heating effort as deviation from heating curve.
+    Compute heating effort as deviation from heating curve baseline.
 
-    Heating effort = HK2_actual - HK2_expected
+    Heating effort = HK2_target - HK2_baseline
 
-    Positive effort: system delivering MORE heat than curve suggests
-    Negative effort: system delivering LESS heat than curve suggests
+    Using TARGET (not actual) because:
+    - We control target via setpoint and curve_rise parameters
+    - Actual follows target with ~1.5°C bias (absorbed into model coefficients)
+    - This makes the model directly useful for optimization
+
+    Positive effort: target temp HIGHER than baseline curve
+    Negative effort: target temp LOWER than baseline curve
     """
     expected_hk2 = heating_curve['baseline'] + heating_curve['slope'] * df[OUTDOOR_COL]
     effort = df[HK2_COL] - expected_hk2
@@ -301,11 +308,17 @@ def plot_thermal_analysis(results: list, heating_curve: dict, df: pd.DataFrame) 
     n_sensors = len(results)
 
     if n_sensors == 1:
-        # Single sensor: 1x3 layout
-        fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+        # Single sensor: 2 rows - top row has 2 panels, bottom row spans full width
+        fig = plt.figure(figsize=(14, 8))
+
+        # Row 1: Two panels side by side
+        ax1 = fig.add_subplot(2, 2, 1)  # Top left
+        ax2 = fig.add_subplot(2, 2, 2)  # Top right
+
+        # Row 2: Full-width time series
+        ax3 = fig.add_subplot(2, 1, 2)  # Bottom, spans full width
 
         # Panel 1: Heating curve with both models
-        ax1 = axes[0]
         clean = df[[HK2_COL, OUTDOOR_COL]].dropna()
         ax1.scatter(clean[OUTDOOR_COL], clean[HK2_COL], alpha=0.2, s=3, label='Data')
         x_line = np.linspace(clean[OUTDOOR_COL].min(), clean[OUTDOOR_COL].max(), 100)
@@ -334,7 +347,6 @@ def plot_thermal_analysis(results: list, heating_curve: dict, df: pd.DataFrame) 
 
         # Panel 2: Actual vs Predicted scatter
         r = results[0]
-        ax2 = axes[1]
         n = len(r['y_actual'])
         step = max(1, n // 500)
         ax2.scatter(r['y_actual'][::step], r['y_pred'][::step], alpha=0.4, s=10)
@@ -347,18 +359,24 @@ def plot_thermal_analysis(results: list, heating_curve: dict, df: pd.DataFrame) 
         ax2.legend(fontsize=8)
         ax2.grid(True, alpha=0.3)
 
-        # Panel 3: Time series (last 2 weeks)
-        ax3 = axes[2]
+        # Panel 3: Time series (FULL heating period) - full width
         idx = r['index']
-        recent = idx >= idx.max() - pd.Timedelta(days=14)
-        ax3.plot(idx[recent], r['y_actual'][recent], 'b-', alpha=0.7, linewidth=0.8, label='Actual')
-        ax3.plot(idx[recent], r['y_pred'][recent], 'r-', alpha=0.7, linewidth=0.8, label='Predicted')
+        # Downsample for readability (every 2 hours = 8 timesteps for better resolution)
+        step = 8
+        n_days = len(idx) // 96
+        ax3.plot(idx[::step], r['y_actual'][::step], 'b-', alpha=0.7, linewidth=0.8, label='Actual')
+        ax3.plot(idx[::step], r['y_pred'][::step], 'r-', alpha=0.7, linewidth=0.8, label='Predicted')
         ax3.set_xlabel('Date')
         ax3.set_ylabel('Temperature (°C)')
-        ax3.set_title(f'{room_name}: Last 2 Weeks')
-        ax3.legend()
+        ax3.set_title(f'{room_name}: Full {n_days} Days - Predicted vs Actual')
+        ax3.legend(loc='upper right')
         ax3.grid(True, alpha=0.3)
         plt.setp(ax3.xaxis.get_majorticklabels(), rotation=45, ha='right')
+        # Add R² annotation
+        ax3.text(0.01, 0.95, f'R² = {r["r2"]:.3f}\nRMSE = {r["rmse"]:.2f}°C',
+                 transform=ax3.transAxes, fontsize=10,
+                 verticalalignment='top', fontweight='bold',
+                 bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
     else:
         # Multiple sensors: 2x3 layout
@@ -407,27 +425,33 @@ def plot_thermal_analysis(results: list, heating_curve: dict, df: pd.DataFrame) 
             ax.legend(fontsize=8)
             ax.grid(True, alpha=0.3)
 
-        # Panel 6: Time series for best room
+        # Panel 6: Time series for best room (FULL heating period)
         ax6 = fig.add_subplot(2, 3, 6)
         best = max(results, key=lambda x: x['r2'])
         idx = best['index']
-        recent = idx >= idx.max() - pd.Timedelta(days=14)
-        ax6.plot(idx[recent], best['y_actual'][recent], 'b-', alpha=0.7, linewidth=0.8, label='Actual')
-        ax6.plot(idx[recent], best['y_pred'][recent], 'r-', alpha=0.7, linewidth=0.8, label='Predicted')
+        # Downsample for readability (every 4 hours = 16 timesteps)
+        step = 16
+        n_days = len(idx) // 96
+        ax6.plot(idx[::step], best['y_actual'][::step], 'b-', alpha=0.7, linewidth=0.8, label='Actual')
+        ax6.plot(idx[::step], best['y_pred'][::step], 'r-', alpha=0.7, linewidth=0.8, label='Predicted')
         room_name = best['room'].replace('_temperature', '')
         ax6.set_xlabel('Date')
         ax6.set_ylabel('Temperature (°C)')
-        ax6.set_title(f'{room_name}: Last 2 Weeks (R²={best["r2"]:.3f})')
+        ax6.set_title(f'{room_name}: Full {n_days} Days (R²={best["r2"]:.3f})')
         ax6.legend()
         ax6.grid(True, alpha=0.3)
         plt.setp(ax6.xaxis.get_majorticklabels(), rotation=45, ha='right')
+        # Add R² annotation
+        ax6.text(0.02, 0.98, f'R² = {best["r2"]:.3f}', transform=ax6.transAxes, fontsize=10,
+                 verticalalignment='top', fontweight='bold',
+                 bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig17_thermal_model.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig18_thermal_model.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig17_thermal_model.png")
+    print("  Saved: fig18_thermal_model.png")
 
-    # Figure 17b: Time series for all rooms (only if multiple sensors)
+    # Figure 18b: Time series for all rooms (only if multiple sensors)
     if n_sensors >= 2:
         n_rows = (n_sensors + 1) // 2
         fig2, axes = plt.subplots(n_rows, 2, figsize=(14, 4 * n_rows))
@@ -456,9 +480,9 @@ def plot_thermal_analysis(results: list, heating_curve: dict, df: pd.DataFrame) 
 
         plt.suptitle('Room Temperature Models: Actual vs Predicted (Last 2 Weeks)', fontsize=14, y=1.02)
         plt.tight_layout()
-        plt.savefig(OUTPUT_DIR / 'fig17b_room_timeseries.png', dpi=150, bbox_inches='tight')
+        plt.savefig(OUTPUT_DIR / 'fig18b_room_timeseries.png', dpi=150, bbox_inches='tight')
         plt.close()
-        print("  Saved: fig17b_room_timeseries.png")
+        print("  Saved: fig18b_room_timeseries.png")
 
 
 def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> str:
@@ -491,14 +515,21 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
 
     html = f"""
     <section id="thermal-model">
-    <h2>3.1 Building Thermal Model</h2>
+    <h2>3.1 Building Thermal Model (Transfer Function)</h2>
+
+    <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+        <strong>Reference Model Only:</strong> This transfer function model has been superseded by the
+        <a href="#greybox-thermal-model">Grey-Box Thermal Model (Section 3.1b)</a> which provides
+        better fit ($R^2=0.995$ vs $R^2=0.683$) and explicit buffer tank modeling. The grey-box model
+        is now used for Phase 4 optimization forward simulation.
+    </div>
 
     <h3>Methodology</h3>
     <p>The thermal model uses a <strong>transfer function approach</strong> that separates the
     heating system behavior from building thermal response:</p>
 
     <ol>
-        <li><strong>Heating Curve</strong>: Model HK2 = f(T_outdoor) to capture how the heat pump
+        <li><strong>Heating Curve</strong>: Model $T_{{HK2}} = f(T_{{out}})$ to capture how the heat pump
             adjusts flow temperature based on outdoor conditions</li>
         <li><strong>Heating Effort</strong>: Calculate deviation from heating curve as the actual
             heating input signal</li>
@@ -509,34 +540,41 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
     <h3>Heating Curve Model</h3>
 
     <h4>Parametric Model (from Phase 2 - used for optimization)</h4>
-    <pre>T_flow = setpoint + curve_rise × (T_ref - T_outdoor)   (R² = {heating_curve['phase2_params']['normal_r_squared']:.3f})</pre>
-    <p>Where:</p>
+    <div class="equation-box">
+    $$T_{{flow}} = T_{{setpoint}} + k_{{curve}} \\times (T_{{ref}} - T_{{out}})$$
+    </div>
+    <p>Where $R^2 = {heating_curve['phase2_params']['normal_r_squared']:.3f}$ and:</p>
     <ul>
-        <li>T_ref (comfort) = {heating_curve['phase2_params']['t_ref_comfort']:.2f}°C</li>
-        <li>T_ref (eco) = {heating_curve['phase2_params']['t_ref_eco']:.2f}°C</li>
-        <li>RMSE = {heating_curve['phase2_params']['normal_rmse']:.2f}°C</li>
+        <li>$T_{{ref,comfort}} = {heating_curve['phase2_params']['t_ref_comfort']:.2f}$°C</li>
+        <li>$T_{{ref,eco}} = {heating_curve['phase2_params']['t_ref_eco']:.2f}$°C</li>
+        <li>$\\text{{RMSE}} = {heating_curve['phase2_params']['normal_rmse']:.2f}$°C</li>
     </ul>
     <p><strong>This is the model used in Phase 4 optimization.</strong> It accounts for controllable
-    parameters (setpoint, curve_rise) that affect T_flow → COP → energy consumption.</p>
+    parameters ($T_{{setpoint}}$, $k_{{curve}}$) that affect $T_{{flow}} \\rightarrow \\text{{COP}} \\rightarrow$ energy consumption.</p>
 
     <h4>Simple Reference Model (diagnostic only)</h4>
-    <pre>HK2 = {heating_curve['baseline']:.1f} {heating_curve['slope']:+.3f} × T_outdoor   (R² = {heating_curve['r2']:.3f})</pre>
+    <div class="equation-box">
+    $$T_{{HK2}} = {heating_curve['baseline']:.1f} {heating_curve['slope']:+.3f} \\times T_{{out}} \\quad (R^2 = {heating_curve['r2']:.3f})$$
+    </div>
     <p>This simplified model ignores controllable parameters and is used only for computing
     "heating effort" as a diagnostic signal for thermal response analysis.</p>
 
     <h3>Room Temperature Model</h3>
-    <pre>T_room = offset + g_out × LPF(T_outdoor, τ_out) + g_eff × LPF(effort, τ_eff) + g_pv × LPF(PV, τ_pv)</pre>
-    <p>Where LPF = low-pass filter (exponential smoothing with time constant τ)</p>
+    <div class="equation-box">
+    $$T_{{room}} = c_0 + g_{{out}} \\cdot \\text{{LPF}}(T_{{out}}, \\tau_{{out}}) + g_{{eff}} \\cdot \\text{{LPF}}(E, \\tau_{{eff}}) + g_{{pv}} \\cdot \\text{{LPF}}(P_{{pv}}, \\tau_{{pv}})$$
+    </div>
+    <p>Where $\\text{{LPF}}(x, \\tau)$ = low-pass filter (exponential smoothing with time constant $\\tau$)</p>
 
     <h4>Model Parameters</h4>
-    <ul>
-        <li><strong>τ_outdoor</strong>: How slowly room tracks outdoor temperature changes (hours)</li>
-        <li><strong>τ_effort</strong>: How quickly room responds to heating effort (hours)</li>
-        <li><strong>τ_pv</strong>: How quickly room responds to solar radiation (hours)</li>
-        <li><strong>gain_outdoor</strong>: °C room change per °C outdoor change</li>
-        <li><strong>gain_effort</strong>: °C room change per °C heating effort</li>
-        <li><strong>gain_pv</strong>: °C room change per kWh PV generation</li>
-    </ul>
+    <table>
+        <tr><th>Symbol</th><th>Parameter</th><th>Description</th></tr>
+        <tr><td>$\\tau_{{out}}$</td><td>Outdoor time constant</td><td>How slowly room tracks outdoor temperature changes (hours)</td></tr>
+        <tr><td>$\\tau_{{eff}}$</td><td>Effort time constant</td><td>How quickly room responds to heating effort (hours)</td></tr>
+        <tr><td>$\\tau_{{pv}}$</td><td>Solar time constant</td><td>How quickly room responds to solar radiation (hours)</td></tr>
+        <tr><td>$g_{{out}}$</td><td>Outdoor gain</td><td>°C room change per °C outdoor change</td></tr>
+        <tr><td>$g_{{eff}}$</td><td>Effort gain</td><td>°C room change per °C heating effort</td></tr>
+        <tr><td>$g_{{pv}}$</td><td>Solar gain</td><td>°C room change per kWh PV generation</td></tr>
+    </table>
 
     <h3>Results by Room</h3>
     <p><strong>Weighted temperature sensors:</strong> {weights_desc}</p>
@@ -546,13 +584,13 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
             <th>Room</th>
             <th>Weight</th>
             <th>Points</th>
-            <th>τ_out</th>
-            <th>τ_eff</th>
-            <th>τ_pv</th>
-            <th>g_out</th>
-            <th>g_eff</th>
-            <th>g_pv</th>
-            <th>R²</th>
+            <th>$\\tau_{{out}}$</th>
+            <th>$\\tau_{{eff}}$</th>
+            <th>$\\tau_{{pv}}$</th>
+            <th>$g_{{out}}$</th>
+            <th>$g_{{eff}}$</th>
+            <th>$g_{{pv}}$</th>
+            <th>$R^2$</th>
             <th>RMSE</th>
         </tr>
         {results_table}
@@ -561,7 +599,7 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
     <h3>Physical Interpretation</h3>
 
     <h4>Heating Response</h4>
-    <p>The <code>gain_effort</code> coefficient shows how much each room responds to additional
+    <p>The $g_{{eff}}$ coefficient shows how much each room responds to additional
     heating beyond the baseline heating curve:</p>
     <ul>
     """
@@ -570,7 +608,7 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
     sorted_by_effort = sorted(results, key=lambda x: x['gain_effort'], reverse=True)
     for r in sorted_by_effort:
         room_name = r['room'].replace('_temperature', '')
-        html += f"<li><strong>{room_name}</strong>: {r['gain_effort']:+.3f} °C per °C effort"
+        html += f"<li><strong>{room_name}</strong>: $g_{{{{eff}}}} = {r['gain_effort']:+.3f}$ °C per °C effort"
         if r['gain_effort'] > 0.5:
             html += " (strong response)"
         elif r['gain_effort'] < 0.3:
@@ -581,7 +619,7 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
     </ul>
 
     <h4>Solar Response</h4>
-    <p>The <code>gain_pv</code> coefficient shows how much each room heats up from solar radiation
+    <p>The $g_{pv}$ coefficient shows how much each room heats up from solar radiation
     (using PV generation as a proxy for irradiance):</p>
     <ul>
     """
@@ -591,47 +629,46 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
     for r in sorted_by_pv:
         room_name = r['room'].replace('_temperature', '')
         if r['gain_pv'] > 0:
-            html += f"<li><strong>{room_name}</strong>: {r['gain_pv']:+.3f} °C per kWh PV</li>\n"
+            html += f"<li><strong>{room_name}</strong>: $g_{{{{pv}}}} = {r['gain_pv']:+.3f}$ °C per kWh PV</li>\n"
         else:
-            html += f"<li><strong>{room_name}</strong>: {r['gain_pv']:+.3f} °C per kWh PV (anomalous - possibly north-facing)</li>\n"
+            html += f"<li><strong>{room_name}</strong>: $g_{{{{pv}}}} = {r['gain_pv']:+.3f}$ °C per kWh PV (anomalous)</li>\n"
 
     html += f"""
     </ul>
 
     <h4>Time Constants</h4>
     <ul>
-        <li><strong>τ_outdoor</strong>: 24-120h - rooms respond slowly to outdoor changes (3-5 days)</li>
-        <li><strong>τ_effort</strong>: 4-48h - rooms respond faster to heating changes</li>
-        <li><strong>τ_pv</strong>: ~24h for all rooms - consistent solar response time</li>
+        <li>$\\tau_{{out}}$: 24-120h — rooms respond slowly to outdoor changes (3-5 days)</li>
+        <li>$\\tau_{{eff}}$: 4-48h — rooms respond faster to heating changes</li>
+        <li>$\\tau_{{pv}}$: ~24h for all rooms — consistent solar response time</li>
     </ul>
 
     <h3>Weighted Average Model Performance</h3>
-    <p>Overall weighted R² = <strong>{weighted_r2:.3f}</strong></p>
+    <p>Overall weighted $R^2 = $ <strong>{weighted_r2:.3f}</strong></p>
 
     <h3>Implications for Optimization</h3>
     <ul>
-        <li><strong>Pre-heating timing</strong>: With τ_effort of 4-48h, rooms need advance notice
+        <li><strong>Pre-heating timing</strong>: With $\\tau_{{eff}}$ of 4-48h, rooms need advance notice
             to reach target temperature</li>
-        <li><strong>Solar preheating</strong>: All rooms (except atelier) benefit from solar gain.
+        <li><strong>Solar preheating</strong>: Positive $g_{{pv}}$ means rooms benefit from solar gain.
             Schedule comfort periods during/after sunny periods.</li>
-        <li><strong>Room variation</strong>: Different rooms respond differently to heating.
-            simlab and studio respond strongly; atelier responds weakly.</li>
+        <li><strong>Room variation</strong>: Different rooms respond differently to heating based on $g_{{eff}}$.</li>
     </ul>
 
     <figure>
-        <img src="fig17_thermal_model.png" alt="Thermal Model Analysis">
-        <figcaption><strong>Figure 17:</strong> Thermal model: heating curve (left),
+        <img src="fig18_thermal_model.png" alt="Thermal Model Analysis">
+        <figcaption><strong>Figure 18:</strong> Thermal model: heating curve (left),
         actual vs predicted scatter (middle), time series validation (right).</figcaption>
     </figure>
     </section>
     """
 
-    # Add fig17b only if multiple sensors
+    # Add fig18b only if multiple sensors
     if len(results) >= 2:
         html = html.replace('</section>', f"""
     <figure>
-        <img src="fig17b_room_timeseries.png" alt="Room Temperature Time Series">
-        <figcaption><strong>Figure 17b:</strong> Actual vs predicted temperature for all rooms
+        <img src="fig18b_room_timeseries.png" alt="Room Temperature Time Series">
+        <figcaption><strong>Figure 18b:</strong> Actual vs predicted temperature for all rooms
         in the weighted temperature objective (last 2 weeks).</figcaption>
     </figure>
     </section>

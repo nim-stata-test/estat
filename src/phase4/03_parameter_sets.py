@@ -384,10 +384,10 @@ def plot_parameter_space(parameter_sets: dict) -> None:
     ax.set_title('Parameter Summary', pad=20, fontsize=12, fontweight='bold')
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig23_parameter_space.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig24_parameter_space.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig23_parameter_space.png")
+    print("  Saved: fig24_parameter_space.png")
 
 
 def generate_implementation_checklist(parameter_sets: dict) -> str:
@@ -577,8 +577,8 @@ def generate_report(parameter_sets: dict, predictions: dict) -> str:
     <p><em>Note: Night temperatures (22:00-08:00) are excluded from comfort compliance. This allows aggressive energy-saving strategies during unoccupied hours.</em></p>
 
     <figure>
-        <img src="fig23_parameter_space.png" alt="Parameter Space">
-        <figcaption><strong>Figure 23:</strong> Parameter space visualization: curve rise vs COP (top-left), schedule duration
+        <img src="fig24_parameter_space.png" alt="Parameter Space">
+        <figcaption><strong>Figure 24:</strong> Parameter space visualization: curve rise vs COP (top-left), schedule duration
         vs self-sufficiency (top-right), comfort-efficiency trade-off (bottom-left),
         parameter summary table (bottom-right).</figcaption>
     </figure>

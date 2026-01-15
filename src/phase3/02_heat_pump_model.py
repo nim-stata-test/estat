@@ -342,89 +342,113 @@ def create_heat_pump_plots(daily: pd.DataFrame, heating: pd.DataFrame,
     """Create visualization of heat pump model results."""
     print("\nCreating heat pump model plots...")
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    # Use gridspec for mixed 2D and 3D subplots
+    from mpl_toolkits.mplot3d import Axes3D
 
-    # Panel 1: COP vs Outdoor Temperature
-    ax = axes[0, 0]
+    fig = plt.figure(figsize=(14, 10))
+
+    # Panel 1: COP vs Outdoor Temperature (top-left)
+    ax1 = fig.add_subplot(2, 2, 1)
     if 'T_outdoor' in daily.columns and daily['cop'].notna().any():
         mask = daily['cop'].notna() & daily['T_outdoor'].notna()
-        ax.scatter(daily.loc[mask, 'T_outdoor'], daily.loc[mask, 'cop'],
+        ax1.scatter(daily.loc[mask, 'T_outdoor'], daily.loc[mask, 'cop'],
                    alpha=0.6, s=50, c='blue')
 
         if 'cop_vs_outdoor' in cop_results:
             r = cop_results['cop_vs_outdoor']
             x_range = np.array([daily['T_outdoor'].min(), daily['T_outdoor'].max()])
             y_line = r['intercept'] + r['slope'] * x_range
-            ax.plot(x_range, y_line, 'r-', linewidth=2,
+            ax1.plot(x_range, y_line, 'r-', linewidth=2,
                     label=f"COP = {r['intercept']:.2f} + {r['slope']:.3f}×T_out (R²={r['r2']:.2f})")
-            ax.legend()
+            ax1.legend()
 
-    ax.set_xlabel('Outdoor Temperature (°C)')
-    ax.set_ylabel('COP')
-    ax.set_title('COP vs Outdoor Temperature')
-    ax.grid(True, alpha=0.3)
+    ax1.set_xlabel('Outdoor Temperature (°C)')
+    ax1.set_ylabel('COP')
+    ax1.set_title('COP vs Outdoor Temperature')
+    ax1.grid(True, alpha=0.3)
 
-    # Panel 2: COP vs T_HK2 (target flow temperature)
-    ax = axes[0, 1]
+    # Panel 2: COP vs T_HK2 (target flow temperature) (top-right)
+    ax2 = fig.add_subplot(2, 2, 2)
     if 'T_HK2' in daily.columns and daily['cop'].notna().any():
         mask = daily['cop'].notna() & daily['T_HK2'].notna()
-        ax.scatter(daily.loc[mask, 'T_HK2'], daily.loc[mask, 'cop'],
+        ax2.scatter(daily.loc[mask, 'T_HK2'], daily.loc[mask, 'cop'],
                    alpha=0.6, s=50, c='green')
 
         if 'cop_vs_t_hk2' in cop_results:
             r = cop_results['cop_vs_t_hk2']
             x_range = np.array([daily['T_HK2'].min(), daily['T_HK2'].max()])
             y_line = r['intercept'] + r['slope'] * x_range
-            ax.plot(x_range, y_line, 'r-', linewidth=2,
+            ax2.plot(x_range, y_line, 'r-', linewidth=2,
                     label=f"COP = {r['intercept']:.2f} + {r['slope']:.3f}×T_HK2 (R²={r['r2']:.2f})")
-            ax.legend()
+            ax2.legend()
 
-    ax.set_xlabel('T_HK2 Target (°C)')
-    ax.set_ylabel('COP')
-    ax.set_title('COP vs T_HK2 (Heating Curve Target)')
-    ax.grid(True, alpha=0.3)
+    ax2.set_xlabel('T_HK2 Target (°C)')
+    ax2.set_ylabel('COP')
+    ax2.set_title('COP vs T_HK2 (Heating Curve Target)')
+    ax2.grid(True, alpha=0.3)
 
-    # Panel 3: Daily Energy Production
-    ax = axes[1, 0]
+    # Panel 3: 3D COP surface (bottom-left)
+    ax3 = fig.add_subplot(2, 2, 3, projection='3d')
+    if 'T_outdoor' in daily.columns and 'T_HK2' in daily.columns and daily['cop'].notna().any():
+        mask = daily['cop'].notna() & daily['T_outdoor'].notna() & daily['T_HK2'].notna()
+        x = daily.loc[mask, 'T_outdoor'].values
+        y = daily.loc[mask, 'T_HK2'].values
+        z = daily.loc[mask, 'cop'].values
+
+        # Scatter plot
+        scatter = ax3.scatter(x, y, z, c=z, cmap='viridis', s=50, alpha=0.8)
+
+        # Add regression plane if multivariate model available
+        if 'cop_multivar' in cop_results:
+            mv = cop_results['cop_multivar']
+            x_grid = np.linspace(x.min(), x.max(), 20)
+            y_grid = np.linspace(y.min(), y.max(), 20)
+            X_grid, Y_grid = np.meshgrid(x_grid, y_grid)
+            Z_grid = mv['intercept'] + mv['outdoor_coef'] * X_grid + mv['t_hk2_coef'] * Y_grid
+            ax3.plot_surface(X_grid, Y_grid, Z_grid, alpha=0.3, color='red')
+
+        ax3.set_xlabel('T_outdoor (°C)')
+        ax3.set_ylabel('T_HK2 (°C)')
+        ax3.set_zlabel('COP')
+        ax3.set_title('COP = f(T_outdoor, T_HK2)')
+        fig.colorbar(scatter, ax=ax3, shrink=0.5, label='COP')
+
+    # Panel 4: Daily Energy Production with outdoor temperature overlay (bottom-right)
+    ax4 = fig.add_subplot(2, 2, 4)
     if 'consumed' in daily.columns and 'produced' in daily.columns:
         valid = daily[['consumed', 'produced']].dropna()
         dates = valid.index
 
-        ax.bar(dates, valid['consumed'], alpha=0.7, label='Electricity Consumed', color='orange')
-        ax.bar(dates, valid['produced'], alpha=0.4, label='Heat Produced', color='red')
+        # Bar charts for energy
+        ax4.bar(dates, valid['consumed'], alpha=0.7, label='Electricity Consumed', color='orange')
+        ax4.bar(dates, valid['produced'], alpha=0.4, label='Heat Produced', color='red')
 
-        ax.set_ylabel('Energy (kWh/day)')
-        ax.set_title('Daily Heating Energy')
-        ax.legend()
-        ax.tick_params(axis='x', rotation=45)
+        ax4.set_ylabel('Energy (kWh/day)')
+        ax4.set_title('Daily Heating Energy & Outdoor Temperature')
+        ax4.tick_params(axis='x', rotation=45)
+        ax4.grid(True, alpha=0.3)
 
-    ax.grid(True, alpha=0.3)
+        # Secondary axis for outdoor temperature
+        if 'T_outdoor' in daily.columns:
+            ax4_twin = ax4.twinx()
+            t_out = daily.loc[valid.index, 'T_outdoor']
+            ax4_twin.plot(dates, t_out, color='blue', linewidth=1.5, marker='o',
+                         markersize=3, label='T_outdoor')
+            ax4_twin.set_ylabel('Outdoor Temperature (°C)', color='blue')
+            ax4_twin.tick_params(axis='y', labelcolor='blue')
 
-    # Panel 4: Buffer Tank Temperature
-    ax = axes[1, 1]
-    buffer_col = 'stiebel_eltron_isg_actual_temperature_buffer'
-    outdoor_col = 'stiebel_eltron_isg_outdoor_temperature'
-
-    if buffer_col in heating.columns:
-        # Hourly averages for cleaner plot
-        hourly = heating[[buffer_col]].resample('h').mean()
-        ax.plot(hourly.index, hourly[buffer_col], label='Buffer Tank', color='red', alpha=0.8)
-
-        if outdoor_col in heating.columns:
-            hourly_out = heating[outdoor_col].resample('h').mean()
-            ax.plot(hourly_out.index, hourly_out, label='Outdoor', color='blue', alpha=0.6)
-
-        ax.set_ylabel('Temperature (°C)')
-        ax.set_title('Buffer Tank vs Outdoor Temperature')
-        ax.legend()
-
-    ax.grid(True, alpha=0.3)
+            # Combined legend
+            lines1, labels1 = ax4.get_legend_handles_labels()
+            lines2, labels2 = ax4_twin.get_legend_handles_labels()
+            ax4.legend(lines1 + lines2, labels1 + labels2, loc='upper left')
+        else:
+            ax4.legend()
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig18_heat_pump_model.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig19_heat_pump_model.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig18_heat_pump_model.png")
+    print("  Saved: fig19_heat_pump_model.png")
 
 
 def generate_report(daily: pd.DataFrame, cop_results: dict,
@@ -439,9 +463,6 @@ def generate_report(daily: pd.DataFrame, cop_results: dict,
     cop_t_hk2_slope = cop_results.get('cop_vs_t_hk2', {}).get('slope', 0)
 
     multivar = cop_results.get('cop_multivar', {})
-    cop_formula = ""
-    if multivar:
-        cop_formula = f"COP = {multivar['intercept']:.2f} + {multivar['outdoor_coef']:.4f}×T_out + {multivar['t_hk2_coef']:.4f}×T_HK2"
 
     daily_consumed = capacity_results.get('daily_consumed', {})
     daily_produced = capacity_results.get('daily_produced', {})
@@ -464,61 +485,64 @@ def generate_report(daily: pd.DataFrame, cop_results: dict,
         <tr>
             <td>COP Range</td>
             <td>{cop_range[0]:.2f} – {cop_range[1]:.2f}</td>
-            <td>Varies with outdoor/flow temperature</td>
+            <td>Varies with $T_{{out}}$ and $T_{{HK2}}$</td>
         </tr>
         <tr>
-            <td>COP sensitivity to outdoor temp</td>
+            <td>$\\partial \\text{{COP}} / \\partial T_{{out}}$</td>
             <td>{cop_outdoor_slope:.4f} COP/°C</td>
             <td>{"Increases" if cop_outdoor_slope > 0 else "Decreases"} with warmer outdoor</td>
         </tr>
         <tr>
-            <td>COP sensitivity to T_HK2</td>
+            <td>$\\partial \\text{{COP}} / \\partial T_{{HK2}}$</td>
             <td>{cop_t_hk2_slope:.4f} COP/°C</td>
-            <td>{"Increases" if cop_t_hk2_slope > 0 else "Decreases"} with higher T_HK2</td>
+            <td>{"Increases" if cop_t_hk2_slope > 0 else "Decreases"} with higher flow temp</td>
         </tr>
     </table>
 
     <h3>COP Model</h3>
     <p>Multi-variable regression model:</p>
-    <pre>{cop_formula if cop_formula else "Insufficient data for multi-variable model"}</pre>
-    <p>R² = {multivar.get('r2', 0):.3f}, RMSE = {multivar.get('rmse', 0):.3f}</p>
+    <div class="equation-box">
+    $$\\text{{COP}} = {multivar.get('intercept', 0):.2f} + {multivar.get('outdoor_coef', 0):.4f} \\cdot T_{{out}} + {multivar.get('t_hk2_coef', 0):.4f} \\cdot T_{{HK2}}$$
+    </div>
+    <p>$R^2 = {multivar.get('r2', 0):.3f}$, $\\text{{RMSE}} = {multivar.get('rmse', 0):.3f}$</p>
 
     <h3>Capacity Analysis</h3>
     <table>
         <tr><th>Metric</th><th>Mean</th><th>Max</th><th>Min</th></tr>
         <tr>
-            <td>Daily electricity consumed</td>
+            <td>Daily electricity consumed ($E_{{elec}}$)</td>
             <td>{daily_consumed.get('mean', 0):.1f} kWh</td>
             <td>{daily_consumed.get('max', 0):.1f} kWh</td>
             <td>{daily_consumed.get('min', 0):.1f} kWh</td>
         </tr>
         <tr>
-            <td>Daily heat produced</td>
+            <td>Daily heat produced ($Q_{{heat}}$)</td>
             <td>{daily_produced.get('mean', 0):.1f} kWh</td>
             <td>{daily_produced.get('max', 0):.1f} kWh</td>
             <td>{daily_produced.get('min', 0):.1f} kWh</td>
         </tr>
         <tr>
-            <td>Compressor runtime</td>
+            <td>Compressor runtime ($t_{{comp}}$)</td>
             <td>{runtime.get('mean_hours', 0):.1f} h/day</td>
             <td>{runtime.get('max_hours', 0):.1f} h/day</td>
             <td>—</td>
         </tr>
     </table>
+    <p>Relationship: $Q_{{heat}} = \\text{{COP}} \\times E_{{elec}}$</p>
 
     <h3>Buffer Tank Dynamics</h3>
     <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Mean temperature</td><td>{buffer_stats.get('mean', 0):.1f}°C</td></tr>
-        <tr><td>Temperature range</td><td>{buffer_stats.get('min', 0):.1f} – {buffer_stats.get('max', 0):.1f}°C</td></tr>
-        <tr><td>Temperature variability (std)</td><td>{buffer_stats.get('std', 0):.2f}°C</td></tr>
+        <tr><td>Mean $T_{{buf}}$</td><td>{buffer_stats.get('mean', 0):.1f}°C</td></tr>
+        <tr><td>Range</td><td>{buffer_stats.get('min', 0):.1f} – {buffer_stats.get('max', 0):.1f}°C</td></tr>
+        <tr><td>Variability ($\\sigma$)</td><td>{buffer_stats.get('std', 0):.2f}°C</td></tr>
     </table>
 
     <h3>Implications for Optimization</h3>
     <ul>
-        <li><strong>COP optimization</strong>: Lower T_HK2 (target temperature) improves COP.
-            With slope {cop_t_hk2_slope:.4f}, reducing T_HK2 by 5°C improves COP by ~{abs(cop_t_hk2_slope*5):.2f}.</li>
-        <li><strong>Timing strategy</strong>: Run heat pump during warmest outdoor temps (daytime/solar hours)
+        <li><strong>COP optimization</strong>: Lower $T_{{HK2}}$ improves COP.
+            With $\\partial \\text{{COP}}/\\partial T_{{HK2}} = {cop_t_hk2_slope:.4f}$, reducing $T_{{HK2}}$ by 5°C improves COP by ~{abs(cop_t_hk2_slope*5):.2f}.</li>
+        <li><strong>Timing strategy</strong>: Run heat pump during warmest $T_{{out}}$ (daytime/solar hours)
             for better COP. Each +1°C outdoor improves COP by ~{cop_outdoor_slope:.3f}.</li>
         <li><strong>Capacity headroom</strong>: Max observed {daily_consumed.get('max', 0):.0f} kWh/day
             suggests capacity is sufficient for current heating demand.</li>
@@ -527,10 +551,10 @@ def generate_report(daily: pd.DataFrame, cop_results: dict,
     </ul>
 
     <figure>
-        <img src="fig18_heat_pump_model.png" alt="Heat Pump Model Analysis">
-        <figcaption><strong>Figure 18:</strong> Heat pump analysis: COP vs outdoor temperature (top-left),
-        COP vs T_HK2 (top-right), daily energy (bottom-left),
-        buffer tank dynamics (bottom-right).</figcaption>
+        <img src="fig19_heat_pump_model.png" alt="Heat Pump Model Analysis">
+        <figcaption><strong>Figure 19:</strong> Heat pump analysis: COP vs outdoor temperature (top-left),
+        COP vs T_HK2 (top-right), 3D COP surface with regression plane (bottom-left),
+        daily energy with outdoor temperature overlay (bottom-right).</figcaption>
     </figure>
     </section>
     """

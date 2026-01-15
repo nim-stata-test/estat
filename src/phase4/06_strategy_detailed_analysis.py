@@ -11,9 +11,9 @@ NOW INCLUDES PROPER ENERGY SIMULATION:
 - Shows meaningful energy differences between strategies
 
 Outputs:
-- fig28_strategy_detailed_timeseries.png
-- fig29_strategy_hourly_patterns.png
-- fig30_strategy_energy_patterns.png
+- fig29_strategy_detailed_timeseries.png
+- fig30_strategy_hourly_patterns.png
+- fig31_strategy_energy_patterns.png
 - strategy_detailed_stats.csv
 - strategy_detailed_report.html
 """
@@ -25,15 +25,28 @@ import matplotlib.dates as mdates
 import seaborn as sns
 from pathlib import Path
 import json
+import sys
 from datetime import datetime
 
 # Project paths
 PROJECT_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / 'src'))
+
+# Grey-box thermal simulator disabled - forward simulation diverges (R² = -6.7)
+# Using TEMP_REGRESSION instead (transfer function model)
+# from shared.thermal_simulator import (
+#     ThermalSimulator, simulate_forward, compute_T_HK2_from_schedule_vectorized
+# )
+
 PHASE1_DIR = PROJECT_ROOT / 'output' / 'phase1'
 PHASE2_DIR = PROJECT_ROOT / 'output' / 'phase2'
+PHASE3_DIR = PROJECT_ROOT / 'output' / 'phase3'
 PHASE4_DIR = PROJECT_ROOT / 'output' / 'phase4'
 OUTPUT_DIR = PHASE4_DIR
 OUTPUT_DIR.mkdir(exist_ok=True)
+
+# Buffer tank sensor column
+BUFFER_COL = 'stiebel_eltron_isg_actual_temperature_buffer'
 
 # =============================================================================
 # MODEL CONSTANTS (must match 04_pareto_optimization.py)
@@ -66,7 +79,8 @@ HEATING_CURVE_PARAMS = _load_heating_curve_params()
 BASE_LOAD_KWH = 11.0   # Non-heating daily consumption
 THERMAL_COEF = 10.0    # Thermal kWh per HDD (before COP division)
 
-# T_weighted regression coefficients from Phase 2
+# T_weighted regression coefficients from Phase 2 multivariate analysis
+# (Grey-box forward simulation disabled due to divergence, R² = -6.7)
 TEMP_REGRESSION = {
     'intercept': -15.31,
     'comfort_setpoint': 1.218,
@@ -74,6 +88,9 @@ TEMP_REGRESSION = {
     'curve_rise': 9.73,
     'comfort_hours': -0.020,
 }
+
+# Grey-box thermal model disabled for optimization
+GREYBOX_PARAMS = None
 
 # Target sensor (single sensor for simplicity)
 SENSOR_WEIGHTS = {
@@ -99,7 +116,7 @@ PHASE5_STRATEGY_LABELS = ['Grid-Minimal', 'Balanced', 'Cost-Minimal']
 
 
 def load_data():
-    """Load integrated dataset and selected strategies."""
+    """Load integrated dataset, thermal simulator, and selected strategies."""
     print("Loading data...")
 
     # Load integrated dataset
@@ -119,6 +136,12 @@ def load_data():
 
     # Add outdoor temperature
     df['T_outdoor'] = df['stiebel_eltron_isg_outdoor_temperature']
+
+    # Add buffer temperature for thermal simulator
+    if BUFFER_COL in df.columns:
+        df['T_buffer'] = df[BUFFER_COL]
+    else:
+        df['T_buffer'] = 30.0  # Fallback
 
     # Add time features
     df['hour'] = df.index.hour + df.index.minute / 60
@@ -140,6 +163,15 @@ def load_data():
     feedin_map = tariff['feedin_rate_rp_kwh'].to_dict()
     df['purchase_rate'] = [purchase_map.get(h, 32.0) for h in hourly_idx]
     df['feedin_rate'] = [feedin_map.get(h, 14.0) for h in hourly_idx]
+
+    # Initialize thermal simulator
+    thermal_sim = None
+    if GREYBOX_PARAMS is not None:
+        thermal_sim = ThermalSimulator(
+            params=GREYBOX_PARAMS['params'],
+            heating_curve_params=HEATING_CURVE_PARAMS
+        )
+        print("  Initialized grey-box thermal simulator")
 
     # Load selected strategies
     with open(PHASE4_DIR / 'selected_strategies.json', 'r') as f:
@@ -164,7 +196,7 @@ def load_data():
     print(f"  Loaded {len(df):,} valid timesteps ({len(df)//96:.0f} days)")
     print(f"  Loaded {len(strategies)} strategies for analysis")
 
-    return df, strategies
+    return df, strategies, thermal_sim
 
 
 def simulate_strategy_energy(df: pd.DataFrame, params: dict) -> pd.DataFrame:
@@ -416,11 +448,11 @@ def plot_detailed_timeseries(df: pd.DataFrame, strategies: list, energy_results:
     ax4.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig28_strategy_detailed_timeseries.png',
+    plt.savefig(OUTPUT_DIR / 'fig29_strategy_detailed_timeseries.png',
                 dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig28_strategy_detailed_timeseries.png")
+    print("  Saved: fig29_strategy_detailed_timeseries.png")
 
 
 def plot_hourly_patterns(df: pd.DataFrame, strategies: list, energy_results: dict):
@@ -558,11 +590,11 @@ def plot_hourly_patterns(df: pd.DataFrame, strategies: list, energy_results: dic
         ax6.set_yticklabels([str(grid_heatmap_gm.index[i])[:10] for i in range(0, n_dates, step)], fontsize=8)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig29_strategy_hourly_patterns.png',
+    plt.savefig(OUTPUT_DIR / 'fig30_strategy_hourly_patterns.png',
                 dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig29_strategy_hourly_patterns.png")
+    print("  Saved: fig30_strategy_hourly_patterns.png")
 
 
 def plot_energy_patterns(df: pd.DataFrame, strategies: list, energy_results: dict, stats_df: pd.DataFrame):
@@ -706,11 +738,11 @@ def plot_energy_patterns(df: pd.DataFrame, strategies: list, energy_results: dic
                  fontsize=12, fontweight='bold', y=0.95)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig30_strategy_energy_patterns.png',
+    plt.savefig(OUTPUT_DIR / 'fig31_strategy_energy_patterns.png',
                 dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig30_strategy_energy_patterns.png")
+    print("  Saved: fig31_strategy_energy_patterns.png")
 
 
 def generate_report(df: pd.DataFrame, strategies: list, stats_df: pd.DataFrame) -> str:
@@ -822,22 +854,22 @@ def generate_report(df: pd.DataFrame, strategies: list, stats_df: pd.DataFrame) 
     <h3>Visualizations</h3>
 
     <figure>
-        <img src="fig28_strategy_detailed_timeseries.png" alt="Strategy Time Series">
-        <figcaption><strong>Figure 28:</strong> Time series showing (A) simulated temperature by strategy,
+        <img src="fig29_strategy_detailed_timeseries.png" alt="Strategy Time Series">
+        <figcaption><strong>Figure 31:</strong> Time series showing (A) simulated temperature by strategy,
         (B) outdoor temperature and PV generation, (C) simulated hourly grid import by strategy,
         (D) daily grid import comparison.</figcaption>
     </figure>
 
     <figure>
-        <img src="fig29_strategy_hourly_patterns.png" alt="Hourly Patterns">
-        <figcaption><strong>Figure 29:</strong> Hourly patterns showing (A) temperature profiles,
+        <img src="fig30_strategy_hourly_patterns.png" alt="Hourly Patterns">
+        <figcaption><strong>Figure 31:</strong> Hourly patterns showing (A) temperature profiles,
         (B) grid import profiles, (C) COP profiles, (D) PV vs demand,
         (E-F) grid import heatmaps for Baseline and Grid-Minimal strategies.</figcaption>
     </figure>
 
     <figure>
-        <img src="fig30_strategy_energy_patterns.png" alt="Energy Patterns">
-        <figcaption><strong>Figure 30:</strong> Energy analysis showing (A) total energy comparison,
+        <img src="fig31_strategy_energy_patterns.png" alt="Energy Patterns">
+        <figcaption><strong>Figure 31:</strong> Energy analysis showing (A) total energy comparison,
         (B) grid savings vs baseline, (C) average COP, (D) daily grid distribution,
         (E) temperature box plots, (F) summary table.</figcaption>
     </figure>
@@ -871,8 +903,9 @@ def main():
     print("Phase 4, Step 6: Detailed Strategy Analysis")
     print("=" * 60)
 
-    # Load data
-    df, strategies = load_data()
+    # Load data and thermal simulator
+    # Note: thermal_sim available for future forward simulation integration
+    df, strategies, thermal_sim = load_data()
 
     # Simulate energy for each strategy
     print("\nSimulating energy for each strategy...")

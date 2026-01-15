@@ -1,0 +1,83 @@
+
+    <section id="hk2-target-actual">
+    <h2>2.7 HK2 Target vs Actual Temperature Analysis</h2>
+
+    <h3>Overview</h3>
+    <p>This analysis examines the relationship between the HK2 <strong>target</strong> temperature
+    (heating curve setpoint, controllable) and <strong>actual</strong> temperature (measured flow).
+    Understanding this relationship is critical because:</p>
+    <ul>
+        <li>The thermal model uses actual HK2 as the heating input signal</li>
+        <li>Optimization controls target HK2 via setpoint and curve_rise parameters</li>
+        <li>A gap between target and actual affects model predictions</li>
+    </ul>
+
+    <h3>Deviation Statistics</h3>
+    <p>Analysis of the difference: $\Delta T = T_{actual} - T_{target}$</p>
+    <table>
+        <tr><th>Statistic</th><th>Value</th></tr>
+        <tr><td>Number of observations</td><td>6,097</td></tr>
+        <tr><td>Mean deviation ($\bar{\Delta T}$)</td><td><strong>-1.45°C</strong></td></tr>
+        <tr><td>Std deviation ($\sigma_{\Delta T}$)</td><td>1.79°C</td></tr>
+        <tr><td>Min deviation</td><td>-9.8°C</td></tr>
+        <tr><td>Max deviation</td><td>29.1°C</td></tr>
+        <tr><td>Actual above target</td><td>14.8%</td></tr>
+        <tr><td>Within ±1°C</td><td>52.6%</td></tr>
+        <tr><td>Within ±2°C</td><td>69.7%</td></tr>
+        <tr><td>Correlation ($r$)</td><td>0.910</td></tr>
+    </table>
+
+    <h3>First-Order Lag Model</h3>
+    <p>We fit a first-order lag model to characterize the dynamics:</p>
+    <div class="equation-box">
+    $$T_{actual}[k+1] = T_{actual}[k] + \frac{\Delta t}{\tau} \left( T_{target}[k] - T_{actual}[k] \right)$$
+    </div>
+    <p>where $\tau$ is the time constant (how quickly actual approaches target).</p>
+
+    <table>
+        <tr><th>Model Parameter</th><th>Value</th></tr>
+        <tr><td>Time constant ($\tau$)</td><td><strong>0.35 hours</strong></td></tr>
+        <tr><td>Forward simulation $R^2$</td><td>0.722</td></tr>
+        <tr><td>Forward simulation RMSE</td><td>2.25°C</td></tr>
+        <tr><td>One-step prediction $R^2$</td><td>0.813</td></tr>
+        <tr><td>One-step prediction RMSE</td><td>1.84°C</td></tr>
+    </table>
+
+    <p><strong>Interpretation:</strong> A time constant of τ = 0.3 hours means the actual
+    temperature reaches ~63% of a step change in target within 0.3 hours, and ~95% within
+    1.0 hours (3τ).</p>
+
+    <h3>Cross-Correlation Analysis</h3>
+    <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Peak correlation</td><td>0.914</td></tr>
+        <tr><td>Peak lag</td><td>-0.25 hours</td></tr>
+        <tr><td>Zero-lag correlation</td><td>0.910</td></tr>
+    </table>
+
+    
+        <div class="warning">
+        <strong>Recommendation:</strong> The lag model achieves moderate fit (R² = 0.722).
+        Consider using actual HK2 temperature directly in thermal models rather than predicting
+        from target. The dynamics may involve factors beyond simple first-order lag.
+        </div>
+        
+
+    <h3>Implications for Thermal Modeling</h3>
+    <ul>
+        <li><strong>Transfer function model:</strong> Currently uses actual HK2 ($T_{actual}$) as input.
+            This is appropriate since it reflects real heat delivery.</li>
+        <li><strong>Grey-box model:</strong> Uses target HK2 ($T_{target}$) as input.
+            The mismatch between target and actual may explain forward simulation divergence.</li>
+        <li><strong>Optimization:</strong> Changes to setpoint/curve_rise affect target immediately
+            but take ~0 hours to fully propagate to actual flow temperature.</li>
+    </ul>
+
+    <figure>
+        <img src="fig17_hk2_target_actual.png" alt="HK2 Target vs Actual Analysis">
+        <figcaption><strong>Figure 17:</strong> HK2 target vs actual temperature analysis:
+        time series (top-left), scatter correlation (top-right), deviation distribution (bottom-left),
+        lag model fit (bottom-right).</figcaption>
+    </figure>
+    </section>
+    

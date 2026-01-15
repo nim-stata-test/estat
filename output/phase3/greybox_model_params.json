@@ -1,19 +1,19 @@
 {
   "params": {
-    "tau_buf": 2.276186187080637,
-    "tau_room": 71.9999999997567,
-    "r_emit": 0.10000000000000002,
-    "r_heat": 1.0465322886742878,
-    "k_solar": 0.016539924577142488,
-    "c_offset": -0.0852421490774589
+    "tau_buf": 2.5802796537821164,
+    "tau_room": 71.99999999999703,
+    "r_emit": 0.10000000000009132,
+    "r_heat": 1.0505310344714802,
+    "k_solar": 0.016621107915098764,
+    "c_offset": -0.08632811030411262
   },
   "param_std": {
-    "tau_buf": 0.11851782867573517,
-    "tau_room": 44.87472960817075,
-    "r_emit": 0.020635085197383166,
-    "r_heat": 0.6008568868938363,
-    "k_solar": 0.020517859379981296,
-    "c_offset": 0.11312889901534123
+    "tau_buf": 0.12483106061049308,
+    "tau_room": 45.69111082442453,
+    "r_emit": 0.018758175766947868,
+    "r_heat": 0.6132780395156398,
+    "k_solar": 0.02082679152476904,
+    "c_offset": 0.11500124355265043
   },
   "param_bounds": {
     "tau_buf": [
@@ -42,31 +42,31 @@
     ]
   },
   "fit_stats": {
-    "r2_buffer": 0.7907337293990896,
-    "r2_room": 0.9947021914767084,
-    "rmse_buffer": 2.734946514453404,
-    "rmse_room": 0.06370476251818781,
-    "mae_buffer": 2.248646021583164,
-    "mae_room": 0.04533841395180775,
-    "bias_buffer": -0.5361570413949369,
-    "bias_room": -8.773820226438666e-15,
-    "n_points": 6862
+    "r2_buffer": 0.784400472172839,
+    "r2_room": 0.9946171714866435,
+    "rmse_buffer": 2.773909468717117,
+    "rmse_room": 0.06415807300285725,
+    "mae_buffer": 2.286644488884779,
+    "mae_room": 0.04559661482043866,
+    "bias_buffer": -0.33602713836328496,
+    "bias_room": -3.659201129649061e-16,
+    "n_points": 6807
   },
   "validation": {
-    "r2_buffer_test": 0.7035223961524553,
-    "r2_room_test": 0.9920686626768207,
-    "rmse_buffer_test": 2.8686986979305757,
-    "rmse_room_test": 0.07017007788631928
+    "r2_buffer_test": 0.6898538518925843,
+    "r2_room_test": 0.9918439467275694,
+    "rmse_buffer_test": 2.935561319178435,
+    "rmse_room_test": 0.07113542350342207
   },
   "diagnostics": {
-    "durbin_watson": 1.4618622433789266,
+    "durbin_watson": 1.461396438424366,
     "decorr_lag_hours": 1.25,
-    "residual_std": 0.06370012049810528
+    "residual_std": 0.06415336017565709
   },
   "sensors": {
     "buffer": "stiebel_eltron_isg_actual_temperature_buffer",
     "room": "davis_inside_temperature",
-    "hk2": "wp_anlage_hk2_ist",
+    "hk2": "stiebel_eltron_isg_target_temperature_hk_2",
     "outdoor": "stiebel_eltron_isg_outdoor_temperature",
     "pv": "pv_generation_kwh"
   },

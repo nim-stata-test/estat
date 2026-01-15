@@ -4,22 +4,22 @@
 
     <h3>PV Generation Patterns</h3>
     <table>
-        <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Mean daily generation</td><td><strong>55.7 kWh</strong></td></tr>
-        <tr><td>Peak daily generation</td><td>145.7 kWh</td></tr>
-        <tr><td>Peak generation hours</td><td>10:00 - 16:00</td></tr>
+        <tr><th>Metric</th><th>Symbol</th><th>Value</th></tr>
+        <tr><td>Mean daily generation</td><td>$\bar{P}_{pv}$</td><td><strong>55.7 kWh</strong></td></tr>
+        <tr><td>Peak daily generation</td><td>$P_{pv,max}$</td><td>145.7 kWh</td></tr>
+        <tr><td>Peak generation hours</td><td>—</td><td>10:00 - 16:00</td></tr>
     </table>
 
     <h3>Battery Performance</h3>
     <table>
         <tr><th>Metric</th><th>Value</th><th>Notes</th></tr>
         <tr>
-            <td>Round-trip efficiency</td>
+            <td>Round-trip efficiency ($\eta_{bat}$)</td>
             <td><strong>83.7%</strong></td>
             <td>Within normal range</td>
         </tr>
         <tr>
-            <td>Mean daily discharge</td>
+            <td>Mean daily discharge ($E_{discharge}$)</td>
             <td>6.3 kWh</td>
             <td>Energy supplied to home from battery</td>
         </tr>
@@ -28,11 +28,15 @@
     <h3>Grid Interaction</h3>
     <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Mean daily import</td><td>10.6 kWh</td></tr>
-        <tr><td>Mean daily export</td><td>40.5 kWh</td></tr>
+        <tr><td>Mean daily import ($E_{import}$)</td><td>10.6 kWh</td></tr>
+        <tr><td>Mean daily export ($E_{export}$)</td><td>40.5 kWh</td></tr>
         <tr><td>Net export</td><td>29.9 kWh/day</td></tr>
-        <tr><td>Current self-sufficiency</td><td><strong>75.3%</strong></td></tr>
+        <tr><td>Current self-sufficiency ($\eta_{ss}$)</td><td><strong>75.3%</strong></td></tr>
     </table>
+    <p>Self-sufficiency definition:</p>
+    <div class="equation-box">
+    $$\eta_{ss} = 1 - \frac{E_{import}}{E_{consumption}} = \frac{E_{direct} + E_{battery}}{E_{consumption}}$$
+    </div>
 
     <h3>Self-Sufficiency Optimization Scenarios</h3>
     <table>
@@ -78,8 +82,8 @@
     </ul>
 
     <figure>
-        <img src="fig19_energy_system_model.png" alt="Energy System Model">
-        <figcaption><strong>Figure 19:</strong> Energy system analysis: daily profile (top-left),
+        <img src="fig20_energy_system_model.png" alt="Energy System Model">
+        <figcaption><strong>Figure 20:</strong> Energy system analysis: daily profile (top-left),
         battery patterns (top-right), monthly grid balance (bottom-left),
         self-sufficiency scenarios (bottom-right).</figcaption>
     </figure>

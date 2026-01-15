@@ -128,7 +128,7 @@
 </head>
 <body>
     <h1>Phase 4: Optimization Strategy Development Report</h1>
-    <p><em>Generated: 2026-01-13 19:24</em></p>
+    <p><em>Generated: 2026-01-15 17:21</em></p>
 
     <div class="summary-box">
         <h3>Executive Summary</h3>
@@ -167,7 +167,7 @@
     <h3>Methodology</h3>
     <p>Three heating optimization strategies were developed using Phase 3 model parameters:</p>
     <ul>
-        <li><strong>COP Model</strong>: COP = 6.52 + 0.13×T_outdoor - 0.10×T_flow (R²=0.95)</li>
+        <li><strong>COP Model</strong>: COP = 6.52 + 0.13×T_outdoor - 0.10×T_HK2 (R²=0.95)</li>
         <li><strong>Building Time Constant</strong>: ~19 hours (weighted average from target sensors)</li>
         <li><strong>Target Sensor</strong>: davis_inside (100% - least noise)</li>
         <li><strong>Peak PV Hours</strong>: 10:00-16:00</li>
@@ -288,10 +288,10 @@
     </table>
 
     <p><strong>Heating curve formula</strong> (from Phase 2 analysis):<br>
-    <code>T_flow = T_setpoint + curve_rise × (T_ref - T_outdoor)</code><br>
+    <code>T_HK2 = T_setpoint + curve_rise × (T_ref - T_outdoor)</code><br>
     where T_ref = 21.32°C (comfort) or 19.18°C (eco).</p>
 
-    <p>Key insight: Reducing curve_rise from 1.08 to 0.95-0.98 lowers flow temperature by ~1-2°C,
+    <p>Key insight: Reducing curve_rise from 1.08 to 0.95-0.98 lowers T_HK2 (target flow) by ~1-2°C,
     improving COP by ~0.1-0.2 across all outdoor temperatures.</p>
 
     <h3>Schedule Optimization Rationale</h3>
@@ -306,8 +306,8 @@
     </ul>
 
     <figure>
-        <img src="fig21_strategy_comparison.png" alt="Strategy Comparison">
-        <figcaption><strong>Figure 21:</strong> Strategy comparison: COP by temperature (top-left), COP improvement (top-right),
+        <img src="fig22_strategy_comparison.png" alt="Strategy Comparison">
+        <figcaption><strong>Figure 22:</strong> Strategy comparison: COP by temperature (top-left), COP improvement (top-right),
         schedule alignment with PV (bottom-left), expected improvements (bottom-right).</figcaption>
     </figure>
     </section>
@@ -336,14 +336,14 @@
         <tr>
             <td>Average COP</td>
             <td>3.90</td>
-            <td>4.21 (+0.15)</td>
-            <td>4.26 (+0.19)</td>
+            <td>4.21 (+0.29)</td>
+            <td>4.26 (+0.34)</td>
         </tr>
         <tr>
             <td>Self-Sufficiency</td>
-            <td>36.8%</td>
-            <td>36.8% (+0.0pp)</td>
-            <td>36.8% (+0.0pp)</td>
+            <td>36.7%</td>
+            <td>36.7% (+0.0pp)</td>
+            <td>36.7% (+0.0pp)</td>
         </tr>
         <tr>
             <td>Mean Daytime Temp (08:00-22:00)</td>
@@ -353,27 +353,27 @@
         </tr>
         <tr>
             <td>Violation % (&lt;18.5°C, target ≤20%)</td>
-            <td>15.8%</td>
-            <td>15.8%</td>
-            <td>15.8%</td>
+            <td>15.5%</td>
+            <td>15.5%</td>
+            <td>15.5%</td>
         </tr>
         <tr>
             <td>Solar Heating %</td>
-            <td>30.3%</td>
-            <td>25.6%</td>
-            <td>20.5%</td>
+            <td>31.0%</td>
+            <td>26.1%</td>
+            <td>20.8%</td>
         </tr>
         <tr>
             <td>Comfort Hours/Day</td>
-            <td>7.0h</td>
-            <td>4.0h</td>
-            <td>4.8h</td>
+            <td>6.6h</td>
+            <td>3.8h</td>
+            <td>4.5h</td>
         </tr>
         <tr>
             <td>Daily Net Cost</td>
-            <td>CHF 3.90</td>
-            <td>CHF 3.90 (+0.0%)</td>
-            <td>CHF 3.90 (+0.0%)</td>
+            <td>CHF 3.53</td>
+            <td>CHF 3.53 (+0.0%)</td>
+            <td>CHF 3.53 (+0.0%)</td>
         </tr>
         <tr>
             <td>High Tariff Exposure</td>
@@ -386,8 +386,8 @@
     <h3>Key Findings</h3>
     <ul>
         <li><strong>COP Improvement</strong>: Optimized strategies achieve higher COP through
-            lower flow temperatures. Energy-optimized gains +0.15 COP,
-            Cost-optimized gains +0.19 COP.</li>
+            lower flow temperatures. Energy-optimized gains +0.29 COP,
+            Cost-optimized gains +0.34 COP.</li>
         <li><strong>Self-Sufficiency</strong>: Schedule shifting improves solar-heating alignment.
             Energy-optimized: +0.0pp,
             Cost-optimized: +0.0pp.</li>
@@ -422,13 +422,13 @@
             <td rowspan="2">COP Improvement</td>
             <td>Energy-Optimized</td>
             <td>+0.5</td>
-            <td>+0.15</td>
-            <td>Check</td>
+            <td>+0.29</td>
+            <td>OK</td>
         </tr>
         <tr>
             <td>Cost-Optimized</td>
             <td>-0.15</td>
-            <td>+0.19</td>
+            <td>+0.34</td>
             <td>Check</td>
         </tr>
         <tr>
@@ -446,8 +446,8 @@
     Night temperatures are excluded from the comfort objective. Full-season validation in Phase 5 will provide more robust estimates.</em></p>
 
     <figure>
-        <img src="fig22_simulation_results.png" alt="Simulation Results">
-        <figcaption><strong>Figure 22:</strong> Simulation results: example week COP (top-left), daily self-sufficiency (top-right),
+        <img src="fig23_simulation_results.png" alt="Simulation Results">
+        <figcaption><strong>Figure 23:</strong> Simulation results: example week COP (top-left), daily self-sufficiency (top-right),
         strategy comparison bars (bottom-left), hourly COP profile with PV availability (bottom-right).</figcaption>
     </figure>
     </section>
@@ -475,10 +475,10 @@
             <tr><td>Eco</td><td><strong>18.5°C</strong></td></tr>
 
             <tr><th colspan="2">Expected Outcomes</th></tr>
-            <tr><td>COP</td><td>3.9 (-0.16 vs baseline)</td></tr>
-            <tr><td>Self-Sufficiency</td><td>36.8% (+0.0pp)</td></tr>
-            <tr><td>Comfort Compliance (08:00-22:00)</td><td>84.2%</td></tr>
-            <tr><td>Daily Net Cost</td><td>CHF 3.90 (+0.0% vs baseline)</td></tr>
+            <tr><td>COP</td><td>3.9 (-0.02 vs baseline)</td></tr>
+            <tr><td>Self-Sufficiency</td><td>36.7% (+0.0pp)</td></tr>
+            <tr><td>Comfort Compliance (08:00-22:00)</td><td>84.5%</td></tr>
+            <tr><td>Daily Net Cost</td><td>CHF 3.53 (+0.0% vs baseline)</td></tr>
         </table>
         </div>
         
@@ -499,10 +499,10 @@
             <tr><td>Eco</td><td><strong>18.0°C</strong></td></tr>
 
             <tr><th colspan="2">Expected Outcomes</th></tr>
-            <tr><td>COP</td><td>4.21 (+0.15 vs baseline)</td></tr>
-            <tr><td>Self-Sufficiency</td><td>36.8% (+0.0pp)</td></tr>
-            <tr><td>Comfort Compliance (08:00-22:00)</td><td>84.2%</td></tr>
-            <tr><td>Daily Net Cost</td><td>CHF 3.90 (+0.0% vs baseline)</td></tr>
+            <tr><td>COP</td><td>4.21 (+0.29 vs baseline)</td></tr>
+            <tr><td>Self-Sufficiency</td><td>36.7% (+0.0pp)</td></tr>
+            <tr><td>Comfort Compliance (08:00-22:00)</td><td>84.5%</td></tr>
+            <tr><td>Daily Net Cost</td><td>CHF 3.53 (+0.0% vs baseline)</td></tr>
         </table>
         </div>
         
@@ -523,10 +523,10 @@
             <tr><td>Eco</td><td><strong>17.5°C</strong></td></tr>
 
             <tr><th colspan="2">Expected Outcomes</th></tr>
-            <tr><td>COP</td><td>4.26 (+0.19 vs baseline)</td></tr>
-            <tr><td>Self-Sufficiency</td><td>36.8% (+0.0pp)</td></tr>
-            <tr><td>Comfort Compliance (08:00-22:00)</td><td>84.2%</td></tr>
-            <tr><td>Daily Net Cost</td><td>CHF 3.90 (+0.0% vs baseline)</td></tr>
+            <tr><td>COP</td><td>4.26 (+0.34 vs baseline)</td></tr>
+            <tr><td>Self-Sufficiency</td><td>36.7% (+0.0pp)</td></tr>
+            <tr><td>Comfort Compliance (08:00-22:00)</td><td>84.5%</td></tr>
+            <tr><td>Daily Net Cost</td><td>CHF 3.53 (+0.0% vs baseline)</td></tr>
         </table>
         </div>
         
@@ -543,25 +543,25 @@
     
         <tr>
             <td>Baseline</td>
-            <td>36.8% (31.8-41.8%)</td>
+            <td>36.7% (31.7-41.7%)</td>
             <td>3.9 (3.6-4.2)</td>
-            <td>≥95.0% (target: 84.2%)</td>
+            <td>≥95.0% (target: 84.5%)</td>
             <td>+0.0%</td>
         </tr>
         
         <tr>
             <td>Energy-Optimized</td>
-            <td>36.8% (31.8-41.8%)</td>
+            <td>36.7% (31.7-41.7%)</td>
             <td>4.21 (3.91-4.51)</td>
-            <td>≥95.0% (target: 84.2%)</td>
+            <td>≥95.0% (target: 84.5%)</td>
             <td>+0.0%</td>
         </tr>
         
         <tr>
             <td>Cost-Optimized</td>
-            <td>36.8% (31.8-41.8%)</td>
+            <td>36.7% (31.7-41.7%)</td>
             <td>4.26 (3.96-4.56)</td>
-            <td>≥95.0% (target: 84.2%)</td>
+            <td>≥95.0% (target: 84.5%)</td>
             <td>+0.0%</td>
         </tr>
         
@@ -586,8 +586,8 @@
     <p><em>Note: Night temperatures (22:00-08:00) are excluded from comfort compliance. This allows aggressive energy-saving strategies during unoccupied hours.</em></p>
 
     <figure>
-        <img src="fig23_parameter_space.png" alt="Parameter Space">
-        <figcaption><strong>Figure 23:</strong> Parameter space visualization: curve rise vs COP (top-left), schedule duration
+        <img src="fig24_parameter_space.png" alt="Parameter Space">
+        <figcaption><strong>Figure 24:</strong> Parameter space visualization: curve rise vs COP (top-left), schedule duration
         vs self-sufficiency (top-right), comfort-efficiency trade-off (bottom-left),
         parameter summary table (bottom-right).</figcaption>
     </figure>

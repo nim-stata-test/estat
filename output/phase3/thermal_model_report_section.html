@@ -1,13 +1,20 @@
 
     <section id="thermal-model">
-    <h2>3.1 Building Thermal Model</h2>
+    <h2>3.1 Building Thermal Model (Transfer Function)</h2>
+
+    <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+        <strong>Reference Model Only:</strong> This transfer function model has been superseded by the
+        <a href="#greybox-thermal-model">Grey-Box Thermal Model (Section 3.1b)</a> which provides
+        better fit ($R^2=0.995$ vs $R^2=0.683$) and explicit buffer tank modeling. The grey-box model
+        is now used for Phase 4 optimization forward simulation.
+    </div>
 
     <h3>Methodology</h3>
     <p>The thermal model uses a <strong>transfer function approach</strong> that separates the
     heating system behavior from building thermal response:</p>
 
     <ol>
-        <li><strong>Heating Curve</strong>: Model HK2 = f(T_outdoor) to capture how the heat pump
+        <li><strong>Heating Curve</strong>: Model $T_{HK2} = f(T_{out})$ to capture how the heat pump
             adjusts flow temperature based on outdoor conditions</li>
         <li><strong>Heating Effort</strong>: Calculate deviation from heating curve as the actual
             heating input signal</li>
@@ -18,34 +25,41 @@
     <h3>Heating Curve Model</h3>
 
     <h4>Parametric Model (from Phase 2 - used for optimization)</h4>
-    <pre>T_flow = setpoint + curve_rise × (T_ref - T_outdoor)   (R² = 0.963)</pre>
-    <p>Where:</p>
+    <div class="equation-box">
+    $$T_{flow} = T_{setpoint} + k_{curve} \times (T_{ref} - T_{out})$$
+    </div>
+    <p>Where $R^2 = 0.963$ and:</p>
     <ul>
-        <li>T_ref (comfort) = 21.32°C</li>
-        <li>T_ref (eco) = 19.16°C</li>
-        <li>RMSE = 0.81°C</li>
+        <li>$T_{ref,comfort} = 21.32$°C</li>
+        <li>$T_{ref,eco} = 19.16$°C</li>
+        <li>$\text{RMSE} = 0.81$°C</li>
     </ul>
     <p><strong>This is the model used in Phase 4 optimization.</strong> It accounts for controllable
-    parameters (setpoint, curve_rise) that affect T_flow → COP → energy consumption.</p>
+    parameters ($T_{setpoint}$, $k_{curve}$) that affect $T_{flow} \rightarrow \text{COP} \rightarrow$ energy consumption.</p>
 
     <h4>Simple Reference Model (diagnostic only)</h4>
-    <pre>HK2 = 38.0 -0.805 × T_outdoor   (R² = 0.557)</pre>
+    <div class="equation-box">
+    $$T_{HK2} = 39.9 -0.869 \times T_{out} \quad (R^2 = 0.686)$$
+    </div>
     <p>This simplified model ignores controllable parameters and is used only for computing
     "heating effort" as a diagnostic signal for thermal response analysis.</p>
 
     <h3>Room Temperature Model</h3>
-    <pre>T_room = offset + g_out × LPF(T_outdoor, τ_out) + g_eff × LPF(effort, τ_eff) + g_pv × LPF(PV, τ_pv)</pre>
-    <p>Where LPF = low-pass filter (exponential smoothing with time constant τ)</p>
+    <div class="equation-box">
+    $$T_{room} = c_0 + g_{out} \cdot \text{LPF}(T_{out}, \tau_{out}) + g_{eff} \cdot \text{LPF}(E, \tau_{eff}) + g_{pv} \cdot \text{LPF}(P_{pv}, \tau_{pv})$$
+    </div>
+    <p>Where $\text{LPF}(x, \tau)$ = low-pass filter (exponential smoothing with time constant $\tau$)</p>
 
     <h4>Model Parameters</h4>
-    <ul>
-        <li><strong>τ_outdoor</strong>: How slowly room tracks outdoor temperature changes (hours)</li>
-        <li><strong>τ_effort</strong>: How quickly room responds to heating effort (hours)</li>
-        <li><strong>τ_pv</strong>: How quickly room responds to solar radiation (hours)</li>
-        <li><strong>gain_outdoor</strong>: °C room change per °C outdoor change</li>
-        <li><strong>gain_effort</strong>: °C room change per °C heating effort</li>
-        <li><strong>gain_pv</strong>: °C room change per kWh PV generation</li>
-    </ul>
+    <table>
+        <tr><th>Symbol</th><th>Parameter</th><th>Description</th></tr>
+        <tr><td>$\tau_{out}$</td><td>Outdoor time constant</td><td>How slowly room tracks outdoor temperature changes (hours)</td></tr>
+        <tr><td>$\tau_{eff}$</td><td>Effort time constant</td><td>How quickly room responds to heating effort (hours)</td></tr>
+        <tr><td>$\tau_{pv}$</td><td>Solar time constant</td><td>How quickly room responds to solar radiation (hours)</td></tr>
+        <tr><td>$g_{out}$</td><td>Outdoor gain</td><td>°C room change per °C outdoor change</td></tr>
+        <tr><td>$g_{eff}$</td><td>Effort gain</td><td>°C room change per °C heating effort</td></tr>
+        <tr><td>$g_{pv}$</td><td>Solar gain</td><td>°C room change per kWh PV generation</td></tr>
+    </table>
 
     <h3>Results by Room</h3>
     <p><strong>Weighted temperature sensors:</strong> davis_inside: 100%</p>
@@ -55,27 +69,27 @@
             <th>Room</th>
             <th>Weight</th>
             <th>Points</th>
-            <th>τ_out</th>
-            <th>τ_eff</th>
-            <th>τ_pv</th>
-            <th>g_out</th>
-            <th>g_eff</th>
-            <th>g_pv</th>
-            <th>R²</th>
+            <th>$\tau_{out}$</th>
+            <th>$\tau_{eff}$</th>
+            <th>$\tau_{pv}$</th>
+            <th>$g_{out}$</th>
+            <th>$g_{eff}$</th>
+            <th>$g_{pv}$</th>
+            <th>$R^2$</th>
             <th>RMSE</th>
         </tr>
         
         <tr>
             <td>davis_inside</td>
             <td>100%</td>
-            <td>3,547</td>
+            <td>3,350</td>
             <td>24h</td>
             <td>2h</td>
             <td>12h</td>
-            <td>+0.069</td>
-            <td>+0.194</td>
-            <td>+4.291</td>
-            <td>0.683</td>
+            <td>+0.078</td>
+            <td>+0.208</td>
+            <td>+4.170</td>
+            <td>0.679</td>
             <td>0.50°C</td>
         </tr>
         
@@ -84,44 +98,43 @@
     <h3>Physical Interpretation</h3>
 
     <h4>Heating Response</h4>
-    <p>The <code>gain_effort</code> coefficient shows how much each room responds to additional
+    <p>The $g_{eff}$ coefficient shows how much each room responds to additional
     heating beyond the baseline heating curve:</p>
     <ul>
-    <li><strong>davis_inside</strong>: +0.194 °C per °C effort (weak response)</li>
+    <li><strong>davis_inside</strong>: $g_{{eff}} = +0.208$ °C per °C effort (weak response)</li>
 
     </ul>
 
     <h4>Solar Response</h4>
-    <p>The <code>gain_pv</code> coefficient shows how much each room heats up from solar radiation
+    <p>The $g_{pv}$ coefficient shows how much each room heats up from solar radiation
     (using PV generation as a proxy for irradiance):</p>
     <ul>
-    <li><strong>davis_inside</strong>: +4.291 °C per kWh PV</li>
+    <li><strong>davis_inside</strong>: $g_{{pv}} = +4.170$ °C per kWh PV</li>
 
     </ul>
 
     <h4>Time Constants</h4>
     <ul>
-        <li><strong>τ_outdoor</strong>: 24-120h - rooms respond slowly to outdoor changes (3-5 days)</li>
-        <li><strong>τ_effort</strong>: 4-48h - rooms respond faster to heating changes</li>
-        <li><strong>τ_pv</strong>: ~24h for all rooms - consistent solar response time</li>
+        <li>$\tau_{out}$: 24-120h — rooms respond slowly to outdoor changes (3-5 days)</li>
+        <li>$\tau_{eff}$: 4-48h — rooms respond faster to heating changes</li>
+        <li>$\tau_{pv}$: ~24h for all rooms — consistent solar response time</li>
     </ul>
 
     <h3>Weighted Average Model Performance</h3>
-    <p>Overall weighted R² = <strong>0.683</strong></p>
+    <p>Overall weighted $R^2 = $ <strong>0.679</strong></p>
 
     <h3>Implications for Optimization</h3>
     <ul>
-        <li><strong>Pre-heating timing</strong>: With τ_effort of 4-48h, rooms need advance notice
+        <li><strong>Pre-heating timing</strong>: With $\tau_{eff}$ of 4-48h, rooms need advance notice
             to reach target temperature</li>
-        <li><strong>Solar preheating</strong>: All rooms (except atelier) benefit from solar gain.
+        <li><strong>Solar preheating</strong>: Positive $g_{pv}$ means rooms benefit from solar gain.
             Schedule comfort periods during/after sunny periods.</li>
-        <li><strong>Room variation</strong>: Different rooms respond differently to heating.
-            simlab and studio respond strongly; atelier responds weakly.</li>
+        <li><strong>Room variation</strong>: Different rooms respond differently to heating based on $g_{eff}$.</li>
     </ul>
 
     <figure>
-        <img src="fig17_thermal_model.png" alt="Thermal Model Analysis">
-        <figcaption><strong>Figure 17:</strong> Thermal model: heating curve (left),
+        <img src="fig18_thermal_model.png" alt="Thermal Model Analysis">
+        <figcaption><strong>Figure 18:</strong> Thermal model: heating curve (left),
         actual vs predicted scatter (middle), time series validation (right).</figcaption>
     </figure>
     </section>

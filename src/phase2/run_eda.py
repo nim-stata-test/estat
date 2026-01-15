@@ -238,6 +238,37 @@ def run_tariff_analysis() -> tuple[bool, str]:
         return False, f"ERROR: {e}"
 
 
+def run_hk2_analysis() -> tuple[bool, str]:
+    """Run the HK2 target vs actual temperature analysis script."""
+    print("\n" + "="*60)
+    print("Running HK2 Target vs Actual Analysis")
+    print("="*60)
+
+    script_path = SRC_DIR / "06_hk2_target_actual_analysis.py"
+
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script_path)],
+            capture_output=True,
+            text=True,
+            cwd=str(PROJECT_ROOT),
+            timeout=300
+        )
+
+        output = result.stdout
+        if result.stderr:
+            output += "\n\nSTDERR:\n" + result.stderr
+
+        print(output)
+
+        return result.returncode == 0, output
+
+    except subprocess.TimeoutExpired:
+        return False, "ERROR: HK2 analysis script timed out"
+    except Exception as e:
+        return False, f"ERROR: {e}"
+
+
 def collect_figure_info() -> list[dict]:
     """Collect information about generated figures."""
     figures = []
@@ -260,6 +291,7 @@ def collect_figure_info() -> list[dict]:
         "fig14_tariff_timeline.png": "Electricity tariff timeline: purchase and feed-in rates over time (2023-2025)",
         "fig15_tariff_windows.png": "Tariff time windows: high/low tariff distribution by hour and day",
         "fig16_tariff_costs.png": "Tariff cost implications: rate trends and comparison scenarios",
+        "fig17_hk2_target_actual.png": "HK2 target vs actual temperature: time series, scatter correlation, deviation distribution, lag model",
     }
 
     for fig_file, description in figure_descriptions.items():
@@ -337,6 +369,14 @@ def load_weighted_temp_section() -> str:
 def load_tariff_section() -> str:
     """Load the tariff analysis HTML section if available."""
     section_path = OUTPUT_DIR / "tariff_report_section.html"
+    if section_path.exists():
+        return section_path.read_text()
+    return ""
+
+
+def load_hk2_section() -> str:
+    """Load the HK2 target vs actual analysis HTML section if available."""
+    section_path = OUTPUT_DIR / "hk2_target_actual_report_section.html"
     if section_path.exists():
         return section_path.read_text()
     return ""
@@ -460,7 +500,8 @@ def generate_cop_model_section(cop_models: dict) -> str:
 
 def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
                          heating_curve_log: str = "", weighted_temp_log: str = "",
-                         tariff_log: str = "", cop_models: dict = None) -> str:
+                         tariff_log: str = "", hk2_log: str = "",
+                         cop_models: dict = None) -> str:
     """Generate comprehensive HTML EDA report."""
 
     # Helper to format stats with fallback for missing values
@@ -620,8 +661,9 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
                 <li><a href="#heating-curve">8. Heating Curve Analysis</a></li>
                 <li><a href="#weighted-temp">9. Weighted Temperature Analysis</a></li>
                 <li><a href="#tariffs">10. Electricity Tariffs</a></li>
-                <li><a href="#battery">11. Battery Degradation</a></li>
-                <li><a href="#log">12. Detailed Log</a></li>
+                <li><a href="#hk2-target-actual">11. HK2 Target vs Actual Analysis</a></li>
+                <li><a href="#battery">12. Battery Degradation</a></li>
+                <li><a href="#log">13. Detailed Log</a></li>
             </ul>
         </div>
 
@@ -794,7 +836,9 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
 
         {load_tariff_section()}
 
-        <h2 id="battery">11. Battery Degradation</h2>
+        {load_hk2_section()}
+
+        <h2 id="battery">12. Battery Degradation</h2>
         <div class="card">
             <p>Analysis of whether the Feb-Mar 2025 deep-discharge event affected battery efficiency.</p>
             <details>
@@ -803,7 +847,7 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
             </details>
         </div>
 
-        <h2 id="log">12. Detailed Log</h2>
+        <h2 id="log">13. Detailed Log</h2>
 
         <details>
             <summary>Full EDA Output Log</summary>
@@ -823,6 +867,11 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
         <details>
             <summary>Tariff Analysis Log</summary>
             <pre>{format_log(tariff_log)}</pre>
+        </details>
+
+        <details>
+            <summary>HK2 Target vs Actual Analysis Log</summary>
+            <pre>{format_log(hk2_log)}</pre>
         </details>
 
     </div>
@@ -874,7 +923,13 @@ def main():
     if not tariff_success:
         print("\nWARNING: Tariff analysis encountered errors")
 
-    # Step 6: Generate HTML report
+    # Step 6: Run HK2 target vs actual analysis
+    hk2_success, hk2_log = run_hk2_analysis()
+
+    if not hk2_success:
+        print("\nWARNING: HK2 target vs actual analysis encountered errors")
+
+    # Step 7: Generate HTML report
     print("\n" + "="*60)
     print("Generating HTML Report")
     print("="*60)
@@ -883,7 +938,7 @@ def main():
     stats = extract_stats_from_log(eda_log)
     cop_models = load_cop_models()
 
-    html_report = generate_html_report(figures, stats, eda_log, heating_curve_log, weighted_temp_log, tariff_log, cop_models)
+    html_report = generate_html_report(figures, stats, eda_log, heating_curve_log, weighted_temp_log, tariff_log, hk2_log, cop_models)
     report_path = OUTPUT_DIR / "phase2_report.html"
     report_path.write_text(html_report)
     print(f"Report saved to: {report_path}")
@@ -897,7 +952,7 @@ def main():
     print(f"Report: {report_path}")
     print(f"Figures: {sum(1 for f in figures if f['exists'])}/{len(figures)} generated")
 
-    return 0 if (success and hc_success and wt_success and tariff_success) else 1
+    return 0 if (success and hc_success and wt_success and tariff_success and hk2_success) else 1
 
 
 if __name__ == "__main__":

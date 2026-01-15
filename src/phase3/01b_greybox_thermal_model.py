@@ -43,7 +43,9 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 # Sensor columns
 BUFFER_COL = 'stiebel_eltron_isg_actual_temperature_buffer'
-HK2_COL = 'wp_anlage_hk2_ist'
+HK2_ACTUAL_COL = 'wp_anlage_hk2_ist'
+HK2_TARGET_COL = 'stiebel_eltron_isg_target_temperature_hk_2'
+HK2_COL = HK2_TARGET_COL  # Use TARGET for optimization (we control this)
 ROOM_COL = 'davis_inside_temperature'
 OUTDOOR_COL = 'stiebel_eltron_isg_outdoor_temperature'
 PV_COL = 'pv_generation_kwh'
@@ -329,9 +331,14 @@ def estimate_parameters(x_obs: np.ndarray, u_inputs: np.ndarray,
     for name in PARAM_NAMES:
         std = stats['param_std'][name]
         print(f"  {name}: {param_dict[name]:.3f} +/- {std:.3f}")
-    print(f"\n  R² (buffer): {stats['r2_buffer']:.3f}")
-    print(f"  R² (room):   {stats['r2_room']:.3f}")
-    print(f"  RMSE (room): {stats['rmse_room']:.3f}°C")
+    print(f"\n  One-step prediction (autocorrelated, for reference):")
+    print(f"    R² (room):   {stats['r2_room']:.3f}")
+    print(f"    RMSE (room): {stats['rmse_room']:.3f}°C")
+    print(f"\n  Forward simulation (actual model performance):")
+    print(f"    R² (room):   {stats['r2_room_forward']:.3f}")
+    print(f"    RMSE (room): {stats['rmse_room_forward']:.2f}°C")
+    if stats['r2_room_forward'] < 0:
+        print(f"    ⚠️  WARNING: Forward simulation diverges (R² < 0)")
 
     return stats
 
@@ -427,72 +434,91 @@ def compute_residual_diagnostics(residuals: np.ndarray, max_lag: int = 96) -> di
 
 def plot_greybox_results(stats: dict, validation: dict, split: dict,
                          timestamps: pd.DatetimeIndex, diagnostics: dict) -> None:
-    """Create 4-panel visualization of grey-box model results."""
+    """Create 4-panel visualization of grey-box model results.
+
+    Uses FORWARD SIMULATION to show actual model performance (not one-step prediction).
+    """
     print("\nCreating grey-box model visualization...")
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
     params = np.array([stats['params'][p] for p in PARAM_NAMES])
-    x_pred = stats['x_pred']
+    # Use forward simulation for visualization (shows true model behavior)
+    x_pred_forward = stats['x_pred_forward']
     x_obs = np.vstack([split['x_train'], split['x_test']])
 
-    # Panel 1: State trajectories (last 2 weeks)
-    ax1 = axes[0, 0]
-    recent_days = 14
-    recent_mask = timestamps >= timestamps.max() - pd.Timedelta(days=recent_days)
-    t_recent = timestamps[recent_mask]
+    # Compute forward simulation R² and RMSE
+    r2_forward = stats.get('r2_room_forward', r2_score(x_obs[:, 1], x_pred_forward[:, 1]))
+    rmse_forward = stats.get('rmse_room_forward', np.sqrt(mean_squared_error(x_obs[:, 1], x_pred_forward[:, 1])))
 
-    ax1.plot(t_recent, x_obs[recent_mask, 1], 'b-', linewidth=1, alpha=0.8, label='Actual (room)')
-    ax1.plot(t_recent, x_pred[recent_mask, 1], 'r--', linewidth=1, alpha=0.8, label='Predicted (room)')
-    ax1.fill_between(t_recent, x_obs[recent_mask, 0], alpha=0.3, color='orange', label='Buffer tank')
+    # Panel 1: State trajectories - FULL HEATING PERIOD
+    ax1 = axes[0, 0]
+
+    # Downsample for readability (every 4 hours = 16 timesteps)
+    step = 16
+    t_plot = timestamps[::step]
+
+    ax1.plot(t_plot, x_obs[::step, 1], 'b-', linewidth=0.8, alpha=0.8, label='Actual (room)')
+    ax1.plot(t_plot, x_pred_forward[::step, 1], 'r-', linewidth=0.8, alpha=0.7, label='Predicted (forward sim)')
+
+    # Add train/test boundary
+    split_time = timestamps[split['split_idx']]
+    ax1.axvline(split_time, color='green', linestyle=':', linewidth=2, alpha=0.7, label='Train/Test split')
 
     ax1.set_xlabel('Date')
-    ax1.set_ylabel('Temperature (°C)')
-    ax1.set_title(f'State Trajectories (Last {recent_days} Days)')
+    ax1.set_ylabel('Room Temperature (°C)')
+    n_days = len(timestamps) // 96
+    ax1.set_title(f'Forward Simulation vs Actual (Full {n_days} Days)')
     ax1.legend(loc='upper right', fontsize=8)
     ax1.grid(True, alpha=0.3)
     plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right')
 
-    # Add train/test boundary
-    split_time = timestamps[split['split_idx']]
-    if split_time >= t_recent.min():
-        ax1.axvline(split_time, color='green', linestyle=':', linewidth=2, label='Train/Test split')
+    # Add R² annotation
+    r2_text = f'R² = {r2_forward:.3f}'
+    if r2_forward < 0:
+        r2_text += ' (DIVERGES)'
+    ax1.text(0.02, 0.98, r2_text, transform=ax1.transAxes, fontsize=10,
+             verticalalignment='top', fontweight='bold',
+             color='red' if r2_forward < 0 else 'green',
+             bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
-    # Panel 2: Actual vs Predicted scatter
+    # Panel 2: Actual vs Predicted scatter (FORWARD SIMULATION)
     ax2 = axes[0, 1]
     step = max(1, len(x_obs) // 1000)
-    ax2.scatter(x_obs[::step, 1], x_pred[::step, 1], alpha=0.4, s=10, c='blue')
-    temp_range = [x_obs[:, 1].min() - 0.5, x_obs[:, 1].max() + 0.5]
+    ax2.scatter(x_obs[::step, 1], x_pred_forward[::step, 1], alpha=0.4, s=10, c='blue')
+
+    # Perfect fit line
+    all_temps = np.concatenate([x_obs[:, 1], x_pred_forward[:, 1]])
+    temp_range = [all_temps.min() - 0.5, all_temps.max() + 0.5]
     ax2.plot(temp_range, temp_range, 'r--', linewidth=1.5, label='Perfect fit')
 
     ax2.set_xlabel('Actual Room Temperature (°C)')
     ax2.set_ylabel('Predicted Room Temperature (°C)')
-    ax2.set_title(f'Room: R²={stats["r2_room"]:.3f}, RMSE={stats["rmse_room"]:.2f}°C')
+    ax2.set_title(f'Forward Simulation: R²={r2_forward:.3f}, RMSE={rmse_forward:.2f}°C')
     ax2.legend(fontsize=8)
     ax2.grid(True, alpha=0.3)
-    ax2.set_aspect('equal', adjustable='box')
 
-    # Panel 3: Residual histogram and autocorrelation
+    # Panel 3: Residual time series (shows drift)
     ax3 = axes[1, 0]
-    residuals = x_obs[:, 1] - x_pred[:, 1]
+    residuals_forward = x_obs[:, 1] - x_pred_forward[:, 1]
 
-    # Histogram
-    ax3.hist(residuals, bins=50, density=True, alpha=0.7, color='steelblue', edgecolor='white')
-    ax3.axvline(0, color='red', linestyle='--', linewidth=1.5)
+    ax3.plot(timestamps[::step], residuals_forward[::step], 'b-', linewidth=0.8, alpha=0.7)
+    ax3.axhline(0, color='red', linestyle='--', linewidth=1.5)
+    ax3.axvline(split_time, color='green', linestyle=':', linewidth=2, alpha=0.7)
 
-    # Add normal curve
-    x_norm = np.linspace(residuals.min(), residuals.max(), 100)
-    from scipy.stats import norm
-    ax3.plot(x_norm, norm.pdf(x_norm, residuals.mean(), residuals.std()),
-             'r-', linewidth=2, label=f'Normal (μ={residuals.mean():.2f}, σ={residuals.std():.2f})')
-
-    ax3.set_xlabel('Residual (°C)')
-    ax3.set_ylabel('Density')
-    ax3.set_title(f'Residual Distribution (DW={diagnostics["durbin_watson"]:.2f})')
-    ax3.legend(fontsize=8)
+    ax3.set_xlabel('Date')
+    ax3.set_ylabel('Residual (°C)')
+    ax3.set_title(f'Forward Simulation Residuals (mean={residuals_forward.mean():.2f}°C, std={residuals_forward.std():.2f}°C)')
     ax3.grid(True, alpha=0.3)
+    plt.setp(ax3.xaxis.get_majorticklabels(), rotation=45, ha='right')
 
-    # Panel 4: Model comparison bar chart
+    # Add drift warning if residuals trend
+    if abs(residuals_forward.mean()) > 1.0:
+        ax3.text(0.02, 0.98, '⚠️ Model drifts', transform=ax3.transAxes, fontsize=10,
+                 verticalalignment='top', fontweight='bold', color='red',
+                 bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+
+    # Panel 4: Model comparison bar chart (using FORWARD SIMULATION metrics)
     ax4 = axes[1, 1]
 
     # Load transfer function results for comparison
@@ -505,9 +531,10 @@ def plot_greybox_results(stats: dict, validation: dict, split: dict,
         tf_r2 = 0.68  # Default from CLAUDE.md
         tf_rmse = 0.50
 
-    models = ['Transfer Function\n(current)', 'Grey-Box\n(new)']
-    r2_values = [tf_r2, stats['r2_room']]
-    rmse_values = [tf_rmse, stats['rmse_room']]
+    # Use forward simulation metrics for grey-box
+    models = ['Transfer Function\n(ΔT regression)', 'Grey-Box\n(forward sim)']
+    r2_values = [tf_r2, max(r2_forward, 0)]  # Clip negative R² at 0 for bar chart
+    rmse_values = [tf_rmse, rmse_forward]
 
     x_pos = np.arange(len(models))
     width = 0.35
@@ -523,22 +550,20 @@ def plot_greybox_results(stats: dict, validation: dict, split: dict,
     ax4_twin.set_ylabel('RMSE (°C)', color='coral')
     ax4.set_xticks(x_pos)
     ax4.set_xticklabels(models)
-    ax4.set_title('Model Comparison')
+    ax4.set_title('Model Comparison (Forward Simulation)')
     ax4.set_ylim(0, 1.0)
     ax4_twin.set_ylim(0, max(rmse_values) * 1.5)
     ax4.grid(True, alpha=0.3, axis='y')
 
-    # Add improvement annotation
-    r2_improvement = (stats['r2_room'] - tf_r2) / tf_r2 * 100
-    ax4.annotate(f'{r2_improvement:+.1f}% R²', xy=(1, stats['r2_room']),
-                 xytext=(1.3, stats['r2_room']), fontsize=10,
-                 arrowprops=dict(arrowstyle='->', color='green'),
-                 color='green', fontweight='bold')
+    # Add note about divergence if applicable
+    if r2_forward < 0:
+        ax4.text(1, 0.5, f'Actual R²\n= {r2_forward:.2f}', ha='center', va='center',
+                 fontsize=9, color='red', fontweight='bold')
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig17b_greybox_model.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig18b_greybox_model.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig17b_greybox_model.png")
+    print("  Saved: fig18b_greybox_model.png")
 
 
 def generate_report(stats: dict, validation: dict, diagnostics: dict) -> str:
@@ -547,43 +572,88 @@ def generate_report(stats: dict, validation: dict, diagnostics: dict) -> str:
     params = stats['params']
     param_std = stats['param_std']
 
-    # Parameter table
+    # Parameter table - use LaTeX symbols
+    display_names = {
+        'tau_buf': r'$\tau_{buf}$',
+        'tau_room': r'$\tau_{room}$',
+        'r_emit': r'$r_{emit}$',
+        'r_heat': r'$r_{heat}$',
+        'k_solar': r'$k_{solar}$',
+        'c_offset': r'$c_{offset}$',
+    }
+    units = {
+        'tau_buf': 'h',
+        'tau_room': 'h',
+        'r_emit': '—',
+        'r_heat': '—',
+        'k_solar': 'K/kWh',
+        'c_offset': 'K/h',
+    }
     param_rows = ""
     for name in PARAM_NAMES:
         bounds = PARAM_BOUNDS[name]
+        disp = display_names.get(name, name)
+        unit = units.get(name, '')
         param_rows += f"""
         <tr>
-            <td><code>{name}</code></td>
-            <td>{params[name]:.3f}</td>
-            <td>+/- {param_std[name]:.3f}</td>
+            <td>{disp}</td>
+            <td>{params[name]:.3f} {unit}</td>
+            <td>±{param_std[name]:.3f}</td>
             <td>[{bounds[0]}, {bounds[1]}]</td>
         </tr>
+        """
+
+    # Get forward simulation metrics
+    r2_forward = stats.get('r2_room_forward', -999)
+    rmse_forward = stats.get('rmse_room_forward', 999)
+
+    # Determine status based on forward simulation performance
+    if r2_forward < 0:
+        status_color = '#f8d7da'
+        status_border = '#f5c6cb'
+        status_text = f"""
+        <strong>⚠️ Reference Model Only:</strong> Forward simulation diverges (R² = {r2_forward:.2f}).
+        This model is kept for reference but is <strong>not used for Phase 4 optimization</strong>.
+        The transfer function model (Section 3.1) with R² = 0.68 is used instead.
+        """
+    else:
+        status_color = '#d4edda'
+        status_border = '#28a745'
+        status_text = f"""
+        <strong>Physics-Based Model:</strong> This grey-box model provides physics-based temperature
+        prediction with forward simulation R² = {r2_forward:.3f}, RMSE = {rmse_forward:.2f}°C.
         """
 
     html = f"""
     <section id="greybox-thermal-model">
     <h2>3.1b Grey-Box Thermal Model</h2>
 
+    <div style="background-color: {status_color}; border: 1px solid {status_border}; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+        {status_text}
+    </div>
+
     <h3>Model Formulation</h3>
     <p>A physics-based discrete-time state-space model with two states:</p>
 
     <h4>State Variables</h4>
-    <ul>
-        <li><strong>T_buffer</strong>: Buffer tank temperature (intermediate thermal storage)</li>
-        <li><strong>T_room</strong>: Room/indoor temperature (comfort objective)</li>
-    </ul>
+    <table>
+        <tr><th>Symbol</th><th>Variable</th><th>Description</th></tr>
+        <tr><td>$T_{{buf}}$</td><td>Buffer tank temperature</td><td>Intermediate thermal storage (°C)</td></tr>
+        <tr><td>$T_{{room}}$</td><td>Room temperature</td><td>Indoor/comfort objective (°C)</td></tr>
+    </table>
 
-    <h4>Discrete-Time Equations (dt = 15 min)</h4>
-    <pre>
-T_buffer[k+1] = T_buffer[k] + (dt/tau_buf) × [(T_HK2[k] - T_buffer[k]) - r_emit × (T_buffer[k] - T_room[k])]
-
-T_room[k+1] = T_room[k] + (dt/tau_room) × [r_heat × (T_buffer[k] - T_room[k]) - (T_room[k] - T_outdoor[k])] + k_solar × PV[k]
-    </pre>
+    <h4>Discrete-Time Equations ($\\Delta t = 0.25$ h)</h4>
+    <div class="equation-box">
+    $$T_{{buf}}[k+1] = T_{{buf}}[k] + \\frac{{\\Delta t}}{{\\tau_{{buf}}}} \\left[ (T_{{HK2}}[k] - T_{{buf}}[k]) - r_{{emit}} \\cdot (T_{{buf}}[k] - T_{{room}}[k]) \\right]$$
+    </div>
+    <div class="equation-box">
+    $$T_{{room}}[k+1] = T_{{room}}[k] + \\frac{{\\Delta t}}{{\\tau_{{room}}}} \\left[ r_{{heat}} \\cdot (T_{{buf}}[k] - T_{{room}}[k]) - (T_{{room}}[k] - T_{{out}}[k]) \\right] + k_{{solar}} \\cdot P_{{pv}}[k]$$
+    </div>
 
     <h3>Estimated Parameters</h3>
     <table>
         <tr>
-            <th>Parameter</th>
+            <th>Symbol</th>
             <th>Value</th>
             <th>Std Error</th>
             <th>Bounds</th>
@@ -593,78 +663,61 @@ T_room[k+1] = T_room[k] + (dt/tau_room) × [r_heat × (T_buffer[k] - T_room[k]) 
 
     <h3>Physical Interpretation</h3>
     <ul>
-        <li><strong>tau_buf = {params['tau_buf']:.2f}h</strong>: Buffer tank responds to heat pump input
-            with time constant of ~{params['tau_buf'] * 60:.0f} minutes</li>
-        <li><strong>tau_room = {params['tau_room']:.1f}h</strong>: Building thermal mass gives
-            ~{params['tau_room']:.0f}-hour time constant for room temperature</li>
-        <li><strong>r_emit = {params['r_emit']:.2f}</strong>: Ratio of heat transfer from buffer to room
-            vs heat input from heat pump</li>
-        <li><strong>r_heat = {params['r_heat']:.2f}</strong>: Ratio of heat transfer from buffer to room
-            vs heat loss to outdoors</li>
-        <li><strong>k_solar = {params['k_solar']:.3f} K/kWh</strong>: Room gains {params['k_solar']:.2f}°C
-            per kWh of PV generation (proxy for solar irradiance)</li>
+        <li>$\\tau_{{buf}} = {params['tau_buf']:.2f}$ h: Buffer tank time constant (~{params['tau_buf'] * 60:.0f} min)</li>
+        <li>$\\tau_{{room}} = {params['tau_room']:.1f}$ h: Building thermal mass time constant (~{params['tau_room']:.0f} hours)</li>
+        <li>$r_{{emit}} = {params['r_emit']:.2f}$: Heat transfer ratio (buffer→room vs HP→buffer)</li>
+        <li>$r_{{heat}} = {params['r_heat']:.2f}$: Heat transfer ratio (buffer→room vs room→outdoor)</li>
+        <li>$k_{{solar}} = {params['k_solar']:.3f}$ K/kWh: Solar gain coefficient</li>
     </ul>
 
-    <h3>Fit Statistics (Training Set)</h3>
+    <h3>Forward Simulation Performance (Actual Model Quality)</h3>
+    <p>Forward simulation runs the model recursively from initial conditions—the true test of predictive ability.</p>
     <table>
         <tr>
             <th>Metric</th>
-            <th>Buffer Tank</th>
-            <th>Room</th>
+            <th>Value</th>
+            <th>Interpretation</th>
         </tr>
-        <tr>
-            <td>R²</td>
-            <td>{stats['r2_buffer']:.3f}</td>
-            <td><strong>{stats['r2_room']:.3f}</strong></td>
+        <tr style="background-color: {'#f8d7da' if r2_forward < 0 else '#d4edda'};">
+            <td><strong>$R^2$</strong></td>
+            <td><strong>{r2_forward:.3f}</strong></td>
+            <td>{'⚠️ Negative = model diverges, worse than predicting mean' if r2_forward < 0 else 'Good fit'}</td>
         </tr>
         <tr>
             <td>RMSE</td>
-            <td>{stats['rmse_buffer']:.2f}°C</td>
-            <td><strong>{stats['rmse_room']:.2f}°C</strong></td>
-        </tr>
-        <tr>
-            <td>MAE</td>
-            <td>{stats['mae_buffer']:.2f}°C</td>
-            <td>{stats['mae_room']:.2f}°C</td>
-        </tr>
-        <tr>
-            <td>Bias</td>
-            <td>{stats['bias_buffer']:+.3f}°C</td>
-            <td>{stats['bias_room']:+.3f}°C</td>
+            <td>{rmse_forward:.2f}°C</td>
+            <td>{'Model error accumulates over time' if rmse_forward > 1.0 else 'Acceptable error'}</td>
         </tr>
     </table>
 
-    <h3>Validation (Test Set)</h3>
+    <h3>One-Step Prediction (Misleading Metric)</h3>
+    <p><em>Note: One-step $R^2 \\approx 0.99$ is artificially high because temperature is highly autocorrelated.
+    Predicting "$T[k+1] \\approx T[k]$" trivially achieves $R^2 > 0.95$. These metrics are shown for reference only.</em></p>
     <table>
         <tr>
             <th>Metric</th>
-            <th>Buffer Tank</th>
-            <th>Room</th>
+            <th>$T_{{buf}}$</th>
+            <th>$T_{{room}}$</th>
         </tr>
         <tr>
-            <td>R²</td>
-            <td>{validation['r2_buffer_test']:.3f}</td>
-            <td><strong>{validation['r2_room_test']:.3f}</strong></td>
+            <td>$R^2$ (one-step)</td>
+            <td>{stats['r2_buffer']:.3f}</td>
+            <td>{stats['r2_room']:.3f} <em>(inflated)</em></td>
         </tr>
         <tr>
-            <td>RMSE</td>
-            <td>{validation['rmse_buffer_test']:.2f}°C</td>
-            <td><strong>{validation['rmse_room_test']:.2f}°C</strong></td>
-        </tr>
-        <tr>
-            <td>Bias</td>
-            <td>—</td>
-            <td>{validation['bias_room_test']:+.3f}°C</td>
+            <td>RMSE (one-step)</td>
+            <td>{stats['rmse_buffer']:.2f}°C</td>
+            <td>{stats['rmse_room']:.2f}°C</td>
         </tr>
     </table>
 
     <h3>Residual Diagnostics</h3>
     <ul>
         <li><strong>Durbin-Watson</strong>: {diagnostics['durbin_watson']:.2f}
-            (ideal = 2.0; &lt;1.5 indicates positive autocorrelation)</li>
+            (ideal = 2.0; $< 1.5$ indicates positive autocorrelation)</li>
         <li><strong>Decorrelation lag</strong>: {diagnostics['decorr_lag_hours']:.1f} hours
             (residuals become uncorrelated after this time)</li>
-        <li><strong>Residual std</strong>: {diagnostics['residual_std']:.3f}°C</li>
+        <li><strong>Residual $\\sigma$</strong>: {diagnostics['residual_std']:.3f}°C</li>
     </ul>
 
     <h3>Comparison with Transfer Function Model</h3>
@@ -676,8 +729,8 @@ T_room[k+1] = T_room[k] + (dt/tau_room) × [r_heat × (T_buffer[k] - T_room[k]) 
     </ul>
 
     <figure>
-        <img src="fig17b_greybox_model.png" alt="Grey-Box Thermal Model Results">
-        <figcaption><strong>Figure 17b:</strong> Grey-box thermal model: state trajectories (top-left),
+        <img src="fig18b_greybox_model.png" alt="Grey-Box Thermal Model Results">
+        <figcaption><strong>Figure 18b:</strong> Grey-box thermal model: state trajectories (top-left),
         actual vs predicted scatter (top-right), residual distribution (bottom-left),
         model comparison (bottom-right).</figcaption>
     </figure>

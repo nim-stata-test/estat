@@ -30,11 +30,11 @@
     },
     "expected_outcomes": {
       "cop_mean": 3.9,
-      "cop_vs_baseline": -0.16,
-      "self_sufficiency": 0.368,
+      "cop_vs_baseline": -0.02,
+      "self_sufficiency": 0.367,
       "self_sufficiency_vs_baseline_pp": 0.0,
-      "comfort_compliance": 0.842,
-      "daily_net_cost_chf": 3.9,
+      "comfort_compliance": 0.845,
+      "daily_net_cost_chf": 3.53,
       "cost_reduction_pct": 0.0
     },
     "confidence_intervals": {
@@ -74,11 +74,11 @@
     },
     "expected_outcomes": {
       "cop_mean": 4.21,
-      "cop_vs_baseline": 0.15,
-      "self_sufficiency": 0.368,
+      "cop_vs_baseline": 0.29,
+      "self_sufficiency": 0.367,
       "self_sufficiency_vs_baseline_pp": 0.0,
-      "comfort_compliance": 0.842,
-      "daily_net_cost_chf": 3.9,
+      "comfort_compliance": 0.845,
+      "daily_net_cost_chf": 3.53,
       "cost_reduction_pct": 0.0
     },
     "confidence_intervals": {
@@ -118,11 +118,11 @@
     },
     "expected_outcomes": {
       "cop_mean": 4.26,
-      "cop_vs_baseline": 0.19,
-      "self_sufficiency": 0.368,
+      "cop_vs_baseline": 0.34,
+      "self_sufficiency": 0.367,
       "self_sufficiency_vs_baseline_pp": 0.0,
-      "comfort_compliance": 0.842,
-      "daily_net_cost_chf": 3.9,
+      "comfort_compliance": 0.845,
+      "daily_net_cost_chf": 3.53,
       "cost_reduction_pct": 0.0
     },
     "confidence_intervals": {

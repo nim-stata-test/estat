@@ -6,7 +6,9 @@ This document provides detailed documentation of the models developed in Phase 3
 
 ## Table of Contents
 
-1. [Thermal Model (3.1)](#1-thermal-model)
+1. [Thermal Model (3.1)](#1-thermal-model) — *Reference only, superseded by Grey-Box*
+   - 1b. [Grey-Box Thermal Model (3.1b)](#1b-grey-box-thermal-model) — **Primary model for optimization**
+   - 1c. [Model Comparison](#1c-model-comparison)
 2. [Heat Pump Model (3.2)](#2-heat-pump-model)
 3. [Energy System Model (3.3)](#3-energy-system-model)
 4. [Model Integration for Optimization](#4-model-integration)
@@ -106,6 +108,175 @@ Where ΔT = T[k+1] - T[k] is the temperature change over one time step.
 3. **No wind/infiltration effects**: Wind increases heat loss through infiltration and convection. Not captured.
 
 4. **Simulation instability**: Forward simulation can diverge due to small coefficient errors accumulating. Requires periodic resetting.
+
+---
+
+## 1b. Grey-Box Thermal Model
+
+> **Primary Model**: This grey-box model is used for Phase 4 optimization forward simulation.
+> It supersedes the transfer function model (Section 1) which is retained for reference.
+
+### 1b.1 Theoretical Background
+
+The grey-box model is a physics-based two-state discrete-time model that explicitly models:
+1. **Buffer tank dynamics**: Thermal storage between heat pump and distribution system
+2. **Room temperature dynamics**: Building thermal mass and heat transfer
+
+This improves on the transfer function model by capturing the intermediate thermal storage stage.
+
+### 1b.2 State Variables
+
+| Symbol | Variable | Code Name | Units | Description |
+|--------|----------|-----------|-------|-------------|
+| $T_{buf}$ | Buffer tank temperature | `T_buffer` | °C | Thermal storage state |
+| $T_{room}$ | Room temperature | `T_room` | °C | Comfort objective |
+
+### 1b.3 Model Formulation
+
+The discrete-time state-space model with timestep $\Delta t = 0.25$ h (15 minutes):
+
+**Buffer Tank Dynamics:**
+
+$$T_{buf}[k+1] = T_{buf}[k] + \frac{\Delta t}{\tau_{buf}} \left[ (T_{HK2}[k] - T_{buf}[k]) - r_{emit} \cdot (T_{buf}[k] - T_{room}[k]) \right]$$
+
+**Room Temperature Dynamics:**
+
+$$T_{room}[k+1] = T_{room}[k] + \frac{\Delta t}{\tau_{room}} \left[ r_{heat} \cdot (T_{buf}[k] - T_{room}[k]) - (T_{room}[k] - T_{out}[k]) \right] + k_{solar} \cdot PV[k]$$
+
+**Physical Interpretation:**
+- The buffer tank receives heat from the heating circuit ($T_{HK2}$) and emits to the room
+- The room receives heat from the buffer and loses heat to outdoors
+- Solar gains add directly to room temperature
+
+### 1b.4 Input Variables
+
+| Symbol | Variable | Code Name | Units | Source |
+|--------|----------|-----------|-------|--------|
+| $T_{HK2}$ | Flow temperature | `wp_anlage_hk2_ist` | °C | Heating circuit 2 actual |
+| $T_{out}$ | Outdoor temperature | `stiebel_eltron_isg_outdoor_temperature` | °C | Heat pump sensor |
+| $PV$ | Solar generation | `pv_generation_kwh` | kWh | 15-min solar production |
+
+### 1b.5 Model Parameters
+
+| Symbol | Parameter | Value | 95% CI | Units | Physical Meaning |
+|--------|-----------|-------|--------|-------|------------------|
+| $\tau_{buf}$ | `tau_buf` | 2.28 | [1.8, 2.8] | h | Buffer tank time constant |
+| $\tau_{room}$ | `tau_room` | 72.0 | [60, 84] | h | Building time constant (3 days) |
+| $r_{emit}$ | `r_emit` | 0.10 | [0.08, 0.12] | — | Emitter/HP coupling ratio |
+| $r_{heat}$ | `r_heat` | 1.05 | [0.9, 1.2] | — | Heat transfer ratio |
+| $k_{solar}$ | `k_solar` | 0.017 | [0.01, 0.03] | K/kWh | Solar gain coefficient |
+| $c_{offset}$ | `c_offset` | -0.085 | [-0.2, 0.1] | K/h | Temperature offset (bias correction) |
+
+### 1b.6 Heating Curve Integration
+
+The heating curve model from Phase 2 determines $T_{HK2}$ from controllable parameters:
+
+$$T_{HK2} = T_{setpoint} + curve\_rise \times (T_{ref} - T_{outdoor})$$
+
+Where:
+- $T_{setpoint}$ = target room temperature (controllable: 19-22°C comfort, 12-19°C eco)
+- $curve\_rise$ = heating curve slope (controllable: 0.80-1.20)
+- $T_{ref}$ = reference temperature (21.32°C comfort, 19.18°C eco)
+
+This enables forward simulation with different heating strategies.
+
+### 1b.7 Forward Simulation Algorithm
+
+```
+Initialize:
+    x[0] = [T_buffer[0], T_room[0]]  # From historical data
+
+For k = 0 to N-1:
+    # Generate T_HK2 from heating curve + schedule
+    T_HK2[k] = compute_from_schedule(hour[k], params)
+
+    # Buffer tank update
+    dT_buf = (dt/tau_buf) * [(T_HK2[k] - T_buf[k]) - r_emit*(T_buf[k] - T_room[k])]
+    T_buf[k+1] = T_buf[k] + dT_buf
+
+    # Room temperature update
+    dT_room = (dt/tau_room) * [r_heat*(T_buf[k] - T_room[k]) - (T_room[k] - T_out[k])]
+    T_room[k+1] = T_room[k] + dT_room + k_solar*PV[k] + c_offset*dt
+```
+
+**Implementation**: `src/shared/thermal_simulator.py`
+
+### 1b.8 Parameter Estimation
+
+Parameters are estimated by minimizing prediction error on historical data:
+
+1. **Objective**: Minimize RMSE between predicted and actual $T_{room}$
+2. **Method**: Bounded optimization (scipy.optimize.minimize with L-BFGS-B)
+3. **Constraints**: Physical bounds on all parameters (see table above)
+4. **Data**: 64-day overlap period with all sensors available
+
+### 1b.9 Model Performance
+
+| Metric | Value | Interpretation |
+|--------|-------|----------------|
+| R² | 0.995 | Explains 99.5% of temperature variance |
+| RMSE | 0.064°C | Excellent prediction accuracy |
+| MAE | 0.047°C | Mean absolute error |
+| Bias | 0.002°C | Negligible systematic error |
+
+### 1b.10 Assumptions
+
+| Assumption | Justification | Impact if Violated |
+|------------|---------------|-------------------|
+| Two-state lumped model | Buffer + room capture main dynamics | Misses floor/wall thermal mass |
+| Linear heat transfer | Small temperature differences | Valid for ΔT < 20K typical |
+| Constant parameters | Building characteristics stable | Seasonal variation possible |
+| 15-min timestep | Matches sensor data resolution | Adequate for slow dynamics |
+| Single room temperature | Weighted average of sensors | Misses room-to-room variation |
+
+### 1b.11 Integration with Phase 4 Optimization
+
+The grey-box model is used for **forward simulation** in Phase 4 optimization:
+
+1. **Parameters loaded from**: `output/phase3/greybox_model_params.json`
+2. **Shared module**: `src/shared/thermal_simulator.py`
+3. **Used by**:
+   - `src/phase4/04_pareto_optimization.py` (NSGA-II multi-objective)
+   - `src/phase4/05_strategy_evaluation.py` (comfort violation analysis)
+   - `src/phase4/06_strategy_detailed_analysis.py` (detailed time series)
+
+**Warmup Period**: 96 timesteps (24 hours) to allow transient decay before evaluation.
+
+### 1b.12 Advantages over Transfer Function Model
+
+| Aspect | Transfer Function | Grey-Box |
+|--------|-------------------|----------|
+| Buffer tank | Not modeled | Explicit state |
+| Physical parameters | Abstract coefficients | Interpretable (time constants, ratios) |
+| R² | 0.10-0.24 | 0.995 |
+| RMSE | ~5°C | 0.064°C |
+| Forward simulation | Unstable (diverges) | Stable |
+| Optimization use | Not suitable | Primary model |
+
+---
+
+## 1c. Model Comparison
+
+### Side-by-Side Performance
+
+| Metric | Transfer Function | Grey-Box | Improvement |
+|--------|-------------------|----------|-------------|
+| R² | 0.683 (weighted) | 0.995 | +46% |
+| RMSE | 0.50°C | 0.064°C | 8× better |
+| Forward simulation | Diverges | Stable | ✓ |
+| Physical interpretability | Low | High | ✓ |
+
+### When to Use Each Model
+
+- **Grey-Box (Primary)**: All optimization, forward simulation, strategy evaluation
+- **Transfer Function (Reference)**: Quick estimates, validation comparison, educational
+
+### Visual Comparison
+
+See `output/phase3/fig18b_greybox_model.png` for side-by-side visualization including:
+- State trajectories (T_buffer, T_room)
+- Prediction residuals
+- Model comparison panel
 
 ---
 
@@ -327,6 +498,9 @@ Three scenarios were modeled to estimate improvement potential:
 
 ## 4. Model Integration for Optimization
 
+> **Note**: The **Grey-Box Thermal Model** (Section 1b) is used for forward simulation in Phase 4 optimization.
+> See `src/shared/thermal_simulator.py` for the shared implementation.
+
 ### 4.1 How Models Connect
 
 ```
@@ -340,11 +514,11 @@ Three scenarios were modeled to estimate improvement potential:
               │              │              │
               ▼              ▼              ▼
       ┌───────────┐  ┌───────────┐  ┌───────────┐
-      │  Thermal  │  │ Heat Pump │  │  Energy   │
-      │   Model   │  │   Model   │  │  System   │
-      │           │  │           │  │   Model   │
+      │ Grey-Box  │  │ Heat Pump │  │  Energy   │
+      │  Thermal  │  │   Model   │  │  System   │
+      │   Model   │  │           │  │   Model   │
       │ T_room(t) │  │  COP(t)   │  │  PV(t)    │
-      │           │  │           │  │ Battery(t)│
+      │ T_buf(t)  │  │           │  │ Battery(t)│
       └─────┬─────┘  └─────┬─────┘  └─────┬─────┘
             │              │              │
             └──────────────┼──────────────┘
@@ -355,7 +529,7 @@ Three scenarios were modeled to estimate improvement potential:
                    │   Decision:   │
                    │ - When to heat│
                    │ - What setpoint│
-                   │ - Flow temp   │
+                   │ - Curve rise  │
                    └───────────────┘
 ```
 
@@ -533,7 +707,34 @@ The tariff cost model enables the **Cost-Optimized** strategy in Phase 4:
 
 ## Appendix: Key Equations Summary
 
-### Thermal Model
+### Grey-Box Thermal Model (Primary)
+
+**State Variables:**
+- $T_{buf}$ — Buffer tank temperature (°C)
+- $T_{room}$ — Room temperature (°C)
+
+**Discrete-Time Equations** ($\Delta t = 0.25$ h):
+
+$$T_{buf}[k+1] = T_{buf}[k] + \frac{\Delta t}{\tau_{buf}} \left[ (T_{HK2}[k] - T_{buf}[k]) - r_{emit}(T_{buf}[k] - T_{room}[k]) \right]$$
+
+$$T_{room}[k+1] = T_{room}[k] + \frac{\Delta t}{\tau_{room}} \left[ r_{heat}(T_{buf}[k] - T_{room}[k]) - (T_{room}[k] - T_{out}[k]) \right] + k_{solar} \cdot PV[k]$$
+
+**Parameters:**
+| Symbol | Code | Value | Units |
+|--------|------|-------|-------|
+| $\tau_{buf}$ | `tau_buf` | 2.28 | h |
+| $\tau_{room}$ | `tau_room` | 72.0 | h |
+| $r_{emit}$ | `r_emit` | 0.10 | — |
+| $r_{heat}$ | `r_heat` | 1.05 | — |
+| $k_{solar}$ | `k_solar` | 0.017 | K/kWh |
+
+**Heating Curve:**
+
+$$T_{HK2} = T_{setpoint} + curve\_rise \times (T_{ref} - T_{outdoor})$$
+
+Where $T_{ref} = 21.32$°C (comfort) or $19.18$°C (eco).
+
+### Transfer Function Model (Reference)
 ```
 Time constant: τ = C/UA ≈ 54-60 hours
 Temperature change: ΔT = a×(T_flow - T_room) - b×(T_room - T_out) + c×PV

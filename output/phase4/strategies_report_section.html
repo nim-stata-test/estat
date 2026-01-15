@@ -5,7 +5,7 @@
     <h3>Methodology</h3>
     <p>Three heating optimization strategies were developed using Phase 3 model parameters:</p>
     <ul>
-        <li><strong>COP Model</strong>: COP = 6.52 + 0.13×T_outdoor - 0.10×T_flow (R²=0.95)</li>
+        <li><strong>COP Model</strong>: COP = 6.52 + 0.13×T_outdoor - 0.10×T_HK2 (R²=0.95)</li>
         <li><strong>Building Time Constant</strong>: ~19 hours (weighted average from target sensors)</li>
         <li><strong>Target Sensor</strong>: davis_inside (100% - least noise)</li>
         <li><strong>Peak PV Hours</strong>: 10:00-16:00</li>
@@ -126,10 +126,10 @@
     </table>
 
     <p><strong>Heating curve formula</strong> (from Phase 2 analysis):<br>
-    <code>T_flow = T_setpoint + curve_rise × (T_ref - T_outdoor)</code><br>
+    <code>T_HK2 = T_setpoint + curve_rise × (T_ref - T_outdoor)</code><br>
     where T_ref = 21.32°C (comfort) or 19.18°C (eco).</p>
 
-    <p>Key insight: Reducing curve_rise from 1.08 to 0.95-0.98 lowers flow temperature by ~1-2°C,
+    <p>Key insight: Reducing curve_rise from 1.08 to 0.95-0.98 lowers T_HK2 (target flow) by ~1-2°C,
     improving COP by ~0.1-0.2 across all outdoor temperatures.</p>
 
     <h3>Schedule Optimization Rationale</h3>
@@ -144,8 +144,8 @@
     </ul>
 
     <figure>
-        <img src="fig21_strategy_comparison.png" alt="Strategy Comparison">
-        <figcaption><strong>Figure 21:</strong> Strategy comparison: COP by temperature (top-left), COP improvement (top-right),
+        <img src="fig22_strategy_comparison.png" alt="Strategy Comparison">
+        <figcaption><strong>Figure 22:</strong> Strategy comparison: COP by temperature (top-left), COP improvement (top-right),
         schedule alignment with PV (bottom-left), expected improvements (bottom-right).</figcaption>
     </figure>
     </section>

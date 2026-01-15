@@ -429,10 +429,10 @@ def plot_strategy_comparison(strategies: dict, cop_analysis: pd.DataFrame,
     ax.grid(True, alpha=0.3, axis='y')
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig21_strategy_comparison.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig22_strategy_comparison.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig21_strategy_comparison.png")
+    print("  Saved: fig22_strategy_comparison.png")
 
 
 def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
@@ -529,8 +529,8 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
     </ul>
 
     <figure>
-        <img src="fig21_strategy_comparison.png" alt="Strategy Comparison">
-        <figcaption><strong>Figure 21:</strong> Strategy comparison: COP by temperature (top-left), COP improvement (top-right),
+        <img src="fig22_strategy_comparison.png" alt="Strategy Comparison">
+        <figcaption><strong>Figure 22:</strong> Strategy comparison: COP by temperature (top-left), COP improvement (top-right),
         schedule alignment with PV (bottom-left), expected improvements (bottom-right).</figcaption>
     </figure>
     </section>

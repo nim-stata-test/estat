@@ -102,7 +102,7 @@
 <body>
     <div class="container">
         <h1>ESTAT Phase 2: Exploratory Data Analysis Report</h1>
-        <p class="meta">Generated: 2026-01-12 18:55:34</p>
+        <p class="meta">Generated: 2026-01-15 16:52:38</p>
 
         <div class="toc">
             <strong>Contents</strong>
@@ -118,8 +118,9 @@
                 <li><a href="#heating-curve">8. Heating Curve Analysis</a></li>
                 <li><a href="#weighted-temp">9. Weighted Temperature Analysis</a></li>
                 <li><a href="#tariffs">10. Electricity Tariffs</a></li>
-                <li><a href="#battery">11. Battery Degradation</a></li>
-                <li><a href="#log">12. Detailed Log</a></li>
+                <li><a href="#hk2-target-actual">11. HK2 Target vs Actual Analysis</a></li>
+                <li><a href="#battery">12. Battery Degradation</a></li>
+                <li><a href="#log">13. Detailed Log</a></li>
             </ul>
         </div>
 
@@ -966,12 +967,6 @@
     </tr>
     <tr>
       <td>2024-01-01 to 2024-12-31</td>
-      <td>single</td>
-      <td>16.5</td>
-      <td>Primeo Standard single tariff confirmed at 16.50 Rp/kWh. 4500kWh household: CHF 1475/year (+4.8%). HT/NT estimates based on typical Swiss utility spreads (~+10% HT / -15% NT vs average).</td>
-    </tr>
-    <tr>
-      <td>2024-01-01 to 2024-12-31</td>
       <td>high</td>
       <td>36.1</td>
       <td>Primeo Standard single tariff confirmed at 16.50 Rp/kWh. 4500kWh household: CHF 1475/year (+4.8%). HT/NT estimates based on typical Swiss utility spreads (~+10% HT / -15% NT vs average).</td>
@@ -1110,7 +1105,7 @@
     <div class="figure">
         <img src="fig14_tariff_timeline.png" alt="Tariff Timeline" style="max-width: 100%;">
         <p class="caption"><strong>Figure 14:</strong> Purchase and feed-in tariff rates over time (2023-2025).
-        Top panel shows grid import rates, bottom panel shows feed-in rates with HKN (excluding base-only rates).</p>
+        Solid lines show grid import rates (high/low), dashed lines show feed-in rates with HKN (excluding base-only rates).</p>
     </div>
 
     <h3>Tariff Time Windows Distribution</h3>
@@ -1118,6 +1113,14 @@
         <img src="fig15_tariff_windows.png" alt="Tariff Windows" style="max-width: 100%;">
         <p class="caption"><strong>Figure 15:</strong> Distribution of high/low tariff periods.
         Shows weekly heatmap, hourly probability, monthly distribution, and summary statistics.</p>
+    </div>
+    <div class="card">
+        <p><strong>Note on "High Tariff Probability":</strong> The heatmap shows the fraction of times each
+        day/hour combination is high tariff across the dataset. Since the tariff schedule is deterministic
+        (Mon-Fri 06:00-21:00, Sat 06:00-12:00 = high tariff), most cells are 0 or 1. However, <em>federal holidays</em>
+        (Jan 1, Good Friday, Easter, Ascension, Whit Monday, Aug 1, Dec 25) are low tariff all day regardless
+        of the day of week. This causes weekday daytime probabilities to be slightly below 1.0 (~0.97),
+        reflecting the occasional holiday override.</p>
     </div>
 
     <h3>Cost Comparison</h3>
@@ -1128,7 +1131,91 @@
     </div>
     
 
-        <h2 id="battery">11. Battery Degradation</h2>
+        
+    <section id="hk2-target-actual">
+    <h2>2.7 HK2 Target vs Actual Temperature Analysis</h2>
+
+    <h3>Overview</h3>
+    <p>This analysis examines the relationship between the HK2 <strong>target</strong> temperature
+    (heating curve setpoint, controllable) and <strong>actual</strong> temperature (measured flow).
+    Understanding this relationship is critical because:</p>
+    <ul>
+        <li>The thermal model uses actual HK2 as the heating input signal</li>
+        <li>Optimization controls target HK2 via setpoint and curve_rise parameters</li>
+        <li>A gap between target and actual affects model predictions</li>
+    </ul>
+
+    <h3>Deviation Statistics</h3>
+    <p>Analysis of the difference: $\Delta T = T_{actual} - T_{target}$</p>
+    <table>
+        <tr><th>Statistic</th><th>Value</th></tr>
+        <tr><td>Number of observations</td><td>6,097</td></tr>
+        <tr><td>Mean deviation ($\bar{\Delta T}$)</td><td><strong>-1.45°C</strong></td></tr>
+        <tr><td>Std deviation ($\sigma_{\Delta T}$)</td><td>1.79°C</td></tr>
+        <tr><td>Min deviation</td><td>-9.8°C</td></tr>
+        <tr><td>Max deviation</td><td>29.1°C</td></tr>
+        <tr><td>Actual above target</td><td>14.8%</td></tr>
+        <tr><td>Within ±1°C</td><td>52.6%</td></tr>
+        <tr><td>Within ±2°C</td><td>69.7%</td></tr>
+        <tr><td>Correlation ($r$)</td><td>0.910</td></tr>
+    </table>
+
+    <h3>First-Order Lag Model</h3>
+    <p>We fit a first-order lag model to characterize the dynamics:</p>
+    <div class="equation-box">
+    $$T_{actual}[k+1] = T_{actual}[k] + \frac{\Delta t}{\tau} \left( T_{target}[k] - T_{actual}[k] \right)$$
+    </div>
+    <p>where $\tau$ is the time constant (how quickly actual approaches target).</p>
+
+    <table>
+        <tr><th>Model Parameter</th><th>Value</th></tr>
+        <tr><td>Time constant ($\tau$)</td><td><strong>0.35 hours</strong></td></tr>
+        <tr><td>Forward simulation $R^2$</td><td>0.722</td></tr>
+        <tr><td>Forward simulation RMSE</td><td>2.25°C</td></tr>
+        <tr><td>One-step prediction $R^2$</td><td>0.813</td></tr>
+        <tr><td>One-step prediction RMSE</td><td>1.84°C</td></tr>
+    </table>
+
+    <p><strong>Interpretation:</strong> A time constant of τ = 0.3 hours means the actual
+    temperature reaches ~63% of a step change in target within 0.3 hours, and ~95% within
+    1.0 hours (3τ).</p>
+
+    <h3>Cross-Correlation Analysis</h3>
+    <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Peak correlation</td><td>0.914</td></tr>
+        <tr><td>Peak lag</td><td>-0.25 hours</td></tr>
+        <tr><td>Zero-lag correlation</td><td>0.910</td></tr>
+    </table>
+
+    
+        <div class="warning">
+        <strong>Recommendation:</strong> The lag model achieves moderate fit (R² = 0.722).
+        Consider using actual HK2 temperature directly in thermal models rather than predicting
+        from target. The dynamics may involve factors beyond simple first-order lag.
+        </div>
+        
+
+    <h3>Implications for Thermal Modeling</h3>
+    <ul>
+        <li><strong>Transfer function model:</strong> Currently uses actual HK2 ($T_{actual}$) as input.
+            This is appropriate since it reflects real heat delivery.</li>
+        <li><strong>Grey-box model:</strong> Uses target HK2 ($T_{target}$) as input.
+            The mismatch between target and actual may explain forward simulation divergence.</li>
+        <li><strong>Optimization:</strong> Changes to setpoint/curve_rise affect target immediately
+            but take ~0 hours to fully propagate to actual flow temperature.</li>
+    </ul>
+
+    <figure>
+        <img src="fig17_hk2_target_actual.png" alt="HK2 Target vs Actual Analysis">
+        <figcaption><strong>Figure 17:</strong> HK2 target vs actual temperature analysis:
+        time series (top-left), scatter correlation (top-right), deviation distribution (bottom-left),
+        lag model fit (bottom-right).</figcaption>
+    </figure>
+    </section>
+    
+
+        <h2 id="battery">12. Battery Degradation</h2>
         <div class="card">
             <p>Analysis of whether the Feb-Mar 2025 deep-discharge event affected battery efficiency.</p>
             <details>
@@ -1354,7 +1441,7 @@
             </details>
         </div>
 
-        <h2 id="log">12. Detailed Log</h2>
+        <h2 id="log">13. Detailed Log</h2>
 
         <details>
             <summary>Full EDA Output Log</summary>
@@ -1643,12 +1730,12 @@ Weighted temperature analysis complete.
 Phase 2, Step 4: Electricity Tariff Analysis
 ============================================================
 Loading tariff data...
-  Schedule: 27 entries
+  Schedule: 26 entries
   Flags: 27025 hourly records
   Series: 27025 hourly records
 
 Filtered tariffs (HKN-only for feed-in):
-  Purchase: 10 entries
+  Purchase: 9 entries
   Feed-in (with HKN): 11 entries
   Excluded: 6 base-only entries
 
@@ -1669,6 +1756,66 @@ Outputs saved to: /Users/stata/workspace/estat/output/phase2
   - fig15_tariff_windows.png
   - fig16_tariff_costs.png
   - tariff_report_section.html
+</pre>
+        </details>
+
+        <details>
+            <summary>HK2 Target vs Actual Analysis Log</summary>
+            <pre>============================================================
+Phase 2, Step 6: HK2 Target vs Actual Temperature Analysis
+============================================================
+Loading heating sensor data...
+  Loaded 2,003,575 rows, 96 sensors
+  Wide format: 7,270 rows, 96 columns
+  Date range: 2025-10-28 16:15:00+00:00 to 2026-01-12 09:30:00+00:00
+
+Preparing HK2 data...
+  Target column (stiebel_eltron_isg_target_temperature_hk_2): found
+  Actual column (stiebel_eltron_isg_actual_temperature_hk_2): found
+  Actual alt column (wp_anlage_hk2_ist): found
+  Outdoor column (stiebel_eltron_isg_outdoor_temperature): found
+  Using actual column: stiebel_eltron_isg_actual_temperature_hk_2
+  Valid observations: 6,097
+  Period: 2025-10-28 to 2026-01-12
+
+Analyzing deviation statistics...
+  Mean deviation: -1.45°C
+  Std deviation: 1.79°C
+  Actual above target: 14.8%
+  Within ±1°C: 52.6%
+  Within ±2°C: 69.7%
+  Correlation: 0.910
+
+Fitting first-order lag model...
+  Optimal time constant τ: 0.35 hours
+  Forward simulation: R² = 0.722, RMSE = 2.25°C
+  One-step prediction: R² = 0.813, RMSE = 1.84°C
+
+Analyzing cross-correlation...
+  Peak correlation: 0.914 at lag -0.25 hours
+  Zero-lag correlation: 0.910
+
+Creating visualization...
+  Saved: fig17_hk2_target_actual.png
+
+Saved: hk2_target_actual_stats.csv
+Saved: hk2_target_actual_report_section.html
+
+============================================================
+HK2 TARGET VS ACTUAL ANALYSIS SUMMARY
+============================================================
+
+Deviation Statistics:
+  Mean (actual - target): -1.45°C
+  Std deviation: 1.79°C
+  Correlation: 0.910
+
+Lag Model:
+  Time constant τ: 0.35 hours
+  Forward R²: 0.722
+  Forward RMSE: 2.25°C
+
+⚠ Lag model has moderate fit - consider additional factors
 </pre>
         </details>
 

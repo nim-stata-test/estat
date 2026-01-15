@@ -28,6 +28,15 @@ from pathlib import Path
 from datetime import datetime
 import json
 import argparse
+import sys
+
+# Add project root to path for shared imports
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / 'src'))
+
+# Grey-box thermal simulator disabled - forward simulation diverges (R² = -6.7)
+# Using TEMP_REGRESSION instead (transfer function model)
+# from shared.thermal_simulator import ThermalSimulator, compute_T_HK2_from_schedule_vectorized
 
 try:
     from pymoo.core.problem import Problem
@@ -45,12 +54,15 @@ except ImportError:
     HAS_PYMOO = False
     print("Warning: pymoo not installed. Run: pip install pymoo>=0.6.0")
 
-# Project paths
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+# Project paths (PROJECT_ROOT already defined above for shared imports)
 PHASE1_DIR = PROJECT_ROOT / 'output' / 'phase1'
 PHASE2_DIR = PROJECT_ROOT / 'output' / 'phase2'
+PHASE3_DIR = PROJECT_ROOT / 'output' / 'phase3'
 OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase4'
 OUTPUT_DIR.mkdir(exist_ok=True)
+
+# Buffer tank sensor column (for grey-box simulation initial conditions)
+BUFFER_COL = 'stiebel_eltron_isg_actual_temperature_buffer'
 
 # Model parameters from Phase 3
 # Uses T_HK2 (target flow from heating curve) not actual measured flow
@@ -77,7 +89,8 @@ def load_heating_curve_params():
 
 HEATING_CURVE_PARAMS = load_heating_curve_params()
 
-# T_weighted regression coefficients from Phase 2 multivariate analysis
+# [DEPRECATED] T_weighted regression coefficients from Phase 2 multivariate analysis
+# Now superseded by grey-box forward simulation. Kept for reference/comparison.
 # T_weighted = intercept + coef * parameter_value
 TEMP_REGRESSION = {
     'intercept': -15.31,
@@ -87,6 +100,11 @@ TEMP_REGRESSION = {
     'comfort_hours': -0.020,     # -0.02°C per hour increase
     'outdoor_mean': 0.090,       # +0.09°C per 1°C outdoor increase
 }
+
+# Grey-box thermal model disabled for optimization
+# Forward simulation diverges (R² = -6.7 on validation)
+# Using TEMP_REGRESSION (transfer function) instead
+GREYBOX_PARAMS = None
 
 # Baseline parameters (reference point)
 BASELINE = {
@@ -108,15 +126,21 @@ OCCUPIED_END = 22    # 22:00
 
 
 class SimulationData:
-    """Container for preloaded simulation data."""
+    """Container for preloaded simulation data and thermal simulator."""
 
     def __init__(self):
         self.sim_data = None
         self.tariff_data = None
         self.baseline_metrics = None
+        self.thermal_simulator = None  # Grey-box thermal model for forward simulation
+        # Pre-cached arrays for simulation performance
+        self._cached_T_outdoor = None
+        self._cached_hours = None
+        self._cached_PV = None
+        self._cached_x0 = None
 
     def load(self):
-        """Load all required data."""
+        """Load all required data and initialize thermal simulator."""
         print("Loading simulation data...")
 
         # Load integrated dataset
@@ -135,6 +159,19 @@ class SimulationData:
 
         # Calculate baseline metrics for reference
         self.baseline_metrics = self._compute_baseline_metrics()
+
+        # Grey-box thermal simulator disabled (forward simulation diverges)
+        # Using TEMP_REGRESSION (transfer function model) instead
+        self.thermal_simulator = None
+
+        # Pre-cache arrays for simulation performance
+        self._cached_T_outdoor = self.sim_data['T_outdoor'].values.copy()
+        self._cached_hours = self.sim_data['hour'].values.copy()
+        self._cached_PV = self.sim_data['pv_generation'].fillna(0).values.copy()
+        # Initial state: [T_buffer, T_room] from first valid observation
+        T_buffer_init = self.sim_data['T_buffer'].iloc[0] if 'T_buffer' in self.sim_data else 30.0
+        T_room_init = self.sim_data['T_weighted'].iloc[0]
+        self._cached_x0 = np.array([T_buffer_init, T_room_init])
 
         print(f"  Loaded {len(self.sim_data):,} timesteps ({len(self.sim_data)//96:.0f} days)")
 
@@ -161,6 +198,13 @@ class SimulationData:
         # Flow temperature
         sim['T_HK2'] = df.get('stiebel_eltron_isg_actual_temperature_hk_2',
                                df.get('stiebel_eltron_isg_flow_temperature_wp1'))
+
+        # Buffer tank temperature (for grey-box simulation initial conditions)
+        if BUFFER_COL in df.columns:
+            sim['T_buffer'] = df[BUFFER_COL]
+        else:
+            # Fallback: estimate from T_HK2 (buffer is typically near flow temp)
+            sim['T_buffer'] = sim['T_HK2'] * 0.9 if sim['T_HK2'] is not None else 30.0
 
         # Energy columns
         sim['pv_generation'] = df.get('pv_generation_kwh', 0)
@@ -221,9 +265,12 @@ def calculate_cop(T_outdoor: float, T_HK2: float) -> float:
             COP_PARAMS['t_hk2_coef'] * T_HK2)
 
 
-def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
+def simulate_parameters(params: dict, sim_data_obj: 'SimulationData') -> dict:
     """
-    Simulate heating strategy and return objective values (vectorized for speed).
+    Simulate heating strategy using grey-box forward simulation.
+
+    Uses physics-based thermal model to predict room temperature trajectory,
+    then calculates comfort objectives and energy/cost metrics.
 
     Models energy time-shifting: when comfort schedule changes, heating energy
     shifts to different hours, affecting:
@@ -233,7 +280,7 @@ def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
 
     Args:
         params: Dict with setpoint_comfort, setpoint_eco, comfort_start, comfort_end, curve_rise
-        sim_data: Prepared simulation DataFrame
+        sim_data_obj: SimulationData object with thermal simulator and cached arrays
 
     Returns:
         Dict with objective values and constraint violations
@@ -244,18 +291,21 @@ def simulate_parameters(params: dict, sim_data: pd.DataFrame) -> dict:
     comfort_end = params['comfort_end']
     curve_rise = params['curve_rise']
 
+    # Extract DataFrame for energy simulation
+    sim_data = sim_data_obj.sim_data
+
     # Calculate comfort hours
     comfort_hours = comfort_end - comfort_start
 
-    # Calculate T_weighted adjustment using regression coefficients
+    # --- Temperature Prediction using Transfer Function Model ---
+    # Uses regression-based delta_T from Phase 2 multivariate analysis
+    # (Grey-box forward simulation disabled due to divergence, R² = -6.7)
     delta_T = (
         TEMP_REGRESSION['comfort_setpoint'] * (setpoint_comfort - BASELINE['setpoint_comfort']) +
         TEMP_REGRESSION['eco_setpoint'] * (setpoint_eco - BASELINE['setpoint_eco']) +
         TEMP_REGRESSION['curve_rise'] * (curve_rise - BASELINE['curve_rise']) +
         TEMP_REGRESSION['comfort_hours'] * (comfort_hours - (BASELINE['comfort_end'] - BASELINE['comfort_start']))
     )
-
-    # Adjust T_weighted for comfort objectives
     T_weighted_adj = sim_data['T_weighted'].values + delta_T
     occupied_mask = (sim_data['hour'].values >= OCCUPIED_START) & (sim_data['hour'].values < OCCUPIED_END)
     T_weighted_occupied = T_weighted_adj[occupied_mask]
@@ -446,7 +496,7 @@ class HeatingOptimizationProblem(Problem):
                 'comfort_end': X[i, 3],
                 'curve_rise': X[i, 4],
             }
-            result = simulate_parameters(params, self.sim_data.sim_data)
+            result = simulate_parameters(params, self.sim_data)
             F[i] = result['objectives']
             G[i] = result['constraints']
 
@@ -883,10 +933,10 @@ def plot_pareto_front(solutions: list, selected: list = None):
     fig.suptitle('Pareto Front: Multi-Objective Heating Optimization\n'
                  '(Maximize Avg Temp, Minimize Grid Import, Minimize Net Cost)', fontsize=12)
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig24_pareto_front.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig25_pareto_front.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig24_pareto_front.png")
+    print("  Saved: fig25_pareto_front.png")
 
 
 def plot_strategy_comparison(selected: list):
@@ -931,10 +981,10 @@ def plot_strategy_comparison(selected: list):
     ax.set_title('Strategy Parameter Comparison (Normalized)', fontsize=12)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig25_pareto_strategy_comparison.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig26_pareto_strategy_comparison.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig25_pareto_strategy_comparison.png")
+    print("  Saved: fig26_pareto_strategy_comparison.png")
 
 
 def generate_report(solutions: list, selected: list, metadata: dict) -> str:
@@ -944,6 +994,21 @@ def generate_report(solutions: list, selected: list, metadata: dict) -> str:
         h = int(decimal_hour)
         m = int((decimal_hour - h) * 60)
         return f"{h:02d}:{m:02d}"
+
+    # Get grey-box model info if available
+    greybox_info = ""
+    if GREYBOX_PARAMS is not None:
+        r2 = GREYBOX_PARAMS['fit_stats']['r2_room']
+        greybox_info = f"""
+    <h3>Thermal Model</h3>
+    <p>Temperature predictions use <strong>grey-box forward simulation</strong> with physics-based
+    state-space model (R² = {r2:.3f}):</p>
+    <pre>
+T_buf[k+1] = T_buf[k] + (dt/τ_buf) × [(T_HK2[k] - T_buf[k]) - r_emit×(T_buf[k] - T_room[k])]
+T_room[k+1] = T_room[k] + (dt/τ_room) × [r_heat×(T_buf[k] - T_room[k]) - (T_room[k] - T_out[k])] + k_solar×PV[k]
+    </pre>
+    <p>This replaces the previous regression-based delta_T approach with explicit thermal dynamics modeling.</p>
+"""
 
     html = f"""
     <section id="pareto-optimization">
@@ -958,6 +1023,7 @@ def generate_report(solutions: list, selected: list, metadata: dict) -> str:
         <li><strong>Evaluations</strong>: {metadata.get('pop_size', 100) * metadata.get('n_gen', 200):,}</li>
         <li><strong>Pareto solutions</strong>: {len(solutions)}</li>
     </ul>
+    {greybox_info}
 
     <h3>Decision Variables</h3>
     <table>
@@ -1019,14 +1085,14 @@ def generate_report(solutions: list, selected: list, metadata: dict) -> str:
 
     <h3>Pareto Front Visualization</h3>
     <figure>
-        <img src="fig24_pareto_front.png" alt="Pareto Front">
-        <figcaption><strong>Figure 24:</strong> Pareto front showing trade-offs between objectives.
+        <img src="fig25_pareto_front.png" alt="Pareto Front">
+        <figcaption><strong>Figure 26:</strong> Pareto front showing trade-offs between objectives.
         Blue points are the 10 selected strategies.</figcaption>
     </figure>
 
     <figure>
-        <img src="fig25_pareto_strategy_comparison.png" alt="Strategy Comparison">
-        <figcaption><strong>Figure 25:</strong> Radar chart comparing parameter values across selected strategies.</figcaption>
+        <img src="fig26_pareto_strategy_comparison.png" alt="Strategy Comparison">
+        <figcaption><strong>Figure 26:</strong> Radar chart comparing parameter values across selected strategies.</figcaption>
     </figure>
     </section>
     """

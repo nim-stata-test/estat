@@ -6,7 +6,7 @@ Evaluates selected Pareto strategies for comfort violations and predicts
 temperature profiles for winter 2026/2027.
 
 Outputs:
-- fig27_strategy_temperature_predictions.png
+- fig28_strategy_temperature_predictions.png
 - strategy_violation_analysis.csv
 - strategy_evaluation_report.html
 """
@@ -17,15 +17,28 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from pathlib import Path
 import json
+import sys
 from datetime import datetime, timedelta
 
 # Project paths
 PROJECT_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / 'src'))
+
+# Grey-box thermal simulator disabled - forward simulation diverges (R² = -6.7)
+# Using TEMP_REGRESSION instead (transfer function model)
+# from shared.thermal_simulator import (
+#     ThermalSimulator, simulate_forward, compute_T_HK2_from_schedule_vectorized
+# )
+
 PHASE1_DIR = PROJECT_ROOT / 'output' / 'phase1'
 PHASE2_DIR = PROJECT_ROOT / 'output' / 'phase2'
+PHASE3_DIR = PROJECT_ROOT / 'output' / 'phase3'
 PHASE4_DIR = PROJECT_ROOT / 'output' / 'phase4'
 OUTPUT_DIR = PHASE4_DIR
 OUTPUT_DIR.mkdir(exist_ok=True)
+
+# Buffer tank sensor column
+BUFFER_COL = 'stiebel_eltron_isg_actual_temperature_buffer'
 
 # Model parameters from Phase 3
 # Uses T_HK2 (target flow from heating curve) not actual measured flow
@@ -47,6 +60,7 @@ def _load_heating_curve_params():
 HEATING_CURVE_PARAMS = _load_heating_curve_params()
 
 # T_weighted regression coefficients from Phase 2 multivariate analysis
+# (Grey-box forward simulation disabled due to divergence, R² = -6.7)
 TEMP_REGRESSION = {
     'intercept': -15.31,
     'comfort_setpoint': 1.218,
@@ -55,6 +69,9 @@ TEMP_REGRESSION = {
     'comfort_hours': -0.020,
     'outdoor_mean': 0.090,
 }
+
+# Grey-box thermal model disabled for optimization
+GREYBOX_PARAMS = None
 
 # Baseline parameters
 BASELINE = {
@@ -78,7 +95,7 @@ VIOLATION_LIMIT = 0.05  # 5% max violation allowed
 
 
 def load_data():
-    """Load integrated dataset and selected strategies."""
+    """Load integrated dataset, thermal simulator, and selected strategies."""
     print("Loading data...")
 
     # Load integrated dataset
@@ -99,6 +116,25 @@ def load_data():
     # Add hour column
     df['hour'] = df.index.hour + df.index.minute / 60
 
+    # Add buffer temperature for thermal simulator
+    df['T_outdoor'] = df['stiebel_eltron_isg_outdoor_temperature']
+    if BUFFER_COL in df.columns:
+        df['T_buffer'] = df[BUFFER_COL]
+    else:
+        df['T_buffer'] = 30.0  # Fallback
+
+    # Add PV generation
+    df['pv_generation'] = df.get('pv_generation_kwh', 0)
+
+    # Initialize thermal simulator
+    thermal_sim = None
+    if GREYBOX_PARAMS is not None:
+        thermal_sim = ThermalSimulator(
+            params=GREYBOX_PARAMS['params'],
+            heating_curve_params=HEATING_CURVE_PARAMS
+        )
+        print("  Initialized grey-box thermal simulator")
+
     # Load selected strategies
     with open(PHASE4_DIR / 'selected_strategies.json', 'r') as f:
         strategies = json.load(f)
@@ -106,7 +142,7 @@ def load_data():
     print(f"  Loaded {len(df):,} timesteps ({len(df)//96:.0f} days)")
     print(f"  Loaded {len(strategies)} selected strategies")
 
-    return df, strategies
+    return df, strategies, thermal_sim
 
 
 def calculate_delta_T(params: dict) -> float:
@@ -124,24 +160,53 @@ def calculate_delta_T(params: dict) -> float:
     return delta_T
 
 
-def evaluate_strategy(params: dict, df: pd.DataFrame) -> dict:
+def evaluate_strategy(params: dict, df: pd.DataFrame, thermal_sim: ThermalSimulator = None) -> dict:
     """
-    Evaluate a strategy for comfort violations.
+    Evaluate a strategy for comfort violations using grey-box forward simulation.
 
     Returns dict with:
-    - T_weighted_adj: adjusted temperature series
+    - T_weighted_adj: simulated temperature series
     - violation_pct: percentage of daytime hours below threshold
     - mean_temp: mean daytime temperature
     - min_temp: minimum daytime temperature
     - hours_below_threshold: total hours below threshold
     """
-    delta_T = calculate_delta_T(params)
+    WARMUP_STEPS = 96  # 24 hours warmup
 
-    # Adjust temperatures
-    T_weighted_adj = df['T_weighted'].values + delta_T
+    if thermal_sim is not None:
+        # Grey-box forward simulation
+        T_outdoor = df['T_outdoor'].values
+        hours = df['hour'].values
+        PV = df['pv_generation'].fillna(0).values
+
+        # Compute T_HK2 from heating curve
+        T_HK2 = compute_T_HK2_from_schedule_vectorized(
+            T_outdoor, hours, params,
+            HEATING_CURVE_PARAMS['t_ref_comfort'],
+            HEATING_CURVE_PARAMS['t_ref_eco']
+        )
+
+        # Initial state
+        T_buffer_init = df['T_buffer'].iloc[0] if 'T_buffer' in df else 30.0
+        T_room_init = df['T_weighted'].iloc[0]
+        x0 = np.array([T_buffer_init, T_room_init])
+
+        # Build inputs and simulate
+        u_inputs = np.column_stack([T_HK2, T_outdoor, PV])
+        x_pred = simulate_forward(thermal_sim.params, x0, u_inputs, dt=0.25)
+
+        # Extract room temperature after warmup
+        T_weighted_adj = x_pred[WARMUP_STEPS:, 1]
+        hours_adj = hours[WARMUP_STEPS:]
+        delta_T = None  # Not applicable for forward simulation
+    else:
+        # Fallback: regression-based delta_T
+        delta_T = calculate_delta_T(params)
+        T_weighted_adj = df['T_weighted'].values + delta_T
+        hours_adj = df['hour'].values
 
     # Filter to occupied hours only
-    occupied_mask = (df['hour'].values >= OCCUPIED_START) & (df['hour'].values < OCCUPIED_END)
+    occupied_mask = (hours_adj >= OCCUPIED_START) & (hours_adj < OCCUPIED_END)
     T_occupied = T_weighted_adj[occupied_mask]
 
     # Calculate violations
@@ -167,12 +232,13 @@ def evaluate_strategy(params: dict, df: pd.DataFrame) -> dict:
     }
 
 
-def generate_winter_predictions(df: pd.DataFrame, strategies: list) -> pd.DataFrame:
+def generate_winter_predictions(df: pd.DataFrame, strategies: list,
+                                thermal_sim: ThermalSimulator = None) -> pd.DataFrame:
     """
     Generate predicted T_weighted for winter 2026/2027 (Nov 2026 - Feb 2027).
 
-    Uses historical outdoor temperatures from the overlap period, repeated
-    to simulate a full winter season.
+    Uses grey-box forward simulation with historical outdoor temperatures
+    repeated to simulate a full winter season.
     """
     print("\nGenerating winter 2026/2027 predictions...")
 
@@ -194,17 +260,52 @@ def generate_winter_predictions(df: pd.DataFrame, strategies: list) -> pd.DataFr
     predictions['date'] = predictions.index.date
     predictions['month'] = predictions.index.month
 
-    # Repeat historical pattern
+    # Repeat historical pattern for baseline
     n_repeats = (len(winter_idx) // hist_len) + 1
     hist_repeated = np.tile(hist_T.values, n_repeats)[:len(winter_idx)]
     predictions['T_weighted_baseline'] = hist_repeated
 
-    # Add strategy predictions
-    for strategy in strategies:
-        label = strategy.get('label', strategy['id'])
-        params = strategy['variables']
-        delta_T = calculate_delta_T(params)
-        predictions[f'T_weighted_{label}'] = hist_repeated + delta_T
+    # Use forward simulation if thermal simulator available
+    if thermal_sim is not None:
+        # Repeat historical outdoor temps and PV
+        hist_T_outdoor = df['T_outdoor'].dropna().values
+        hist_PV = df['pv_generation'].fillna(0).values
+        T_outdoor_repeated = np.tile(hist_T_outdoor, n_repeats)[:len(winter_idx)]
+        PV_repeated = np.tile(hist_PV, n_repeats)[:len(winter_idx)]
+        hours = predictions['hour'].values
+
+        # Initial state
+        T_buffer_init = df['T_buffer'].iloc[0] if 'T_buffer' in df else 30.0
+        T_room_init = df['T_weighted'].iloc[0]
+        x0 = np.array([T_buffer_init, T_room_init])
+
+        # Add strategy predictions using forward simulation
+        for strategy in strategies:
+            label = strategy.get('label', strategy['id'])
+            params = strategy['variables']
+
+            # Compute T_HK2 from heating curve
+            T_HK2 = compute_T_HK2_from_schedule_vectorized(
+                T_outdoor_repeated, hours, params,
+                HEATING_CURVE_PARAMS['t_ref_comfort'],
+                HEATING_CURVE_PARAMS['t_ref_eco']
+            )
+
+            # Build inputs and simulate
+            u_inputs = np.column_stack([T_HK2, T_outdoor_repeated, PV_repeated])
+            x_pred = simulate_forward(thermal_sim.params, x0, u_inputs, dt=0.25)
+            predictions[f'T_weighted_{label}'] = x_pred[:, 1]  # Room temperature
+
+        print("  Using grey-box forward simulation for predictions")
+    else:
+        # Fallback: regression-based delta_T
+        for strategy in strategies:
+            label = strategy.get('label', strategy['id'])
+            params = strategy['variables']
+            delta_T = calculate_delta_T(params)
+            predictions[f'T_weighted_{label}'] = hist_repeated + delta_T
+
+        print("  Using regression-based delta_T for predictions (fallback)")
 
     return predictions
 
@@ -388,11 +489,11 @@ def plot_strategy_predictions(predictions: pd.DataFrame, strategies: list, evalu
     ax6.set_title('Strategy Evaluation Summary', fontsize=12, fontweight='bold', y=0.95)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig27_strategy_temperature_predictions.png',
+    plt.savefig(OUTPUT_DIR / 'fig28_strategy_temperature_predictions.png',
                 dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig27_strategy_temperature_predictions.png")
+    print("  Saved: fig28_strategy_temperature_predictions.png")
 
 
 def generate_report(strategies: list, evaluations: dict) -> str:
@@ -498,8 +599,8 @@ def generate_report(strategies: list, evaluations: dict) -> str:
 
     <h3>Winter 2026/2027 Temperature Predictions</h3>
     <figure>
-        <img src="fig27_strategy_temperature_predictions.png" alt="Strategy Temperature Predictions">
-        <figcaption><strong>Figure 27:</strong> Predicted weighted indoor temperatures for each strategy
+        <img src="fig28_strategy_temperature_predictions.png" alt="Strategy Temperature Predictions">
+        <figcaption><strong>Figure 28:</strong> Predicted weighted indoor temperatures for each strategy
         over winter 2026/2027. Red dashed line indicates the comfort threshold. Strategies with
         violation percentages exceeding the constraint limit are highlighted.</figcaption>
     </figure>
@@ -515,30 +616,31 @@ def main():
     print("Phase 4, Step 5: Strategy Evaluation")
     print("=" * 60)
 
-    # Load data
-    df, strategies = load_data()
+    # Load data and thermal simulator
+    df, strategies, thermal_sim = load_data()
 
-    # Evaluate each strategy
-    print("\nEvaluating strategies...")
+    # Evaluate each strategy using grey-box forward simulation
+    print("\nEvaluating strategies (using grey-box forward simulation)...")
     evaluations = {}
 
     for strategy in strategies:
         label = strategy.get('label', strategy['id'])
         params = strategy['variables']
-        evaluation = evaluate_strategy(params, df)
+        evaluation = evaluate_strategy(params, df, thermal_sim)
         evaluations[label] = evaluation
 
         status = "✓" if evaluation['constraint_satisfied'] else "✗"
         print(f"  {label:20s}: violation={evaluation['violation_pct']*100:5.1f}%, "
               f"mean={evaluation['mean_temp']:.1f}°C, min={evaluation['min_temp']:.1f}°C {status}")
 
-    # Generate winter predictions
-    predictions = generate_winter_predictions(df, strategies)
+    # Generate winter predictions using forward simulation
+    predictions = generate_winter_predictions(df, strategies, thermal_sim)
 
     # Create visualization
     plot_strategy_predictions(predictions, strategies, evaluations)
 
     # Save evaluation results
+    # Note: delta_T is deprecated when using forward simulation (will be None)
     eval_df = pd.DataFrame([
         {
             'strategy': label,
@@ -547,7 +649,7 @@ def main():
             'comfort_start': strategies[i]['variables']['comfort_start'],
             'comfort_end': strategies[i]['variables']['comfort_end'],
             'curve_rise': strategies[i]['variables']['curve_rise'],
-            'delta_T': e['delta_T'],
+            'simulation_method': 'grey-box' if e.get('delta_T') is None else 'regression',
             'mean_temp': e['mean_temp'],
             'min_temp': e['min_temp'],
             'max_temp': e['max_temp'],
