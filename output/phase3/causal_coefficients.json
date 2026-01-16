@@ -1,0 +1,19 @@
+{
+  "source": "Phase 3 transfer function analysis",
+  "method": "Causal coefficients derived from g_eff \u00d7 physical pathways",
+  "g_eff": 0.208,
+  "g_eff_stability": "CV = 9% (stable)",
+  "coefficients": {
+    "comfort_setpoint": 0.208,
+    "eco_setpoint": 0.208,
+    "curve_rise": 2.9161599999999996,
+    "comfort_hours": 0.0
+  },
+  "heating_curve": {
+    "t_ref_comfort": 21.32,
+    "t_ref_eco": 19.18,
+    "baseline_curve_rise": 1.08
+  },
+  "t_outdoor_mean": 7.3,
+  "note": "These replace Phase 2 regression coefficients for optimization"
+}

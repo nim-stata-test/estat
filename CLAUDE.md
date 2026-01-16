@@ -451,6 +451,43 @@ Parameters: `tau_buf` (buffer time constant), `tau_room` (building time constant
 
 Script: `src/phase3/01b_greybox_thermal_model.py`
 
+## Transfer Function Thermal Model
+
+Linear transfer function model using low-pass filtered inputs:
+```
+T_room = offset + g_outdoor×LPF(T_outdoor, 24h) + g_effort×LPF(Effort, 2h) + g_pv×LPF(PV, 12h)
+```
+
+Where `Effort = T_HK2 - baseline_curve` (deviation from heating curve).
+
+**Key Parameters:**
+- `g_effort = 0.208` (STABLE: coefficient of variation = 9%)
+- `g_outdoor = 0.442` (UNSTABLE: CV = 95%)
+- Model R² = 0.68 (captures 68% of variance)
+
+**Causal Coefficients (for Phase 4 optimization):**
+
+The transfer function provides causal estimates of how heating parameters affect room temperature:
+
+| Parameter | Phase 2 Regression | Phase 3 Causal | Ratio |
+|-----------|-------------------|----------------|-------|
+| comfort_setpoint | +1.22°C/°C | **+0.21°C/°C** | 5.9x |
+| curve_rise | +9.73°C/unit | **+2.92°C/unit** | 3.3x |
+
+**Important:** Phase 2 regression coefficients overestimate effects by 3-6x because they
+capture associations, not causal effects. Phase 4 now uses the causal coefficients from
+`output/phase3/causal_coefficients.json`.
+
+**Causal Chain:**
+```
+setpoint +1°C → T_HK2 +1°C → Effort +1°C → LPF(Effort) +1°C → T_room +0.21°C
+```
+
+Scripts:
+- `src/phase3/01_thermal_model.py` - Main thermal model
+- `src/phase3/01e_adaptive_thermal_model.py` - Time-varying parameters (RLS)
+- `src/phase3/01f_transfer_function_integration.py` - Causal coefficient derivation
+
 ## Phase 4: Optimization Strategy Outputs
 
 After running `python src/phase4/run_optimization.py`, outputs are saved to `output/phase4/`:

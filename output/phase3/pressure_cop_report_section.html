@@ -1,0 +1,70 @@
+
+    <section id="pressure-cop-model">
+    <h2>Thermodynamic COP Model</h2>
+
+    <h3>Theory</h3>
+    <p>The thermodynamic COP model uses refrigerant pressure measurements to calculate the
+    theoretical maximum COP (Carnot COP):</p>
+
+    <pre>
+COP_carnot = T_cond / (T_cond - T_evap)    [temperatures in Kelvin]
+COP_actual = η × COP_carnot                 [η is efficiency factor]
+    </pre>
+
+    <p>Where T_cond and T_evap are saturation temperatures derived from the high and low
+    pressure sensors using R410A refrigerant properties.</p>
+
+    <h3>Data Summary</h3>
+    <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Days analyzed</td><td>77</td></tr>
+        <tr><td>Mean Carnot COP</td><td>10.47</td></tr>
+        <tr><td>Mean Actual COP</td><td>3.91</td></tr>
+        <tr><td>Mean Efficiency (η)</td><td>37.3%</td></tr>
+        <tr><td>Efficiency Range</td><td>33.7% - 40.9%</td></tr>
+    </table>
+
+    <h3>Model Comparison</h3>
+    <table>
+        <tr><th>Model</th><th>Formula</th><th>R²</th><th>RMSE</th></tr>
+    
+        <tr>
+            <td>Empirical</td>
+            <td><code>COP = 4.64 + 0.163×T_out + -0.054×T_HK2</code></td>
+            <td>0.9394</td>
+            <td>0.198</td>
+        </tr>
+                
+        <tr>
+            <td>Thermodynamic</td>
+            <td><code>COP = 0.373 × COP_carnot</code></td>
+            <td>0.9351</td>
+            <td>0.205</td>
+        </tr>
+                
+        <tr>
+            <td>Hybrid</td>
+            <td><code>COP = 1.33 + 0.178×COP_carnot + 0.110×T_out</code></td>
+            <td>0.9489</td>
+            <td>0.182</td>
+        </tr>
+                
+    </table>
+
+    <h3>Key Findings</h3>
+    <ul>
+        <li><strong>Refrigerant identified as R410A</strong> based on pressure-temperature relationship</li>
+    
+        <li><strong>Best model: Hybrid</strong> with R²=0.9489</li>
+        <li>Mean efficiency η = 37.3% of Carnot maximum</li>
+        <li>Efficiency decreases with temperature lift (larger ΔT = less efficient)</li>
+        
+    </ul>
+
+    <figure>
+        <img src="fig_pressure_cop_model.png" alt="Thermodynamic COP Model">
+        <figcaption>Thermodynamic COP analysis: pressure-temperature relationship,
+        Carnot vs actual COP, model comparison, and efficiency factors.</figcaption>
+    </figure>
+    </section>
+    

@@ -1,0 +1,50 @@
+{
+  "efficiency": {
+    "constant": {
+      "eta": 0.37275602203628355,
+      "eta_std": 0.019493003466310835
+    },
+    "lift_dependent": {
+      "intercept": 0.3906695483828697,
+      "slope": -0.00054221252337559,
+      "r_squared": 0.03190211760106997,
+      "p_value": 0.12013630272507052
+    },
+    "outdoor_dependent": {
+      "intercept": 0.36608885767823796,
+      "slope": 0.0010361163681581569,
+      "r_squared": 0.040315879072299,
+      "p_value": 0.0799510873113751
+    }
+  },
+  "cop_models": {
+    "empirical": {
+      "intercept": 4.636179993778043,
+      "coef_T_outdoor": 0.1632403475321488,
+      "coef_T_HK2": -0.053976443224264654,
+      "r_squared": 0.9393999890224891,
+      "rmse": 0.19791236242522225,
+      "formula": "COP = 4.64 + 0.163\u00d7T_out + -0.054\u00d7T_HK2"
+    },
+    "thermodynamic": {
+      "eta": 0.37275602203628355,
+      "r_squared": 0.935052674999996,
+      "rmse": 0.2048883219984114,
+      "formula": "COP = 0.373 \u00d7 COP_carnot"
+    },
+    "hybrid": {
+      "intercept": 1.3303931556835975,
+      "coef_COP_carnot": 0.17819833308269345,
+      "coef_T_outdoor": 0.11036252498312989,
+      "r_squared": 0.9488501944215104,
+      "rmse": 0.181827080314989,
+      "formula": "COP = 1.33 + 0.178\u00d7COP_carnot + 0.110\u00d7T_out"
+    }
+  },
+  "summary": {
+    "n_days": 77,
+    "mean_carnot_cop": 10.471227022066788,
+    "mean_actual_cop": 3.9065051646394573,
+    "mean_efficiency": 0.37275602203628355
+  }
+}

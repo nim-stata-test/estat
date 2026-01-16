@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body { font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; }
+h1 { color: #2c3e50; }
+h2 { color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
+table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+th { background-color: #3498db; color: white; }
+tr:nth-child(even) { background-color: #f9f9f9; }
+.warning { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 10px; margin: 10px 0; }
+.recommendation { background-color: #d4edda; border-left: 4px solid #28a745; padding: 10px; margin: 10px 0; }
+.code { background-color: #f4f4f4; padding: 10px; font-family: monospace; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<h1>Transfer Function Integration Analysis</h1>
+
+<h2>The Problem</h2>
+<p>Phase 4 optimization uses regression coefficients from Phase 2 that predict how room temperature
+responds to heating parameter changes:</p>
+
+<table>
+<tr><th>Parameter</th><th>Phase 2 Coefficient</th><th>Interpretation</th></tr>
+<tr><td>comfort_setpoint</td><td>+1.22°C per °C</td><td>+1°C setpoint → +1.22°C room</td></tr>
+<tr><td>curve_rise</td><td>+9.73°C per unit</td><td>+0.1 rise → +0.97°C room</td></tr>
+</table>
+
+<div class="warning">
+<strong>Issue:</strong> These coefficients are from observational data - they capture <em>associations</em>,
+not <em>causal effects</em>. If setpoint changes historically coincided with other factors
+(weather, occupancy, schedule), the regression attributes all effects to the setpoint.
+</div>
+
+<h2>The Transfer Function (Phase 3)</h2>
+<p>The transfer function models the physical causal chain:</p>
+
+<div class="code">
+T_room = offset + g_outdoor×LPF(T_outdoor, 24h) + g_effort×LPF(Effort, 2h) + g_pv×LPF(PV, 12h)
+
+Where:
+- g_effort = 0.208 (STABLE: coefficient of variation = 9%)
+- Effort = T_HK2 - baseline_curve
+- T_HK2 = setpoint + curve_rise × (T_ref - T_outdoor)
+</div>
+
+<h2>Deriving Causal Coefficients</h2>
+<p>Following the causal chain:</p>
+
+<ol>
+<li><strong>Setpoint +1°C</strong> → T_HK2 +1°C (direct via heating curve)</li>
+<li><strong>T_HK2 +1°C</strong> → Effort +1°C (deviation from baseline)</li>
+<li><strong>Effort +1°C</strong> → LPF(Effort) +1°C (after τ=2h settling)</li>
+<li><strong>LPF(Effort) +1°C</strong> → T_room +0.208°C (via g_effort)</li>
+</ol>
+
+<table>
+<tr><th>Parameter</th><th>Phase 2 (Regression)</th><th>Phase 3 (Causal)</th><th>Ratio</th></tr>
+<tr>
+<td>comfort_setpoint</td>
+<td>1.22°C/°C</td>
+<td>0.21°C/°C</td>
+<td>5.9x</td>
+</tr>
+<tr>
+<td>curve_rise</td>
+<td>9.73°C/unit</td>
+<td>2.92°C/unit</td>
+<td>3.3x</td>
+</tr>
+</table>
+
+<p>The regression overestimates effects by <strong>3-6x</strong>!</p>
+
+<h2>Why This Matters for Optimization</h2>
+
+<p>If Phase 4 uses the inflated regression coefficients:</p>
+<ul>
+<li>It overestimates temperature gains from setpoint increases</li>
+<li>It overestimates temperature losses from curve rise reductions</li>
+<li>Optimization may select strategies that don't actually achieve predicted comfort</li>
+</ul>
+
+<div class="recommendation">
+<strong>Recommendation:</strong> Update Phase 4 to use causal coefficients from the transfer function.
+<br><br>
+<strong>Updated coefficients:</strong>
+<ul>
+<li>comfort_setpoint: 0.208 (was 1.218)</li>
+<li>eco_setpoint: 0.208 (was -0.090)</li>
+<li>curve_rise: 2.92 (was 9.73)</li>
+</ul>
+</div>
+
+<h2>Important Caveats</h2>
+
+<ol>
+<li><strong>Transfer function R² = 0.68</strong> - captures only 68% of variance.
+    The adaptive model (RLS) achieves 0.86 but parameters vary over time.</li>
+<li><strong>g_effort is stable</strong> (CV=9%) but g_outdoor varies significantly (CV=95%)</li>
+<li><strong>Schedule effects are indirect</strong> - comfort_hours doesn't directly affect
+    temperature; it changes the proportion of time in comfort vs eco mode</li>
+<li><strong>Nonlinear effects</strong> - curve_rise effect depends on outdoor temperature:
+    larger effect at colder outdoor temps</li>
+</ol>
+
+<h2>Integration Proposal</h2>
+
+<p>Replace the simple linear adjustment in Phase 4 with a physics-based simulation:</p>
+
+<div class="code">
+# Current (problematic):
+delta_T = coef_setpoint × (setpoint - baseline)
+T_room_adjusted = T_room_historical + delta_T
+
+# Proposed (physics-based):
+for each timestep:
+    T_HK2 = compute_heating_curve(setpoint, curve_rise, T_outdoor, schedule)
+    Effort = T_HK2 - baseline_curve(T_outdoor)
+    T_room_pred = offset + g_eff × LPF(Effort) + g_out × LPF(T_outdoor) + g_pv × LPF(PV)
+</div>
+
+<p>This ensures the optimization respects the physical constraints of the system.</p>
+
+<figure>
+<img src="fig_transfer_function_integration.png" alt="Coefficient comparison" style="max-width:100%">
+<figcaption>Figure: Comparison of Phase 2 regression vs Phase 3 transfer function coefficients</figcaption>
+</figure>
+
+</body>
+</html>

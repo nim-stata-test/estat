@@ -89,17 +89,38 @@ def load_heating_curve_params():
 
 HEATING_CURVE_PARAMS = load_heating_curve_params()
 
-# [DEPRECATED] T_weighted regression coefficients from Phase 2 multivariate analysis
-# Now superseded by grey-box forward simulation. Kept for reference/comparison.
-# T_weighted = intercept + coef * parameter_value
-TEMP_REGRESSION = {
-    'intercept': -15.31,
-    'comfort_setpoint': 1.218,   # +1.22°C per 1°C increase
-    'eco_setpoint': -0.090,      # -0.09°C per 1°C increase (negligible)
-    'curve_rise': 9.73,          # +9.73°C per unit increase
-    'comfort_hours': -0.020,     # -0.02°C per hour increase
-    'outdoor_mean': 0.090,       # +0.09°C per 1°C outdoor increase
-}
+# Load causal coefficients from Phase 3 transfer function analysis
+# These replace the Phase 2 regression coefficients which overestimate effects by 3-6x
+def load_causal_coefficients():
+    """Load causal coefficients from Phase 3 transfer function analysis."""
+    causal_file = PHASE3_DIR / 'causal_coefficients.json'
+    if causal_file.exists():
+        with open(causal_file) as f:
+            data = json.load(f)
+        print(f"  Loaded causal coefficients from Phase 3 (g_eff={data['g_eff']:.3f})")
+        return {
+            'intercept': 0.0,  # No intercept needed for delta-based adjustment
+            'comfort_setpoint': data['coefficients']['comfort_setpoint'],
+            'eco_setpoint': data['coefficients']['eco_setpoint'],
+            'curve_rise': data['coefficients']['curve_rise'],
+            'comfort_hours': data['coefficients']['comfort_hours'],
+            'outdoor_mean': 0.0,  # Outdoor is exogenous, not controllable
+        }
+    else:
+        # Fallback to Phase 2 regression (with warning)
+        print(f"  WARNING: {causal_file} not found, using Phase 2 regression (may overestimate effects)")
+        return {
+            'intercept': -15.31,
+            'comfort_setpoint': 1.218,
+            'eco_setpoint': -0.090,
+            'curve_rise': 9.73,
+            'comfort_hours': -0.020,
+            'outdoor_mean': 0.090,
+        }
+
+# Temperature adjustment coefficients
+# Source: Phase 3 transfer function (causal) or Phase 2 regression (fallback)
+TEMP_REGRESSION = load_causal_coefficients()
 
 # Grey-box thermal model disabled for optimization
 # Forward simulation diverges (R² = -6.7 on validation)

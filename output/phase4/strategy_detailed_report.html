@@ -36,25 +36,17 @@
         <tr>
             <td><strong>Grid-Minimal</strong></td>
             <td>22.0°C</td>
-            <td>14.1°C</td>
-            <td>11:00-16:00</td>
-            <td>0.82</td>
+            <td>19.0°C</td>
+            <td>12:00-16:00</td>
+            <td>1.00</td>
         </tr>
         
         <tr>
             <td><strong>Balanced</strong></td>
             <td>22.0°C</td>
-            <td>14.2°C</td>
-            <td>11:00-16:00</td>
-            <td>0.82</td>
-        </tr>
-        
-        <tr>
-            <td><strong>Cost-Minimal</strong></td>
-            <td>22.0°C</td>
-            <td>14.2°C</td>
+            <td>19.0°C</td>
             <td>12:00-16:00</td>
-            <td>0.82</td>
+            <td>1.02</td>
         </tr>
         </table>
     <h3>Energy Performance Comparison</h3>
@@ -77,26 +69,18 @@
         
         <tr>
             <td><strong>Grid-Minimal</strong></td>
-            <td>2008</td>
-            <td style="color: green">+20.5%</td>
-            <td>2128</td>
-            <td>4.68</td>
+            <td>2338</td>
+            <td style="color: green">+7.4%</td>
+            <td>2429</td>
+            <td>4.05</td>
         </tr>
         
         <tr>
             <td><strong>Balanced</strong></td>
-            <td>2009</td>
-            <td style="color: green">+20.5%</td>
-            <td>2121</td>
-            <td>4.68</td>
-        </tr>
-        
-        <tr>
-            <td><strong>Cost-Minimal</strong></td>
-            <td>2012</td>
-            <td style="color: green">+20.3%</td>
-            <td>2113</td>
-            <td>4.69</td>
+            <td>2361</td>
+            <td style="color: green">+6.5%</td>
+            <td>2452</td>
+            <td>4.03</td>
         </tr>
         </table>
     <h3>Temperature Performance (Occupied Hours)</h3>
@@ -119,47 +103,39 @@
         
         <tr>
             <td><strong>Grid-Minimal</strong></td>
-            <td>19.6</td>
-            <td>17.7</td>
-            <td>18.5</td>
-            <td style="background-color: #ccffcc">4.7%</td>
+            <td>20.9</td>
+            <td>19.0</td>
+            <td>19.8</td>
+            <td style="background-color: #ccffcc">0.0%</td>
         </tr>
         
         <tr>
             <td><strong>Balanced</strong></td>
-            <td>19.6</td>
-            <td>17.7</td>
-            <td>18.5</td>
-            <td style="background-color: #ccffcc">4.7%</td>
-        </tr>
-        
-        <tr>
-            <td><strong>Cost-Minimal</strong></td>
-            <td>19.6</td>
-            <td>17.7</td>
-            <td>18.5</td>
-            <td style="background-color: #ccffcc">4.7%</td>
+            <td>21.1</td>
+            <td>19.2</td>
+            <td>20.0</td>
+            <td style="background-color: #ccffcc">0.0%</td>
         </tr>
         </table>
     <h3>Visualizations</h3>
 
     <figure>
-        <img src="fig28_strategy_detailed_timeseries.png" alt="Strategy Time Series">
-        <figcaption><strong>Figure 28:</strong> Time series showing (A) simulated temperature by strategy,
+        <img src="fig29_strategy_detailed_timeseries.png" alt="Strategy Time Series">
+        <figcaption><strong>Figure 31:</strong> Time series showing (A) simulated temperature by strategy,
         (B) outdoor temperature and PV generation, (C) simulated hourly grid import by strategy,
         (D) daily grid import comparison.</figcaption>
     </figure>
 
     <figure>
-        <img src="fig29_strategy_hourly_patterns.png" alt="Hourly Patterns">
-        <figcaption><strong>Figure 29:</strong> Hourly patterns showing (A) temperature profiles,
+        <img src="fig30_strategy_hourly_patterns.png" alt="Hourly Patterns">
+        <figcaption><strong>Figure 31:</strong> Hourly patterns showing (A) temperature profiles,
         (B) grid import profiles, (C) COP profiles, (D) PV vs demand,
         (E-F) grid import heatmaps for Baseline and Grid-Minimal strategies.</figcaption>
     </figure>
 
     <figure>
-        <img src="fig30_strategy_energy_patterns.png" alt="Energy Patterns">
-        <figcaption><strong>Figure 30:</strong> Energy analysis showing (A) total energy comparison,
+        <img src="fig31_strategy_energy_patterns.png" alt="Energy Patterns">
+        <figcaption><strong>Figure 31:</strong> Energy analysis showing (A) total energy comparison,
         (B) grid savings vs baseline, (C) average COP, (D) daily grid distribution,
         (E) temperature box plots, (F) summary table.</figcaption>
     </figure>
@@ -168,9 +144,9 @@
     <ul>
     
         <li><strong>Best grid efficiency:</strong> Grid-Minimal saves
-            20.5%
+            7.4%
             grid import vs Baseline</li>
-        <li><strong>Best COP:</strong> Cost-Minimal achieves COP 4.69
+        <li><strong>Best COP:</strong> Grid-Minimal achieves COP 4.05
             vs Baseline COP 3.84</li>
         <li><strong>Energy model calibration:</strong> Uses BASE_LOAD=11.0 kWh/day,
             THERMAL_COEF=10.0 kWh/HDD (electrical = thermal/COP)</li>
