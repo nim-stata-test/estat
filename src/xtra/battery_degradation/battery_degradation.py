@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Phase 2, Step 2: Battery Degradation Analysis
+Battery Degradation Analysis (xtra)
 
 Standalone analysis investigating whether the Feb-Mar 2025 deep-discharge event
 (caused by a faulty inverter) significantly affected battery round-trip efficiency.
@@ -20,10 +20,10 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Project directories
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 PROCESSED_DIR = PROJECT_ROOT / 'output' / 'phase1'
-OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase2'
-OUTPUT_DIR.mkdir(exist_ok=True)
+OUTPUT_DIR = PROJECT_ROOT / 'output' / 'xtra' / 'battery_degradation'
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Event definition
 EVENT_START = pd.Timestamp('2025-02-01')

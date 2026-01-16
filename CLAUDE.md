@@ -116,7 +116,6 @@ src/
 ├── phase2/              # Exploratory Data Analysis
 │   ├── run_eda.py                    # Wrapper: filters sensors + HTML report
 │   ├── 01_eda.py                     # Main EDA (energy, heating, solar)
-│   ├── 02_battery_degradation.py     # Standalone battery analysis
 │   ├── 03_heating_curve_analysis.py  # Heating curve model + schedule detection
 │   └── 04_tariff_analysis.py         # Electricity tariff analysis (HKN-only)
 ├── phase3/              # System Modeling
@@ -139,12 +138,15 @@ src/
 ├── phase5/              # Intervention Study
 │   ├── estimate_study_parameters.py  # Data-driven washout/block estimation
 │   └── generate_schedule.py          # Randomization schedule generator
-└── phase5_pilot/        # Pilot Experiment (Jan-Mar 2026)
-    ├── run_pilot.py                  # Main runner: design + schedule + analysis
-    ├── 01_generate_thk2_design.py    # T_HK2-targeted design generation
-    ├── 02_generate_pilot_schedule.py # Dated block schedule
-    ├── 03_pilot_analysis.py          # RSM block-averaged analysis
-    └── 04_dynamical_analysis.py      # Grey-box dynamical analysis (abandoned)
+├── phase5_pilot/        # Pilot Experiment (Jan-Mar 2026)
+│   ├── run_pilot.py                  # Main runner: design + schedule + analysis
+│   ├── 01_generate_thk2_design.py    # T_HK2-targeted design generation
+│   ├── 02_generate_pilot_schedule.py # Dated block schedule
+│   ├── 03_pilot_analysis.py          # RSM block-averaged analysis
+│   └── 04_dynamical_analysis.py      # Grey-box dynamical analysis (abandoned)
+└── xtra/                # Standalone analyses (not part of Phase 5 study)
+    └── battery_degradation/          # Battery efficiency degradation study
+        └── battery_degradation.py
 ```
 
 ## Output Directory Structure
@@ -157,7 +159,9 @@ output/
 ├── phase3/       # System modeling outputs (figures, model results)
 ├── phase4/       # Optimization outputs (strategies, predictions)
 ├── phase5/       # Intervention study outputs (schedules, logs, analysis)
-└── phase5_pilot/ # Pilot experiment outputs (Jan-Mar 2026)
+├── phase5_pilot/ # Pilot experiment outputs (Jan-Mar 2026)
+└── xtra/         # Standalone analysis outputs
+    └── battery_degradation/  # Battery efficiency study
 ```
 
 ## Processed Data
@@ -249,18 +253,18 @@ After running `python src/phase2/run_eda.py`, outputs are saved to `output/phase
 **HTML Report:**
 - `phase2_report.html` - Comprehensive EDA documentation with all figures
 
-## Battery Degradation Analysis
+## Battery Degradation Analysis (xtra)
 
 Standalone analysis investigating whether the Feb-Mar 2025 deep-discharge event
-affected battery efficiency. Run separately from main EDA:
+affected battery efficiency. Not part of the Phase 5 study pipeline.
 
 ```bash
-python src/phase2/02_battery_degradation.py
+python src/xtra/battery_degradation/battery_degradation.py
 ```
 
-**Outputs:**
-- `output/phase2/battery_degradation_analysis.png` - 4-panel visualization
-- `output/phase2/battery_degradation_report.rtf` - Detailed report with methods & results
+**Outputs** (in `output/xtra/battery_degradation/`):
+- `battery_degradation_analysis.png` - 4-panel visualization
+- `battery_degradation_report.html` - Detailed report with methods & results
 
 **Analysis includes:**
 - OLS regression with time trend and post-event indicator
