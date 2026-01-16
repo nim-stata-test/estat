@@ -40,6 +40,9 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 # Tax rate on feed-in income
 FEEDIN_TAX_RATE = 0.30
 
+# Target savings for projection
+TARGET_SAVINGS_CHF = 10000
+
 # HKN bonus rates (CHF/kWh) - added to base feed-in rate
 # From CLAUDE.md: HKN bonus is 1.5 Rp until Dec 2024, then 2.5 Rp from Jan 2025
 HKN_BONUS = {
@@ -235,7 +238,106 @@ def aggregate_daily_totals(df):
     return daily
 
 
-def create_visualizations(daily):
+def calculate_projection(daily, daily_by_tariff):
+    """
+    Project when savings will reach the target amount.
+
+    Uses recent data (2025+) to estimate savings rate under current tariffs,
+    accounting for the high/low tariff distribution.
+    """
+    print(f"Calculating projection to CHF {TARGET_SAVINGS_CHF:,}...")
+
+    # Current cumulative savings
+    current_savings = daily['battery_savings_chf'].sum()
+    remaining = TARGET_SAVINGS_CHF - current_savings
+
+    if remaining <= 0:
+        print(f"  Target already reached!")
+        return {
+            'current_savings': current_savings,
+            'target_savings': TARGET_SAVINGS_CHF,
+            'remaining': 0,
+            'target_reached': True,
+            'target_date': daily.index.max(),
+        }
+
+    # Use 2025 data for projection (reflects current tariff structure)
+    recent_data = daily[daily.index.year >= 2025]
+    if len(recent_data) < 30:
+        # Fall back to last 365 days if not enough 2025 data
+        recent_data = daily.iloc[-365:]
+        projection_basis = "last 365 days"
+    else:
+        projection_basis = "2025 data"
+
+    # Calculate average daily savings rate from recent period
+    avg_daily_savings = recent_data['battery_savings_chf'].mean()
+
+    # Calculate tariff breakdown from recent period
+    recent_by_tariff = daily_by_tariff[daily_by_tariff['date'].dt.year >= 2025]
+    if len(recent_by_tariff) < 30:
+        recent_by_tariff = daily_by_tariff.iloc[-730:]  # Last 365 days × 2 tariff types
+
+    tariff_breakdown = recent_by_tariff.groupby('tariff_type').agg({
+        'battery_savings_chf': 'sum',
+        'battery_discharging_kwh': 'sum',
+        'battery_charging_kwh': 'sum',
+    })
+
+    # Days to target
+    days_to_target = remaining / avg_daily_savings if avg_daily_savings > 0 else float('inf')
+    years_to_target = days_to_target / 365.25
+
+    # Target date
+    last_date = daily.index.max()
+    target_date = last_date + pd.Timedelta(days=days_to_target)
+
+    # Calculate confidence interval using recent data variability
+    daily_std = recent_data['battery_savings_chf'].std()
+    # Using CLT: std of mean over N days ≈ std / sqrt(N)
+    # For 95% CI on the time estimate
+    savings_rate_se = daily_std / np.sqrt(len(recent_data))
+
+    # Pessimistic and optimistic estimates (±2 SE on savings rate)
+    rate_low = max(0.01, avg_daily_savings - 2 * savings_rate_se)
+    rate_high = avg_daily_savings + 2 * savings_rate_se
+
+    days_pessimistic = remaining / rate_low if rate_low > 0 else float('inf')
+    days_optimistic = remaining / rate_high if rate_high > 0 else float('inf')
+
+    target_date_pessimistic = last_date + pd.Timedelta(days=days_pessimistic)
+    target_date_optimistic = last_date + pd.Timedelta(days=days_optimistic)
+
+    projection = {
+        'current_savings': current_savings,
+        'target_savings': TARGET_SAVINGS_CHF,
+        'remaining': remaining,
+        'target_reached': False,
+        'projection_basis': projection_basis,
+        'projection_days': len(recent_data),
+        'avg_daily_savings': avg_daily_savings,
+        'daily_savings_std': daily_std,
+        'days_to_target': days_to_target,
+        'years_to_target': years_to_target,
+        'target_date': target_date,
+        'target_date_optimistic': target_date_optimistic,
+        'target_date_pessimistic': target_date_pessimistic,
+        'tariff_breakdown': tariff_breakdown,
+        'high_tariff_pct': tariff_breakdown.loc['high', 'battery_savings_chf'] / tariff_breakdown['battery_savings_chf'].sum() * 100 if 'high' in tariff_breakdown.index else 0,
+    }
+
+    print(f"  Projection basis: {projection_basis} ({len(recent_data)} days)")
+    print(f"  Current savings: CHF {current_savings:,.2f}")
+    print(f"  Remaining to target: CHF {remaining:,.2f}")
+    print(f"  Average daily savings: CHF {avg_daily_savings:.2f} ± {daily_std:.2f}")
+    print(f"  Days to target: {days_to_target:,.0f} ({years_to_target:.1f} years)")
+    print(f"  Estimated target date: {target_date.strftime('%Y-%m')}")
+    print(f"  Range: {target_date_optimistic.strftime('%Y-%m')} to {target_date_pessimistic.strftime('%Y-%m')}")
+
+    return projection
+
+
+def create_visualizations(daily, projection=None):
     """Create visualization of battery cost savings."""
     print("Creating visualizations...")
 
@@ -263,6 +365,31 @@ def create_visualizations(daily):
                  xytext=(-80, 10), textcoords='offset points',
                  fontsize=11, fontweight='bold',
                  bbox=dict(boxstyle='round', facecolor='lightgreen', alpha=0.8))
+
+    # Add projection to target if provided
+    if projection and not projection.get('target_reached', False):
+        target_date = projection['target_date']
+        target_savings = projection['target_savings']
+
+        # Extend the x-axis to include projection
+        ax1.axhline(y=target_savings, color='gold', linestyle='--', linewidth=2,
+                    label=f'Target: CHF {target_savings:,}')
+
+        # Add projection line
+        proj_dates = pd.date_range(daily.index[-1], target_date, freq='M')
+        proj_savings = np.linspace(total_savings, target_savings, len(proj_dates))
+        ax1.plot(proj_dates, proj_savings, 'g--', linewidth=1.5, alpha=0.7,
+                 label='Projection')
+
+        # Add target date annotation
+        ax1.annotate(f'Target: {target_date.strftime("%Y-%m")}\n({projection["years_to_target"]:.1f} years)',
+                     xy=(target_date, target_savings),
+                     xytext=(-100, -30), textcoords='offset points',
+                     fontsize=10,
+                     arrowprops=dict(arrowstyle='->', color='gold'),
+                     bbox=dict(boxstyle='round', facecolor='lightyellow', alpha=0.8))
+
+        ax1.legend(loc='upper left', fontsize=9)
 
     # Panel 2: Monthly savings breakdown
     ax2 = axes[0, 1]
@@ -353,7 +480,7 @@ def create_visualizations(daily):
     return fig_path
 
 
-def generate_report(daily, daily_by_tariff):
+def generate_report(daily, daily_by_tariff, projection=None):
     """Generate HTML summary report."""
     print("Generating report...")
 
@@ -508,7 +635,46 @@ def generate_report(daily, daily_by_tariff):
         html += f"        <tr><td>{year.year}</td><td>CHF {savings:,.2f}</td></tr>\n"
 
     html += f"""    </table>
+"""
 
+    # Add projection section if available
+    if projection and not projection.get('target_reached', False):
+        html += f"""
+    <h2>Projection to CHF {projection['target_savings']:,}</h2>
+
+    <div class="summary-box">
+        <h3>Estimated Target Date: {projection['target_date'].strftime('%B %Y')}</h3>
+        <p>Based on {projection['projection_basis']} ({projection['projection_days']} days), the battery is expected to reach
+        <strong>CHF {projection['target_savings']:,}</strong> in cumulative savings by
+        <strong>{projection['target_date'].strftime('%B %Y')}</strong>
+        ({projection['years_to_target']:.1f} years from now).</p>
+        <p>Range: {projection['target_date_optimistic'].strftime('%B %Y')} (optimistic)
+        to {projection['target_date_pessimistic'].strftime('%B %Y')} (pessimistic)</p>
+    </div>
+
+    <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Current cumulative savings</td><td>CHF {projection['current_savings']:,.2f}</td></tr>
+        <tr><td>Remaining to target</td><td>CHF {projection['remaining']:,.2f}</td></tr>
+        <tr><td>Average daily savings (recent)</td><td>CHF {projection['avg_daily_savings']:.2f} ± {projection['daily_savings_std']:.2f}</td></tr>
+        <tr><td>Days to target</td><td>{projection['days_to_target']:,.0f}</td></tr>
+        <tr class="highlight"><td>Years to target</td><td>{projection['years_to_target']:.1f}</td></tr>
+        <tr><td>Estimated target date</td><td>{projection['target_date'].strftime('%Y-%m')}</td></tr>
+        <tr><td>High tariff contribution</td><td>{projection['high_tariff_pct']:.1f}%</td></tr>
+    </table>
+
+    <div class="methodology">
+        <h4>Projection Assumptions</h4>
+        <ul>
+            <li>Based on {projection['projection_basis']} to reflect current tariff structure</li>
+            <li>Assumes constant electricity usage patterns and tariff rates</li>
+            <li>Feed-in tariffs may decrease further, which would improve savings</li>
+            <li>Range estimates use ±2 standard errors on the daily savings rate</li>
+        </ul>
+    </div>
+"""
+
+    html += f"""
     <h2>Monthly Performance</h2>
 
     <table>
@@ -576,11 +742,14 @@ def main():
     daily_by_tariff.to_csv(csv_path, index=False)
     print(f"Saved: {csv_path}")
 
+    # Calculate projection to CHF 10,000
+    projection = calculate_projection(daily, daily_by_tariff)
+
     # Create visualizations
-    create_visualizations(daily)
+    create_visualizations(daily, projection)
 
     # Generate report
-    generate_report(daily, daily_by_tariff)
+    generate_report(daily, daily_by_tariff, projection)
 
     # Print summary
     print("\n" + "=" * 60)
@@ -598,6 +767,14 @@ def main():
     print(f"\nBy tariff:")
     print(f"  Hochtarif:   CHF {tariff_summary['high']:,.2f}")
     print(f"  Niedertarif: CHF {tariff_summary['low']:,.2f}")
+
+    # Projection
+    if not projection.get('target_reached', False):
+        print(f"\nProjection to CHF {projection['target_savings']:,}:")
+        print(f"  Avg daily savings (recent): CHF {projection['avg_daily_savings']:.2f}")
+        print(f"  Years to target: {projection['years_to_target']:.1f}")
+        print(f"  Target date: {projection['target_date'].strftime('%Y-%m')}")
+        print(f"  Range: {projection['target_date_optimistic'].strftime('%Y-%m')} to {projection['target_date_pessimistic'].strftime('%Y-%m')}")
     print("=" * 60)
 
 
