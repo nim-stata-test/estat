@@ -485,15 +485,15 @@ def generate_report(daily: pd.DataFrame, cop_results: dict,
         <tr>
             <td>COP Range</td>
             <td>{cop_range[0]:.2f} – {cop_range[1]:.2f}</td>
-            <td>Varies with $T_{{out}}$ and $T_{{HK2}}$</td>
+            <td>Varies with T<sub>out</sub> and T<sub>HK2</sub></td>
         </tr>
         <tr>
-            <td>$\\partial \\text{{COP}} / \\partial T_{{out}}$</td>
+            <td>∂COP/∂T<sub>out</sub></td>
             <td>{cop_outdoor_slope:.4f} COP/°C</td>
             <td>{"Increases" if cop_outdoor_slope > 0 else "Decreases"} with warmer outdoor</td>
         </tr>
         <tr>
-            <td>$\\partial \\text{{COP}} / \\partial T_{{HK2}}$</td>
+            <td>∂COP/∂T<sub>HK2</sub></td>
             <td>{cop_t_hk2_slope:.4f} COP/°C</td>
             <td>{"Increases" if cop_t_hk2_slope > 0 else "Decreases"} with higher flow temp</td>
         </tr>
@@ -502,47 +502,47 @@ def generate_report(daily: pd.DataFrame, cop_results: dict,
     <h3>COP Model</h3>
     <p>Multi-variable regression model:</p>
     <div class="equation-box">
-    $$\\text{{COP}} = {multivar.get('intercept', 0):.2f} + {multivar.get('outdoor_coef', 0):.4f} \\cdot T_{{out}} + {multivar.get('t_hk2_coef', 0):.4f} \\cdot T_{{HK2}}$$
+    COP = {multivar.get('intercept', 0):.2f} + {multivar.get('outdoor_coef', 0):.4f} × T<sub>out</sub> + {multivar.get('t_hk2_coef', 0):.4f} × T<sub>HK2</sub>
     </div>
-    <p>$R^2 = {multivar.get('r2', 0):.3f}$, $\\text{{RMSE}} = {multivar.get('rmse', 0):.3f}$</p>
+    <p>R² = {multivar.get('r2', 0):.3f}, RMSE = {multivar.get('rmse', 0):.3f}</p>
 
     <h3>Capacity Analysis</h3>
     <table>
         <tr><th>Metric</th><th>Mean</th><th>Max</th><th>Min</th></tr>
         <tr>
-            <td>Daily electricity consumed ($E_{{elec}}$)</td>
+            <td>Daily electricity consumed (E<sub>elec</sub>)</td>
             <td>{daily_consumed.get('mean', 0):.1f} kWh</td>
             <td>{daily_consumed.get('max', 0):.1f} kWh</td>
             <td>{daily_consumed.get('min', 0):.1f} kWh</td>
         </tr>
         <tr>
-            <td>Daily heat produced ($Q_{{heat}}$)</td>
+            <td>Daily heat produced (Q<sub>heat</sub>)</td>
             <td>{daily_produced.get('mean', 0):.1f} kWh</td>
             <td>{daily_produced.get('max', 0):.1f} kWh</td>
             <td>{daily_produced.get('min', 0):.1f} kWh</td>
         </tr>
         <tr>
-            <td>Compressor runtime ($t_{{comp}}$)</td>
+            <td>Compressor runtime (t<sub>comp</sub>)</td>
             <td>{runtime.get('mean_hours', 0):.1f} h/day</td>
             <td>{runtime.get('max_hours', 0):.1f} h/day</td>
             <td>—</td>
         </tr>
     </table>
-    <p>Relationship: $Q_{{heat}} = \\text{{COP}} \\times E_{{elec}}$</p>
+    <p>Relationship: Q<sub>heat</sub> = COP × E<sub>elec</sub></p>
 
     <h3>Buffer Tank Dynamics</h3>
     <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Mean $T_{{buf}}$</td><td>{buffer_stats.get('mean', 0):.1f}°C</td></tr>
+        <tr><td>Mean T<sub>buf</sub></td><td>{buffer_stats.get('mean', 0):.1f}°C</td></tr>
         <tr><td>Range</td><td>{buffer_stats.get('min', 0):.1f} – {buffer_stats.get('max', 0):.1f}°C</td></tr>
-        <tr><td>Variability ($\\sigma$)</td><td>{buffer_stats.get('std', 0):.2f}°C</td></tr>
+        <tr><td>Variability (σ)</td><td>{buffer_stats.get('std', 0):.2f}°C</td></tr>
     </table>
 
     <h3>Implications for Optimization</h3>
     <ul>
-        <li><strong>COP optimization</strong>: Lower $T_{{HK2}}$ improves COP.
-            With $\\partial \\text{{COP}}/\\partial T_{{HK2}} = {cop_t_hk2_slope:.4f}$, reducing $T_{{HK2}}$ by 5°C improves COP by ~{abs(cop_t_hk2_slope*5):.2f}.</li>
-        <li><strong>Timing strategy</strong>: Run heat pump during warmest $T_{{out}}$ (daytime/solar hours)
+        <li><strong>COP optimization</strong>: Lower T<sub>HK2</sub> improves COP.
+            With ∂COP/∂T<sub>HK2</sub> = {cop_t_hk2_slope:.4f}, reducing T<sub>HK2</sub> by 5°C improves COP by ~{abs(cop_t_hk2_slope*5):.2f}.</li>
+        <li><strong>Timing strategy</strong>: Run heat pump during warmest T<sub>out</sub> (daytime/solar hours)
             for better COP. Each +1°C outdoor improves COP by ~{cop_outdoor_slope:.3f}.</li>
         <li><strong>Capacity headroom</strong>: Max observed {daily_consumed.get('max', 0):.0f} kWh/day
             suggests capacity is sufficient for current heating demand.</li>

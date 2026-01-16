@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Weekly Model Decomposition Report</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #1a5f7a;
+            border-bottom: 2px solid #1a5f7a;
+            padding-bottom: 10px;
+        }
+        h2 { color: #2c3e50; margin-top: 30px; }
+        h3 {
+            color: #34495e;
+            margin-bottom: 10px;
+            border-left: 4px solid #1a5f7a;
+            padding-left: 10px;
+        }
+        .summary-box {
+            background-color: #e8f4f8;
+            border-left: 4px solid #1a5f7a;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .week-section {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stats-table {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .stats-table td {
+            padding: 5px 15px;
+            text-align: center;
+        }
+        figure {
+            margin: 0;
+            text-align: center;
+        }
+        figure img {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        table.summary {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        table.summary th, table.summary td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        table.summary th {
+            background-color: #f8f9fa;
+        }
+        .model-info {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Weekly Model Decomposition Report</h1>
+    <p><em>Generated: 2026-01-16 18:12</em></p>
+
+    <div class="summary-box">
+        <h3 style="margin-top: 0; border: none; padding-left: 0;">Summary</h3>
+        <p>This report shows the thermal model decomposition for each week of available data.
+        Each figure breaks down the room temperature prediction into its component terms:</p>
+        <ul>
+            <li><strong>Panel 1:</strong> Actual vs predicted room temperature</li>
+            <li><strong>Panel 2:</strong> Outdoor temperature contribution (g<sub>out</sub> × LPF(T<sub>out</sub>))</li>
+            <li><strong>Panel 3:</strong> Heating effort contribution (g<sub>eff</sub> × LPF(Effort))</li>
+            <li><strong>Panel 4:</strong> Solar/PV contribution (g<sub>pv</sub> × LPF(PV))</li>
+        </ul>
+    </div>
+
+    <div class="model-info">
+        <strong>Model Parameters:</strong><br>
+        T<sub>room</sub> = 17.7 + 0.078×LPF(T<sub>out</sub>, τ=24h)
+        + 0.208×LPF(Effort, τ=2h)
+        + 4.170×LPF(PV, τ=12h)
+    </div>
+
+    <h2>Overall Statistics</h2>
+    <table class="summary">
+        <tr>
+            <th>Metric</th>
+            <th>Mean</th>
+            <th>Min</th>
+            <th>Max</th>
+            <th>Std</th>
+        </tr>
+        <tr>
+            <td>R²</td>
+            <td>-0.147</td>
+            <td>-1.914</td>
+            <td>0.642</td>
+            <td>0.836</td>
+        </tr>
+        <tr>
+            <td>RMSE (°C)</td>
+            <td>0.54</td>
+            <td>0.34</td>
+            <td>0.87</td>
+            <td>0.16</td>
+        </tr>
+    </table>
+
+    <h2>Weekly Decomposition (11 weeks)</h2>
+
+    
+        <div class="week-section">
+            <h3>Week 1: Oct 27 - Nov 02, 2025</h3>
+            <table class="stats-table">
+                <tr>
+                    <td><strong>R²:</strong> -1.914</td>
+                    <td><strong>RMSE:</strong> 0.71°C</td>
+                    <td><strong>Mean T<sub>out</sub>:</strong> 12.3°C</td>
+                    <td><strong>Mean T<sub>room</sub>:</strong> 20.2°C</td>
+                    <td><strong>Points:</strong> 262</td>
+                </tr>
+            </table>
+            <figure>
+                <img src="week_01_20251027.png" alt="Week 1 decomposition">
+            </figure>
+        </div>
+        
+        <div class="week-section">
+            <h3>Week 2: Nov 03 - Nov 09, 2025</h3>
+            <table class="stats-table">
+                <tr>
+                    <td><strong>R²:</strong> -0.154</td>
+                    <td><strong>RMSE:</strong> 0.65°C</td>
+                    <td><strong>Mean T<sub>out</sub>:</strong> 9.6°C</td>
+                    <td><strong>Mean T<sub>room</sub>:</strong> 20.2°C</td>
+                    <td><strong>Points:</strong> 387</td>
+                </tr>
+            </table>
+            <figure>
+                <img src="week_02_20251103.png" alt="Week 2 decomposition">
+            </figure>
+        </div>
+        
+        <div class="week-section">
+            <h3>Week 3: Nov 10 - Nov 16, 2025</h3>
+            <table class="stats-table">
+                <tr>
+                    <td><strong>R²:</strong> -0.043</td>
+                    <td><strong>RMSE:</strong> 0.53°C</td>
+                    <td><strong>Mean T<sub>out</sub>:</strong> 11.5°C</td>
+                    <td><strong>Mean T<sub>room</sub>:</strong> 19.8°C</td>
+                    <td><strong>Points:</strong> 366</td>
+                </tr>
+            </table>
+            <figure>
+                <img src="week_03_20251110.png" alt="Week 3 decomposition">
+            </figure>
+        </div>
+        
+        <div class="week-section">
+            <h3>Week 4: Nov 17 - Nov 23, 2025</h3>
+            <table class="stats-table">
+                <tr>
+                    <td><strong>R²:</strong> 0.481</td>
+                    <td><strong>RMSE:</strong> 0.45°C</td>
+                    <td><strong>Mean T<sub>out</sub>:</strong> 4.3°C</td>
+                    <td><strong>Mean T<sub>room</sub>:</strong> 18.9°C</td>
+                    <td><strong>Points:</strong> 383</td>
+                </tr>
+            </table>
+            <figure>
+                <img src="week_04_20251117.png" alt="Week 4 decomposition">
+            </figure>
+        </div>
+        
+        <div class="week-section">
+            <h3>Week 5: Nov 24 - Nov 30, 2025</h3>
+            <table class="stats-table">
+                <tr>
+                    <td><strong>R²:</strong> -0.089</td>
+                    <td><strong>RMSE:</strong> 0.43°C</td>
+                    <td><strong>Mean T<sub>out</sub>:</strong> 5.9°C</td>
+                    <td><strong>Mean T<sub>room</sub>:</strong> 18.5°C</td>
+                    <td><strong>Points:</strong> 352</td>
+                </tr>
+            </table>
+            <figure>
+                <img src="week_05_20251124.png" alt="Week 5 decomposition">
+            </figure>
+        </div>
+        
+        <div class="week-section">
+            <h3>Week 6: Dec 01 - Dec 07, 2025</h3>
+            <table class="stats-table">
+                <tr>
+                    <td><strong>R²:</strong> -1.612</td>
+                    <td><strong>RMSE:</strong> 0.60°C</td>
+                    <td><strong>Mean T<sub>out</sub>:</strong> 6.7°C</td>
+                    <td><strong>Mean T<sub>room</sub>:</strong> 18.4°C</td>
+                    <td><strong>Points:</strong> 366</td>
+                </tr>
+            </table>
+            <figure>
+                <img src="week_06_20251201.png" alt="Week 6 decomposition">
+            </figure>
+        </div>
+        
+        <div class="week-section">
+            <h3>Week 7: Dec 08 - Dec 14, 2025</h3>
+            <table class="stats-table">
+                <tr>
+                    <td><strong>R²:</strong> 0.490</td>
+                    <td><strong>RMSE:</strong> 0.37°C</td>
+                    <td><strong>Mean T<sub>out</sub>:</strong> 8.9°C</td>
+                    <td><strong>Mean T<sub>room</sub>:</strong> 18.8°C</td>
+                    <td><strong>Points:</strong> 375</td>
+                </tr>
+            </table>
+            <figure>
+                <img src="week_07_20251208.png" alt="Week 7 decomposition">
+            </figure>
+        </div>
+        
+        <div class="week-section">
+            <h3>Week 8: Dec 15 - Dec 21, 2025</h3>
+            <table class="stats-table">
+                <tr>
+                    <td><strong>R²:</strong> 0.642</td>
+                    <td><strong>RMSE:</strong> 0.34°C</td>
+                    <td><strong>Mean T<sub>out</sub>:</strong> 6.4°C</td>
+                    <td><strong>Mean T<sub>room</sub>:</strong> 18.7°C</td>
+                    <td><strong>Points:</strong> 383</td>
+                </tr>
+            </table>
+            <figure>
+                <img src="week_08_20251215.png" alt="Week 8 decomposition">
+            </figure>
+        </div>
+        
+        <div class="week-section">
+            <h3>Week 9: Dec 22 - Dec 28, 2025</h3>
+            <table class="stats-table">
+                <tr>
+                    <td><strong>R²:</strong> 0.393</td>
+                    <td><strong>RMSE:</strong> 0.58°C</td>
+                    <td><strong>Mean T<sub>out</sub>:</strong> 3.9°C</td>
+                    <td><strong>Mean T<sub>room</sub>:</strong> 18.8°C</td>
+                    <td><strong>Points:</strong> 418</td>
+                </tr>
+            </table>
+            <figure>
+                <img src="week_09_20251222.png" alt="Week 9 decomposition">
+            </figure>
+        </div>
+        
+        <div class="week-section">
+            <h3>Week 10: Dec 29 - Jan 04, 2026</h3>
+            <table class="stats-table">
+                <tr>
+                    <td><strong>R²:</strong> -0.444</td>
+                    <td><strong>RMSE:</strong> 0.87°C</td>
+                    <td><strong>Mean T<sub>out</sub>:</strong> 1.1°C</td>
+                    <td><strong>Mean T<sub>room</sub>:</strong> 19.3°C</td>
+                    <td><strong>Points:</strong> 454</td>
+                </tr>
+            </table>
+            <figure>
+                <img src="week_10_20251229.png" alt="Week 10 decomposition">
+            </figure>
+        </div>
+        
+        <div class="week-section">
+            <h3>Week 11: Jan 05 - Jan 11, 2026</h3>
+            <table class="stats-table">
+                <tr>
+                    <td><strong>R²:</strong> 0.634</td>
+                    <td><strong>RMSE:</strong> 0.38°C</td>
+                    <td><strong>Mean T<sub>out</sub>:</strong> 1.9°C</td>
+                    <td><strong>Mean T<sub>room</sub>:</strong> 18.2°C</td>
+                    <td><strong>Points:</strong> 402</td>
+                </tr>
+            </table>
+            <figure>
+                <img src="week_11_20260105.png" alt="Week 11 decomposition">
+            </figure>
+        </div>
+        
+
+    <p style="text-align: center; color: #666; margin-top: 40px;">
+        <a href="../phase3_report.html">← Back to Phase 3 Report</a>
+    </p>
+</body>
+</html>

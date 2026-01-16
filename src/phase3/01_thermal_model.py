@@ -49,14 +49,57 @@ PV_COL = 'pv_generation_kwh'
 
 def exponential_smooth(x: np.ndarray, tau_steps: float) -> np.ndarray:
     """
-    Apply exponential smoothing (first-order low-pass filter).
+    Apply first-order exponential smoothing (low-pass filter).
 
-    Args:
-        x: Input signal
-        tau_steps: Time constant in number of time steps
+    Implements a discrete-time first-order IIR filter:
 
-    Returns:
-        Smoothed signal
+        y[n] = α × x[n] + (1 - α) × y[n-1]
+
+    where α = 1 - exp(-1/τ) is the smoothing factor.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        Input signal (e.g., temperature, power measurements).
+        NaN values are handled by holding the last valid output.
+
+    tau_steps : float
+        Time constant in number of timesteps (not hours).
+        For 15-minute data: tau_steps = tau_hours × 4
+        Example: 24h time constant → tau_steps = 96
+
+    Returns
+    -------
+    np.ndarray
+        Smoothed signal with same shape as input.
+
+    Physical Interpretation
+    -----------------------
+    The time constant τ determines how quickly the filter responds:
+
+    - After 1×τ: output reaches 63.2% of step change
+    - After 2×τ: output reaches 86.5% of step change
+    - After 3×τ: output reaches 95.0% of step change
+    - After 5×τ: output reaches 99.3% (essentially steady state)
+
+    For building thermal modeling:
+    - τ_outdoor ~ 24-120h: Building mass slowly tracks outdoor changes
+    - τ_effort ~ 2-48h: Room responds to heating within hours
+    - τ_pv ~ 1-24h: Solar gain response (depends on window area/orientation)
+
+    Examples
+    --------
+    >>> # 24-hour smoothing of outdoor temperature (15-min data)
+    >>> outdoor_smooth = exponential_smooth(outdoor_temp, tau_steps=96)
+
+    >>> # 4-hour smoothing of heating effort
+    >>> effort_smooth = exponential_smooth(effort, tau_steps=16)
+
+    Notes
+    -----
+    - Initial value is set to first non-NaN input value
+    - Equivalent to scipy.signal.lfilter([alpha], [1, -(1-alpha)], x)
+    - The transfer function in z-domain is: H(z) = α / (1 - (1-α)z⁻¹)
     """
     if tau_steps < 1:
         return x.copy()
@@ -75,6 +118,286 @@ def exponential_smooth(x: np.ndarray, tau_steps: float) -> np.ndarray:
             result[i] = alpha * x[i] + (1 - alpha) * result[i-1]
 
     return result
+
+
+def plot_lpf_visualization(output_dir: Path) -> None:
+    """
+    Create visualization of LPF (exponential smoothing) behavior.
+
+    Shows:
+    1. Step response for different tau values
+    2. Impulse response (decay curves)
+    3. Example with actual building data
+    """
+    print("\nCreating LPF visualization...")
+
+    fig, axes = plt.subplots(1, 3, figsize=(14, 4))
+
+    # Time axis (in hours, assuming 15-min timesteps)
+    n_steps = 200  # 50 hours
+    t_hours = np.arange(n_steps) * 0.25  # Convert to hours
+
+    # Tau values to demonstrate (in hours)
+    tau_values_h = [4, 12, 24, 48]
+    colors = ['#e74c3c', '#f39c12', '#27ae60', '#3498db']
+
+    # Panel 1: Step response
+    ax1 = axes[0]
+    step_input = np.ones(n_steps)
+    step_input[:10] = 0  # Step at t=2.5h
+
+    for tau_h, color in zip(tau_values_h, colors):
+        tau_steps = tau_h * 4
+        response = exponential_smooth(step_input, tau_steps)
+        ax1.plot(t_hours, response, color=color, linewidth=2, label=f'τ = {tau_h}h')
+
+    ax1.axhline(y=0.632, color='gray', linestyle='--', alpha=0.5, label='63.2% (1τ)')
+    ax1.axhline(y=0.95, color='gray', linestyle=':', alpha=0.5, label='95% (3τ)')
+    ax1.set_xlabel('Time (hours)')
+    ax1.set_ylabel('Response')
+    ax1.set_title('Step Response')
+    ax1.legend(fontsize=8, loc='lower right')
+    ax1.grid(True, alpha=0.3)
+    ax1.set_xlim(0, 50)
+    ax1.set_ylim(-0.05, 1.05)
+
+    # Panel 2: Impulse response (decay)
+    ax2 = axes[1]
+    impulse_input = np.zeros(n_steps)
+    impulse_input[0] = 1  # Impulse at t=0
+
+    for tau_h, color in zip(tau_values_h, colors):
+        tau_steps = tau_h * 4
+        response = exponential_smooth(impulse_input, tau_steps)
+        ax2.plot(t_hours, response, color=color, linewidth=2, label=f'τ = {tau_h}h')
+
+    ax2.axhline(y=0.368, color='gray', linestyle='--', alpha=0.5, label='36.8% (1τ)')
+    ax2.set_xlabel('Time (hours)')
+    ax2.set_ylabel('Response')
+    ax2.set_title('Impulse Response (Decay)')
+    ax2.legend(fontsize=8, loc='upper right')
+    ax2.grid(True, alpha=0.3)
+    ax2.set_xlim(0, 50)
+    ax2.set_ylim(-0.05, 1.05)
+
+    # Panel 3: Formula and key facts
+    ax3 = axes[2]
+    ax3.axis('off')
+
+    info_text = """
+    Low-Pass Filter (Exponential Smoothing)
+
+    Difference equation:
+        y[n] = α·x[n] + (1-α)·y[n-1]
+
+    where:
+        α = 1 - exp(-1/τ)
+        τ = time constant (in timesteps)
+
+    Time constant interpretation:
+        1τ → 63.2% of final value
+        2τ → 86.5% of final value
+        3τ → 95.0% of final value
+        5τ → 99.3% of final value
+
+    For 15-min data:
+        τ_steps = τ_hours × 4
+
+    Typical values in thermal model:
+        τ_outdoor = 24-120h (slow)
+        τ_effort = 2-48h (medium)
+        τ_pv = 1-24h (fast)
+    """
+    ax3.text(0.05, 0.95, info_text, transform=ax3.transAxes,
+             fontsize=10, verticalalignment='top', fontfamily='monospace',
+             bbox=dict(boxstyle='round', facecolor='#f8f9fa', edgecolor='#dee2e6'))
+
+    plt.tight_layout()
+    plt.savefig(output_dir / 'fig18a_lpf_visualization.png', dpi=150, bbox_inches='tight')
+    plt.close()
+    print("  Saved: fig18a_lpf_visualization.png")
+
+
+def select_representative_week(df: pd.DataFrame, room_col: str) -> tuple:
+    """
+    Select a representative winter week with typical heating behavior.
+
+    Criteria:
+    - Full 7 days of data (no significant gaps)
+    - Typical outdoor temperature range (near median)
+    - Complete heating cycles visible
+
+    Returns:
+        tuple of (start_date, end_date) as pd.Timestamp
+    """
+    # Get valid data range
+    valid_data = df[[room_col, OUTDOOR_COL, PV_COL]].dropna()
+    if len(valid_data) < 7 * 96:  # Need at least 7 days
+        return valid_data.index[0], valid_data.index[-1]
+
+    # Find weeks with complete data
+    weekly_counts = valid_data.resample('W').count()[room_col]
+    complete_weeks = weekly_counts[weekly_counts >= 7 * 96 * 0.9]  # 90% complete
+
+    if len(complete_weeks) == 0:
+        # Fallback: use most recent 7 days
+        end = valid_data.index[-1]
+        start = end - pd.Timedelta(days=7)
+        return start, end
+
+    # Find week closest to median outdoor temperature
+    median_outdoor = df[OUTDOOR_COL].median()
+    best_week = None
+    best_diff = float('inf')
+
+    for week_end in complete_weeks.index:
+        week_start = week_end - pd.Timedelta(days=7)
+        week_data = df.loc[week_start:week_end, OUTDOOR_COL]
+        week_mean = week_data.mean()
+        diff = abs(week_mean - median_outdoor)
+        if diff < best_diff:
+            best_diff = diff
+            best_week = (week_start, week_end)
+
+    return best_week
+
+
+def plot_model_decomposition(result: dict, df: pd.DataFrame, effort: pd.Series,
+                              output_dir: Path) -> None:
+    """
+    Create 4-panel figure showing model term decomposition for one week.
+
+    Panel layout (all full width, stacked vertically):
+    1. T_room actual vs predicted (representative week)
+    2. T_outdoor raw + second term: g_out × LPF(T_out, τ_out)
+    3. Heating effort raw + third term: g_eff × LPF(E, τ_eff)
+    4. PV generation raw + final term: g_pv × LPF(PV, τ_pv)
+    """
+    print("\nCreating model decomposition figure...")
+
+    # Get model parameters
+    tau_out_h = result['tau_out_h']
+    tau_eff_h = result['tau_effort_h']
+    tau_pv_h = result['tau_pv_h']
+    g_out = result['gain_outdoor']
+    g_eff = result['gain_effort']
+    g_pv = result['gain_pv']
+    offset = result['offset']
+
+    # Select representative week
+    room_col = result['room']
+    start_date, end_date = select_representative_week(df, room_col)
+    print(f"  Representative week: {start_date.date()} to {end_date.date()}")
+
+    # Prepare data for the week
+    week_mask = (df.index >= start_date) & (df.index <= end_date)
+    df_week = df.loc[week_mask].copy()
+    effort_week = effort.loc[week_mask]
+
+    # Compute smoothed signals for full dataset first (for proper filter initialization)
+    out_smooth_full = exponential_smooth(df[OUTDOOR_COL].values, tau_out_h * 4)
+    effort_smooth_full = exponential_smooth(effort.values, tau_eff_h * 4)
+    pv_smooth_full = exponential_smooth(df[PV_COL].values, tau_pv_h * 4)
+
+    # Extract week portion
+    week_idx = df.index.get_indexer(df_week.index)
+    out_smooth = out_smooth_full[week_idx]
+    effort_smooth = effort_smooth_full[week_idx]
+    pv_smooth = pv_smooth_full[week_idx]
+
+    # Compute model terms
+    term_outdoor = g_out * out_smooth
+    term_effort = g_eff * effort_smooth
+    term_pv = g_pv * pv_smooth
+    y_pred = offset + term_outdoor + term_effort + term_pv
+
+    # Actual room temperature
+    y_actual = df_week[room_col].values
+
+    # Create figure
+    fig, axes = plt.subplots(4, 1, figsize=(14, 12), sharex=True)
+
+    # Panel 1: Room temperature actual vs predicted
+    ax1 = axes[0]
+    ax1.plot(df_week.index, y_actual, 'b-', linewidth=1, alpha=0.8, label='Actual')
+    ax1.plot(df_week.index, y_pred, 'r-', linewidth=1, alpha=0.8, label='Predicted')
+    ax1.fill_between(df_week.index, y_actual, y_pred, alpha=0.2, color='gray')
+    ax1.set_ylabel('Temperature (°C)')
+    room_name = room_col.replace('_temperature', '')
+    r2_week = 1 - np.sum((y_actual - y_pred)**2) / np.sum((y_actual - np.mean(y_actual))**2)
+    rmse_week = np.sqrt(np.mean((y_actual - y_pred)**2))
+    ax1.set_title(f'Panel 1: Room Temperature ({room_name}) — R²={r2_week:.3f}, RMSE={rmse_week:.2f}°C')
+    ax1.legend(loc='upper right')
+    ax1.grid(True, alpha=0.3)
+
+    # Panel 2: Outdoor temperature and its contribution
+    ax2 = axes[1]
+    ax2_twin = ax2.twinx()
+
+    ax2.plot(df_week.index, df_week[OUTDOOR_COL], 'b-', linewidth=1, alpha=0.7, label='T_outdoor (raw)')
+    ax2.plot(df_week.index, out_smooth, 'b--', linewidth=1.5, alpha=0.9, label=f'LPF(T_outdoor, τ={tau_out_h}h)')
+    ax2.set_ylabel('Outdoor Temperature (°C)', color='blue')
+    ax2.tick_params(axis='y', labelcolor='blue')
+
+    ax2_twin.plot(df_week.index, term_outdoor, 'orange', linewidth=1.5, label=f'g_out×LPF = {g_out:.3f}×LPF')
+    ax2_twin.set_ylabel('Contribution to T_room (°C)', color='orange')
+    ax2_twin.tick_params(axis='y', labelcolor='orange')
+
+    ax2.set_title(f'Panel 2: Outdoor Temperature Contribution (g_out={g_out:+.3f}, τ={tau_out_h}h)')
+    lines1, labels1 = ax2.get_legend_handles_labels()
+    lines2, labels2 = ax2_twin.get_legend_handles_labels()
+    ax2.legend(lines1 + lines2, labels1 + labels2, loc='upper right', fontsize=8)
+    ax2.grid(True, alpha=0.3)
+
+    # Panel 3: Heating effort and its contribution
+    ax3 = axes[2]
+    ax3_twin = ax3.twinx()
+
+    ax3.plot(df_week.index, effort_week, 'b-', linewidth=0.8, alpha=0.5, label='Effort (raw)')
+    ax3.plot(df_week.index, effort_smooth, 'b-', linewidth=1.5, alpha=0.9, label=f'LPF(Effort, τ={tau_eff_h}h)')
+    ax3.set_ylabel('Heating Effort (°C)', color='blue')
+    ax3.tick_params(axis='y', labelcolor='blue')
+
+    ax3_twin.plot(df_week.index, term_effort, 'orange', linewidth=1.5, label=f'g_eff×LPF = {g_eff:.3f}×LPF')
+    ax3_twin.set_ylabel('Contribution to T_room (°C)', color='orange')
+    ax3_twin.tick_params(axis='y', labelcolor='orange')
+
+    ax3.set_title(f'Panel 3: Heating Effort Contribution (g_eff={g_eff:+.3f}, τ={tau_eff_h}h)')
+    lines1, labels1 = ax3.get_legend_handles_labels()
+    lines2, labels2 = ax3_twin.get_legend_handles_labels()
+    ax3.legend(lines1 + lines2, labels1 + labels2, loc='upper right', fontsize=8)
+    ax3.grid(True, alpha=0.3)
+
+    # Panel 4: PV/Solar and its contribution
+    ax4 = axes[3]
+    ax4_twin = ax4.twinx()
+
+    ax4.plot(df_week.index, df_week[PV_COL], 'b-', linewidth=0.8, alpha=0.5, label='PV (raw)')
+    ax4.plot(df_week.index, pv_smooth, 'b-', linewidth=1.5, alpha=0.9, label=f'LPF(PV, τ={tau_pv_h}h)')
+    ax4.set_ylabel('PV Generation (kWh)', color='blue')
+    ax4.tick_params(axis='y', labelcolor='blue')
+
+    ax4_twin.plot(df_week.index, term_pv, 'orange', linewidth=1.5, label=f'g_pv×LPF = {g_pv:.3f}×LPF')
+    ax4_twin.set_ylabel('Contribution to T_room (°C)', color='orange')
+    ax4_twin.tick_params(axis='y', labelcolor='orange')
+
+    ax4.set_title(f'Panel 4: Solar/PV Contribution (g_pv={g_pv:+.3f}, τ={tau_pv_h}h)')
+    lines1, labels1 = ax4.get_legend_handles_labels()
+    lines2, labels2 = ax4_twin.get_legend_handles_labels()
+    ax4.legend(lines1 + lines2, labels1 + labels2, loc='upper right', fontsize=8)
+    ax4.grid(True, alpha=0.3)
+
+    ax4.set_xlabel('Date')
+    plt.setp(ax4.xaxis.get_majorticklabels(), rotation=45, ha='right')
+
+    # Add overall title
+    fig.suptitle(f'Model Term Decomposition: T_room = {offset:.1f} + g_out×LPF(T_out) + g_eff×LPF(E) + g_pv×LPF(PV)',
+                 fontsize=12, y=1.01)
+
+    plt.tight_layout()
+    plt.savefig(output_dir / 'fig18c_model_decomposition.png', dpi=150, bbox_inches='tight')
+    plt.close()
+    print("  Saved: fig18c_model_decomposition.png")
 
 
 def load_data() -> pd.DataFrame:
@@ -515,21 +838,14 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
 
     html = f"""
     <section id="thermal-model">
-    <h2>3.1 Building Thermal Model (Transfer Function)</h2>
-
-    <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
-        <strong>Reference Model Only:</strong> This transfer function model has been superseded by the
-        <a href="#greybox-thermal-model">Grey-Box Thermal Model (Section 3.1b)</a> which provides
-        better fit ($R^2=0.995$ vs $R^2=0.683$) and explicit buffer tank modeling. The grey-box model
-        is now used for Phase 4 optimization forward simulation.
-    </div>
+    <h2>3.1 Building Thermal Model</h2>
 
     <h3>Methodology</h3>
     <p>The thermal model uses a <strong>transfer function approach</strong> that separates the
     heating system behavior from building thermal response:</p>
 
     <ol>
-        <li><strong>Heating Curve</strong>: Model $T_{{HK2}} = f(T_{{out}})$ to capture how the heat pump
+        <li><strong>Heating Curve</strong>: Model T<sub>HK2</sub> = f(T<sub>out</sub>) to capture how the heat pump
             adjusts flow temperature based on outdoor conditions</li>
         <li><strong>Heating Effort</strong>: Calculate deviation from heating curve as the actual
             heating input signal</li>
@@ -543,14 +859,14 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
     <div class="equation-box">
     $$T_{{flow}} = T_{{setpoint}} + k_{{curve}} \\times (T_{{ref}} - T_{{out}})$$
     </div>
-    <p>Where $R^2 = {heating_curve['phase2_params']['normal_r_squared']:.3f}$ and:</p>
+    <p>Where R² = {heating_curve['phase2_params']['normal_r_squared']:.3f} and:</p>
     <ul>
-        <li>$T_{{ref,comfort}} = {heating_curve['phase2_params']['t_ref_comfort']:.2f}$°C</li>
-        <li>$T_{{ref,eco}} = {heating_curve['phase2_params']['t_ref_eco']:.2f}$°C</li>
-        <li>$\\text{{RMSE}} = {heating_curve['phase2_params']['normal_rmse']:.2f}$°C</li>
+        <li>T<sub>ref,comfort</sub> = {heating_curve['phase2_params']['t_ref_comfort']:.2f}°C</li>
+        <li>T<sub>ref,eco</sub> = {heating_curve['phase2_params']['t_ref_eco']:.2f}°C</li>
+        <li>RMSE = {heating_curve['phase2_params']['normal_rmse']:.2f}°C</li>
     </ul>
     <p><strong>This is the model used in Phase 4 optimization.</strong> It accounts for controllable
-    parameters ($T_{{setpoint}}$, $k_{{curve}}$) that affect $T_{{flow}} \\rightarrow \\text{{COP}} \\rightarrow$ energy consumption.</p>
+    parameters (<em>T<sub>setpoint</sub></em>, <em>k<sub>curve</sub></em>) that affect T<sub>flow</sub> → COP → energy consumption.</p>
 
     <h4>Simple Reference Model (diagnostic only)</h4>
     <div class="equation-box">
@@ -563,18 +879,42 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
     <div class="equation-box">
     $$T_{{room}} = c_0 + g_{{out}} \\cdot \\text{{LPF}}(T_{{out}}, \\tau_{{out}}) + g_{{eff}} \\cdot \\text{{LPF}}(E, \\tau_{{eff}}) + g_{{pv}} \\cdot \\text{{LPF}}(P_{{pv}}, \\tau_{{pv}})$$
     </div>
-    <p>Where $\\text{{LPF}}(x, \\tau)$ = low-pass filter (exponential smoothing with time constant $\\tau$)</p>
+    <p>Where LPF(<em>x</em>, <em>τ</em>) = low-pass filter (exponential smoothing with time constant <em>τ</em>)</p>
 
     <h4>Model Parameters</h4>
     <table>
         <tr><th>Symbol</th><th>Parameter</th><th>Description</th></tr>
-        <tr><td>$\\tau_{{out}}$</td><td>Outdoor time constant</td><td>How slowly room tracks outdoor temperature changes (hours)</td></tr>
-        <tr><td>$\\tau_{{eff}}$</td><td>Effort time constant</td><td>How quickly room responds to heating effort (hours)</td></tr>
-        <tr><td>$\\tau_{{pv}}$</td><td>Solar time constant</td><td>How quickly room responds to solar radiation (hours)</td></tr>
-        <tr><td>$g_{{out}}$</td><td>Outdoor gain</td><td>°C room change per °C outdoor change</td></tr>
-        <tr><td>$g_{{eff}}$</td><td>Effort gain</td><td>°C room change per °C heating effort</td></tr>
-        <tr><td>$g_{{pv}}$</td><td>Solar gain</td><td>°C room change per kWh PV generation</td></tr>
+        <tr><td>τ<sub>out</sub></td><td>Outdoor time constant</td><td>How slowly room tracks outdoor temperature changes (hours)</td></tr>
+        <tr><td>τ<sub>eff</sub></td><td>Effort time constant</td><td>How quickly room responds to heating effort (hours)</td></tr>
+        <tr><td>τ<sub>pv</sub></td><td>Solar time constant</td><td>How quickly room responds to solar radiation (hours)</td></tr>
+        <tr><td>g<sub>out</sub></td><td>Outdoor gain</td><td>°C room change per °C outdoor change</td></tr>
+        <tr><td>g<sub>eff</sub></td><td>Effort gain</td><td>°C room change per °C heating effort</td></tr>
+        <tr><td>g<sub>pv</sub></td><td>Solar gain</td><td>°C room change per kWh PV generation</td></tr>
     </table>
+
+    <h3>Low-Pass Filter (LPF) Details</h3>
+    <p>The model uses first-order exponential smoothing to capture thermal inertia.
+    This is a discrete-time IIR filter with the difference equation:</p>
+    <div class="equation-box">
+    $$y[n] = \\alpha \\cdot x[n] + (1-\\alpha) \\cdot y[n-1]$$
+    </div>
+    <p>where <em>α</em> = 1 − e<sup>−1/τ</sup> and <em>τ</em> is the time constant in timesteps
+    (multiply hours by 4 for 15-min data).</p>
+
+    <h4>Time Constant Interpretation</h4>
+    <table>
+        <tr><th>Time</th><th>Response</th><th>Physical Meaning</th></tr>
+        <tr><td>1τ</td><td>63.2%</td><td>Most of the response has occurred</td></tr>
+        <tr><td>2τ</td><td>86.5%</td><td>Nearly at steady state</td></tr>
+        <tr><td>3τ</td><td>95.0%</td><td>Effectively at steady state</td></tr>
+        <tr><td>5τ</td><td>99.3%</td><td>Full response complete</td></tr>
+    </table>
+
+    <figure>
+        <img src="fig18a_lpf_visualization.png" alt="Low-Pass Filter Visualization">
+        <figcaption><strong>Figure 18a:</strong> Low-pass filter behavior: step response (left),
+        impulse response/decay (middle), and filter equations (right).</figcaption>
+    </figure>
 
     <h3>Results by Room</h3>
     <p><strong>Weighted temperature sensors:</strong> {weights_desc}</p>
@@ -584,13 +924,13 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
             <th>Room</th>
             <th>Weight</th>
             <th>Points</th>
-            <th>$\\tau_{{out}}$</th>
-            <th>$\\tau_{{eff}}$</th>
-            <th>$\\tau_{{pv}}$</th>
-            <th>$g_{{out}}$</th>
-            <th>$g_{{eff}}$</th>
-            <th>$g_{{pv}}$</th>
-            <th>$R^2$</th>
+            <th>τ<sub>out</sub></th>
+            <th>τ<sub>eff</sub></th>
+            <th>τ<sub>pv</sub></th>
+            <th>g<sub>out</sub></th>
+            <th>g<sub>eff</sub></th>
+            <th>g<sub>pv</sub></th>
+            <th>R²</th>
             <th>RMSE</th>
         </tr>
         {results_table}
@@ -599,7 +939,7 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
     <h3>Physical Interpretation</h3>
 
     <h4>Heating Response</h4>
-    <p>The $g_{{eff}}$ coefficient shows how much each room responds to additional
+    <p>The g<sub>eff</sub> coefficient shows how much each room responds to additional
     heating beyond the baseline heating curve:</p>
     <ul>
     """
@@ -608,7 +948,7 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
     sorted_by_effort = sorted(results, key=lambda x: x['gain_effort'], reverse=True)
     for r in sorted_by_effort:
         room_name = r['room'].replace('_temperature', '')
-        html += f"<li><strong>{room_name}</strong>: $g_{{{{eff}}}} = {r['gain_effort']:+.3f}$ °C per °C effort"
+        html += f"<li><strong>{room_name}</strong>: g<sub>eff</sub> = {r['gain_effort']:+.3f} °C per °C effort"
         if r['gain_effort'] > 0.5:
             html += " (strong response)"
         elif r['gain_effort'] < 0.3:
@@ -619,7 +959,7 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
     </ul>
 
     <h4>Solar Response</h4>
-    <p>The $g_{pv}$ coefficient shows how much each room heats up from solar radiation
+    <p>The g<sub>pv</sub> coefficient shows how much each room heats up from solar radiation
     (using PV generation as a proxy for irradiance):</p>
     <ul>
     """
@@ -629,30 +969,30 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
     for r in sorted_by_pv:
         room_name = r['room'].replace('_temperature', '')
         if r['gain_pv'] > 0:
-            html += f"<li><strong>{room_name}</strong>: $g_{{{{pv}}}} = {r['gain_pv']:+.3f}$ °C per kWh PV</li>\n"
+            html += f"<li><strong>{room_name}</strong>: g<sub>pv</sub> = {r['gain_pv']:+.3f} °C per kWh PV</li>\n"
         else:
-            html += f"<li><strong>{room_name}</strong>: $g_{{{{pv}}}} = {r['gain_pv']:+.3f}$ °C per kWh PV (anomalous)</li>\n"
+            html += f"<li><strong>{room_name}</strong>: g<sub>pv</sub> = {r['gain_pv']:+.3f} °C per kWh PV (anomalous)</li>\n"
 
     html += f"""
     </ul>
 
     <h4>Time Constants</h4>
     <ul>
-        <li>$\\tau_{{out}}$: 24-120h — rooms respond slowly to outdoor changes (3-5 days)</li>
-        <li>$\\tau_{{eff}}$: 4-48h — rooms respond faster to heating changes</li>
-        <li>$\\tau_{{pv}}$: ~24h for all rooms — consistent solar response time</li>
+        <li>τ<sub>out</sub>: 24-120h — rooms respond slowly to outdoor changes (3-5 days)</li>
+        <li>τ<sub>eff</sub>: 4-48h — rooms respond faster to heating changes</li>
+        <li>τ<sub>pv</sub>: ~24h for all rooms — consistent solar response time</li>
     </ul>
 
     <h3>Weighted Average Model Performance</h3>
-    <p>Overall weighted $R^2 = $ <strong>{weighted_r2:.3f}</strong></p>
+    <p>Overall weighted R² = <strong>{weighted_r2:.3f}</strong></p>
 
     <h3>Implications for Optimization</h3>
     <ul>
-        <li><strong>Pre-heating timing</strong>: With $\\tau_{{eff}}$ of 4-48h, rooms need advance notice
+        <li><strong>Pre-heating timing</strong>: With τ<sub>eff</sub> of 4-48h, rooms need advance notice
             to reach target temperature</li>
-        <li><strong>Solar preheating</strong>: Positive $g_{{pv}}$ means rooms benefit from solar gain.
+        <li><strong>Solar preheating</strong>: Positive g<sub>pv</sub> means rooms benefit from solar gain.
             Schedule comfort periods during/after sunny periods.</li>
-        <li><strong>Room variation</strong>: Different rooms respond differently to heating based on $g_{{eff}}$.</li>
+        <li><strong>Room variation</strong>: Different rooms respond differently to heating based on g<sub>eff</sub>.</li>
     </ul>
 
     <figure>
@@ -660,19 +1000,31 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
         <figcaption><strong>Figure 18:</strong> Thermal model: heating curve (left),
         actual vs predicted scatter (middle), time series validation (right).</figcaption>
     </figure>
+
+    <h3>Model Term Decomposition</h3>
+    <p>The following figure shows how each input term contributes to the predicted room temperature
+    over a representative one-week period. Each panel shows the raw input signal (blue, left axis)
+    and its contribution to the room temperature prediction (orange, right axis):</p>
+
+    <figure>
+        <img src="fig18c_model_decomposition.png" alt="Model Term Decomposition">
+        <figcaption><strong>Figure 18c:</strong> Model term decomposition for a representative week.
+        Panel 1: Actual vs predicted room temperature. Panel 2: Outdoor temperature contribution.
+        Panel 3: Heating effort contribution. Panel 4: Solar/PV contribution.</figcaption>
+    </figure>
     </section>
     """
 
     # Add fig18b only if multiple sensors
     if len(results) >= 2:
-        html = html.replace('</section>', f"""
+        html = html.replace('<h3>Model Term Decomposition</h3>', f"""
     <figure>
         <img src="fig18b_room_timeseries.png" alt="Room Temperature Time Series">
         <figcaption><strong>Figure 18b:</strong> Actual vs predicted temperature for all rooms
         in the weighted temperature objective (last 2 weeks).</figcaption>
     </figure>
-    </section>
-    """)
+
+    <h3>Model Term Decomposition</h3>""")
 
     return html
 
@@ -743,6 +1095,13 @@ def main():
 
     # Create visualizations
     plot_thermal_analysis(results, heating_curve, df)
+
+    # Create LPF visualization
+    plot_lpf_visualization(OUTPUT_DIR)
+
+    # Create model decomposition figure (using best/primary result)
+    best_result = max(results, key=lambda x: SENSOR_WEIGHTS.get(x['room'], 0))
+    plot_model_decomposition(best_result, df, effort, OUTPUT_DIR)
 
     # Save results
     results_df = pd.DataFrame([{

@@ -491,8 +491,8 @@ def generate_report(pv_results: dict, battery_results: dict,
     <h3>PV Generation Patterns</h3>
     <table>
         <tr><th>Metric</th><th>Symbol</th><th>Value</th></tr>
-        <tr><td>Mean daily generation</td><td>$\\bar{{P}}_{{pv}}$</td><td><strong>{daily_pv:.1f} kWh</strong></td></tr>
-        <tr><td>Peak daily generation</td><td>$P_{{pv,max}}$</td><td>{daily_pv_max:.1f} kWh</td></tr>
+        <tr><td>Mean daily generation</td><td>P̄<sub>pv</sub></td><td><strong>{daily_pv:.1f} kWh</strong></td></tr>
+        <tr><td>Peak daily generation</td><td>P<sub>pv,max</sub></td><td>{daily_pv_max:.1f} kWh</td></tr>
         <tr><td>Peak generation hours</td><td>—</td><td>{peak_hours[0] if peak_hours else 'N/A'}:00 - {peak_hours[-1] if peak_hours else 'N/A'}:00</td></tr>
     </table>
 
@@ -500,12 +500,12 @@ def generate_report(pv_results: dict, battery_results: dict,
     <table>
         <tr><th>Metric</th><th>Value</th><th>Notes</th></tr>
         <tr>
-            <td>Round-trip efficiency ($\\eta_{{bat}}$)</td>
+            <td>Round-trip efficiency (η<sub>bat</sub>)</td>
             <td><strong>{battery_eff:.1f}%</strong></td>
             <td>{"Below expected (degraded)" if battery_eff < 82 else "Within normal range"}</td>
         </tr>
         <tr>
-            <td>Mean daily discharge ($E_{{discharge}}$)</td>
+            <td>Mean daily discharge (E<sub>discharge</sub>)</td>
             <td>{daily_discharge:.1f} kWh</td>
             <td>Energy supplied to home from battery</td>
         </tr>
@@ -514,14 +514,14 @@ def generate_report(pv_results: dict, battery_results: dict,
     <h3>Grid Interaction</h3>
     <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Mean daily import ($E_{{import}}$)</td><td>{daily_import:.1f} kWh</td></tr>
-        <tr><td>Mean daily export ($E_{{export}}$)</td><td>{daily_export:.1f} kWh</td></tr>
+        <tr><td>Mean daily import (E<sub>import</sub>)</td><td>{daily_import:.1f} kWh</td></tr>
+        <tr><td>Mean daily export (E<sub>export</sub>)</td><td>{daily_export:.1f} kWh</td></tr>
         <tr><td>Net export</td><td>{daily_export - daily_import:.1f} kWh/day</td></tr>
-        <tr><td>Current self-sufficiency ($\\eta_{{ss}}$)</td><td><strong>{self_suff:.1f}%</strong></td></tr>
+        <tr><td>Current self-sufficiency (η<sub>ss</sub>)</td><td><strong>{self_suff:.1f}%</strong></td></tr>
     </table>
     <p>Self-sufficiency definition:</p>
     <div class="equation-box">
-    $$\\eta_{{ss}} = 1 - \\frac{{E_{{import}}}}{{E_{{consumption}}}} = \\frac{{E_{{direct}} + E_{{battery}}}}{{E_{{consumption}}}}$$
+    η<sub>ss</sub> = 1 − E<sub>import</sub>/E<sub>consumption</sub> = (E<sub>direct</sub> + E<sub>battery</sub>)/E<sub>consumption</sub>
     </div>
 
     <h3>Self-Sufficiency Optimization Scenarios</h3>

@@ -1,20 +1,13 @@
 
     <section id="thermal-model">
-    <h2>3.1 Building Thermal Model (Transfer Function)</h2>
-
-    <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
-        <strong>Reference Model Only:</strong> This transfer function model has been superseded by the
-        <a href="#greybox-thermal-model">Grey-Box Thermal Model (Section 3.1b)</a> which provides
-        better fit ($R^2=0.995$ vs $R^2=0.683$) and explicit buffer tank modeling. The grey-box model
-        is now used for Phase 4 optimization forward simulation.
-    </div>
+    <h2>3.1 Building Thermal Model</h2>
 
     <h3>Methodology</h3>
     <p>The thermal model uses a <strong>transfer function approach</strong> that separates the
     heating system behavior from building thermal response:</p>
 
     <ol>
-        <li><strong>Heating Curve</strong>: Model $T_{HK2} = f(T_{out})$ to capture how the heat pump
+        <li><strong>Heating Curve</strong>: Model T<sub>HK2</sub> = f(T<sub>out</sub>) to capture how the heat pump
             adjusts flow temperature based on outdoor conditions</li>
         <li><strong>Heating Effort</strong>: Calculate deviation from heating curve as the actual
             heating input signal</li>
@@ -28,14 +21,14 @@
     <div class="equation-box">
     $$T_{flow} = T_{setpoint} + k_{curve} \times (T_{ref} - T_{out})$$
     </div>
-    <p>Where $R^2 = 0.963$ and:</p>
+    <p>Where R² = 0.963 and:</p>
     <ul>
-        <li>$T_{ref,comfort} = 21.32$°C</li>
-        <li>$T_{ref,eco} = 19.16$°C</li>
-        <li>$\text{RMSE} = 0.81$°C</li>
+        <li>T<sub>ref,comfort</sub> = 21.32°C</li>
+        <li>T<sub>ref,eco</sub> = 19.16°C</li>
+        <li>RMSE = 0.81°C</li>
     </ul>
     <p><strong>This is the model used in Phase 4 optimization.</strong> It accounts for controllable
-    parameters ($T_{setpoint}$, $k_{curve}$) that affect $T_{flow} \rightarrow \text{COP} \rightarrow$ energy consumption.</p>
+    parameters (<em>T<sub>setpoint</sub></em>, <em>k<sub>curve</sub></em>) that affect T<sub>flow</sub> → COP → energy consumption.</p>
 
     <h4>Simple Reference Model (diagnostic only)</h4>
     <div class="equation-box">
@@ -48,18 +41,42 @@
     <div class="equation-box">
     $$T_{room} = c_0 + g_{out} \cdot \text{LPF}(T_{out}, \tau_{out}) + g_{eff} \cdot \text{LPF}(E, \tau_{eff}) + g_{pv} \cdot \text{LPF}(P_{pv}, \tau_{pv})$$
     </div>
-    <p>Where $\text{LPF}(x, \tau)$ = low-pass filter (exponential smoothing with time constant $\tau$)</p>
+    <p>Where LPF(<em>x</em>, <em>τ</em>) = low-pass filter (exponential smoothing with time constant <em>τ</em>)</p>
 
     <h4>Model Parameters</h4>
     <table>
         <tr><th>Symbol</th><th>Parameter</th><th>Description</th></tr>
-        <tr><td>$\tau_{out}$</td><td>Outdoor time constant</td><td>How slowly room tracks outdoor temperature changes (hours)</td></tr>
-        <tr><td>$\tau_{eff}$</td><td>Effort time constant</td><td>How quickly room responds to heating effort (hours)</td></tr>
-        <tr><td>$\tau_{pv}$</td><td>Solar time constant</td><td>How quickly room responds to solar radiation (hours)</td></tr>
-        <tr><td>$g_{out}$</td><td>Outdoor gain</td><td>°C room change per °C outdoor change</td></tr>
-        <tr><td>$g_{eff}$</td><td>Effort gain</td><td>°C room change per °C heating effort</td></tr>
-        <tr><td>$g_{pv}$</td><td>Solar gain</td><td>°C room change per kWh PV generation</td></tr>
+        <tr><td>τ<sub>out</sub></td><td>Outdoor time constant</td><td>How slowly room tracks outdoor temperature changes (hours)</td></tr>
+        <tr><td>τ<sub>eff</sub></td><td>Effort time constant</td><td>How quickly room responds to heating effort (hours)</td></tr>
+        <tr><td>τ<sub>pv</sub></td><td>Solar time constant</td><td>How quickly room responds to solar radiation (hours)</td></tr>
+        <tr><td>g<sub>out</sub></td><td>Outdoor gain</td><td>°C room change per °C outdoor change</td></tr>
+        <tr><td>g<sub>eff</sub></td><td>Effort gain</td><td>°C room change per °C heating effort</td></tr>
+        <tr><td>g<sub>pv</sub></td><td>Solar gain</td><td>°C room change per kWh PV generation</td></tr>
     </table>
+
+    <h3>Low-Pass Filter (LPF) Details</h3>
+    <p>The model uses first-order exponential smoothing to capture thermal inertia.
+    This is a discrete-time IIR filter with the difference equation:</p>
+    <div class="equation-box">
+    $$y[n] = \alpha \cdot x[n] + (1-\alpha) \cdot y[n-1]$$
+    </div>
+    <p>where <em>α</em> = 1 − e<sup>−1/τ</sup> and <em>τ</em> is the time constant in timesteps
+    (multiply hours by 4 for 15-min data).</p>
+
+    <h4>Time Constant Interpretation</h4>
+    <table>
+        <tr><th>Time</th><th>Response</th><th>Physical Meaning</th></tr>
+        <tr><td>1τ</td><td>63.2%</td><td>Most of the response has occurred</td></tr>
+        <tr><td>2τ</td><td>86.5%</td><td>Nearly at steady state</td></tr>
+        <tr><td>3τ</td><td>95.0%</td><td>Effectively at steady state</td></tr>
+        <tr><td>5τ</td><td>99.3%</td><td>Full response complete</td></tr>
+    </table>
+
+    <figure>
+        <img src="fig18a_lpf_visualization.png" alt="Low-Pass Filter Visualization">
+        <figcaption><strong>Figure 18a:</strong> Low-pass filter behavior: step response (left),
+        impulse response/decay (middle), and filter equations (right).</figcaption>
+    </figure>
 
     <h3>Results by Room</h3>
     <p><strong>Weighted temperature sensors:</strong> davis_inside: 100%</p>
@@ -69,13 +86,13 @@
             <th>Room</th>
             <th>Weight</th>
             <th>Points</th>
-            <th>$\tau_{out}$</th>
-            <th>$\tau_{eff}$</th>
-            <th>$\tau_{pv}$</th>
-            <th>$g_{out}$</th>
-            <th>$g_{eff}$</th>
-            <th>$g_{pv}$</th>
-            <th>$R^2$</th>
+            <th>τ<sub>out</sub></th>
+            <th>τ<sub>eff</sub></th>
+            <th>τ<sub>pv</sub></th>
+            <th>g<sub>out</sub></th>
+            <th>g<sub>eff</sub></th>
+            <th>g<sub>pv</sub></th>
+            <th>R²</th>
             <th>RMSE</th>
         </tr>
         
@@ -98,44 +115,56 @@
     <h3>Physical Interpretation</h3>
 
     <h4>Heating Response</h4>
-    <p>The $g_{eff}$ coefficient shows how much each room responds to additional
+    <p>The g<sub>eff</sub> coefficient shows how much each room responds to additional
     heating beyond the baseline heating curve:</p>
     <ul>
-    <li><strong>davis_inside</strong>: $g_{{eff}} = +0.208$ °C per °C effort (weak response)</li>
+    <li><strong>davis_inside</strong>: g<sub>eff</sub> = +0.208 °C per °C effort (weak response)</li>
 
     </ul>
 
     <h4>Solar Response</h4>
-    <p>The $g_{pv}$ coefficient shows how much each room heats up from solar radiation
+    <p>The g<sub>pv</sub> coefficient shows how much each room heats up from solar radiation
     (using PV generation as a proxy for irradiance):</p>
     <ul>
-    <li><strong>davis_inside</strong>: $g_{{pv}} = +4.170$ °C per kWh PV</li>
+    <li><strong>davis_inside</strong>: g<sub>pv</sub> = +4.170 °C per kWh PV</li>
 
     </ul>
 
     <h4>Time Constants</h4>
     <ul>
-        <li>$\tau_{out}$: 24-120h — rooms respond slowly to outdoor changes (3-5 days)</li>
-        <li>$\tau_{eff}$: 4-48h — rooms respond faster to heating changes</li>
-        <li>$\tau_{pv}$: ~24h for all rooms — consistent solar response time</li>
+        <li>τ<sub>out</sub>: 24-120h — rooms respond slowly to outdoor changes (3-5 days)</li>
+        <li>τ<sub>eff</sub>: 4-48h — rooms respond faster to heating changes</li>
+        <li>τ<sub>pv</sub>: ~24h for all rooms — consistent solar response time</li>
     </ul>
 
     <h3>Weighted Average Model Performance</h3>
-    <p>Overall weighted $R^2 = $ <strong>0.679</strong></p>
+    <p>Overall weighted R² = <strong>0.679</strong></p>
 
     <h3>Implications for Optimization</h3>
     <ul>
-        <li><strong>Pre-heating timing</strong>: With $\tau_{eff}$ of 4-48h, rooms need advance notice
+        <li><strong>Pre-heating timing</strong>: With τ<sub>eff</sub> of 4-48h, rooms need advance notice
             to reach target temperature</li>
-        <li><strong>Solar preheating</strong>: Positive $g_{pv}$ means rooms benefit from solar gain.
+        <li><strong>Solar preheating</strong>: Positive g<sub>pv</sub> means rooms benefit from solar gain.
             Schedule comfort periods during/after sunny periods.</li>
-        <li><strong>Room variation</strong>: Different rooms respond differently to heating based on $g_{eff}$.</li>
+        <li><strong>Room variation</strong>: Different rooms respond differently to heating based on g<sub>eff</sub>.</li>
     </ul>
 
     <figure>
         <img src="fig18_thermal_model.png" alt="Thermal Model Analysis">
         <figcaption><strong>Figure 18:</strong> Thermal model: heating curve (left),
         actual vs predicted scatter (middle), time series validation (right).</figcaption>
+    </figure>
+
+    <h3>Model Term Decomposition</h3>
+    <p>The following figure shows how each input term contributes to the predicted room temperature
+    over a representative one-week period. Each panel shows the raw input signal (blue, left axis)
+    and its contribution to the room temperature prediction (orange, right axis):</p>
+
+    <figure>
+        <img src="fig18c_model_decomposition.png" alt="Model Term Decomposition">
+        <figcaption><strong>Figure 18c:</strong> Model term decomposition for a representative week.
+        Panel 1: Actual vs predicted room temperature. Panel 2: Outdoor temperature contribution.
+        Panel 3: Heating effort contribution. Panel 4: Solar/PV contribution.</figcaption>
     </figure>
     </section>
     

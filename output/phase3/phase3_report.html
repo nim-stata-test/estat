@@ -106,21 +106,23 @@
             overflow-x: auto;
         }
     </style>
-    <!-- MathJax for LaTeX rendering -->
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- MathJax for LaTeX rendering - config MUST come before script -->
     <script>
         window.MathJax = {
             tex: {
                 inlineMath: [['$', '$'], ['\(', '\)']],
                 displayMath: [['$$', '$$'], ['\[', '\]']]
+            },
+            startup: {
+                typeset: true
             }
         };
     </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
     <h1>Phase 3: System Modeling Report</h1>
-    <p><em>Generated: 2026-01-15 17:20</em></p>
+    <p><em>Generated: 2026-01-16 18:15</em></p>
 
     <div class="summary-box">
         <h3>Executive Summary</h3>
@@ -136,8 +138,11 @@
     <nav class="table-of-contents">
         <h2>Table of Contents</h2>
         <ol>
-            <li><a href="#thermal-model">Thermal Model (Transfer Function)</a></li>
-            <li><a href="#greybox-thermal-model">Thermal Model (Grey-Box)</a></li>
+            <li><a href="#thermal-model">Building Thermal Model</a>
+                <ul style="list-style-type: disc; margin: 5px 0 0 20px;">
+                    <li><a href="weekly_decomposition/weekly_decomposition_report.html">Weekly Model Decomposition</a> (detailed per-week analysis)</li>
+                </ul>
+            </li>
             <li><a href="#heat-pump-model">Heat Pump Model</a></li>
             <li><a href="#energy-system-model">Energy System Model</a></li>
             <li><a href="#tariff-cost-model">Tariff Cost Model</a></li>
@@ -149,21 +154,14 @@
 
     
     <section id="thermal-model">
-    <h2>3.1 Building Thermal Model (Transfer Function)</h2>
-
-    <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
-        <strong>Reference Model Only:</strong> This transfer function model has been superseded by the
-        <a href="#greybox-thermal-model">Grey-Box Thermal Model (Section 3.1b)</a> which provides
-        better fit ($R^2=0.995$ vs $R^2=0.683$) and explicit buffer tank modeling. The grey-box model
-        is now used for Phase 4 optimization forward simulation.
-    </div>
+    <h2>3.1 Building Thermal Model</h2>
 
     <h3>Methodology</h3>
     <p>The thermal model uses a <strong>transfer function approach</strong> that separates the
     heating system behavior from building thermal response:</p>
 
     <ol>
-        <li><strong>Heating Curve</strong>: Model $T_{HK2} = f(T_{out})$ to capture how the heat pump
+        <li><strong>Heating Curve</strong>: Model T<sub>HK2</sub> = f(T<sub>out</sub>) to capture how the heat pump
             adjusts flow temperature based on outdoor conditions</li>
         <li><strong>Heating Effort</strong>: Calculate deviation from heating curve as the actual
             heating input signal</li>
@@ -177,14 +175,14 @@
     <div class="equation-box">
     $$T_{flow} = T_{setpoint} + k_{curve} \times (T_{ref} - T_{out})$$
     </div>
-    <p>Where $R^2 = 0.963$ and:</p>
+    <p>Where R² = 0.963 and:</p>
     <ul>
-        <li>$T_{ref,comfort} = 21.32$°C</li>
-        <li>$T_{ref,eco} = 19.16$°C</li>
-        <li>$\text{RMSE} = 0.81$°C</li>
+        <li>T<sub>ref,comfort</sub> = 21.32°C</li>
+        <li>T<sub>ref,eco</sub> = 19.16°C</li>
+        <li>RMSE = 0.81°C</li>
     </ul>
     <p><strong>This is the model used in Phase 4 optimization.</strong> It accounts for controllable
-    parameters ($T_{setpoint}$, $k_{curve}$) that affect $T_{flow} \rightarrow \text{COP} \rightarrow$ energy consumption.</p>
+    parameters (<em>T<sub>setpoint</sub></em>, <em>k<sub>curve</sub></em>) that affect T<sub>flow</sub> → COP → energy consumption.</p>
 
     <h4>Simple Reference Model (diagnostic only)</h4>
     <div class="equation-box">
@@ -197,18 +195,42 @@
     <div class="equation-box">
     $$T_{room} = c_0 + g_{out} \cdot \text{LPF}(T_{out}, \tau_{out}) + g_{eff} \cdot \text{LPF}(E, \tau_{eff}) + g_{pv} \cdot \text{LPF}(P_{pv}, \tau_{pv})$$
     </div>
-    <p>Where $\text{LPF}(x, \tau)$ = low-pass filter (exponential smoothing with time constant $\tau$)</p>
+    <p>Where LPF(<em>x</em>, <em>τ</em>) = low-pass filter (exponential smoothing with time constant <em>τ</em>)</p>
 
     <h4>Model Parameters</h4>
     <table>
         <tr><th>Symbol</th><th>Parameter</th><th>Description</th></tr>
-        <tr><td>$\tau_{out}$</td><td>Outdoor time constant</td><td>How slowly room tracks outdoor temperature changes (hours)</td></tr>
-        <tr><td>$\tau_{eff}$</td><td>Effort time constant</td><td>How quickly room responds to heating effort (hours)</td></tr>
-        <tr><td>$\tau_{pv}$</td><td>Solar time constant</td><td>How quickly room responds to solar radiation (hours)</td></tr>
-        <tr><td>$g_{out}$</td><td>Outdoor gain</td><td>°C room change per °C outdoor change</td></tr>
-        <tr><td>$g_{eff}$</td><td>Effort gain</td><td>°C room change per °C heating effort</td></tr>
-        <tr><td>$g_{pv}$</td><td>Solar gain</td><td>°C room change per kWh PV generation</td></tr>
+        <tr><td>τ<sub>out</sub></td><td>Outdoor time constant</td><td>How slowly room tracks outdoor temperature changes (hours)</td></tr>
+        <tr><td>τ<sub>eff</sub></td><td>Effort time constant</td><td>How quickly room responds to heating effort (hours)</td></tr>
+        <tr><td>τ<sub>pv</sub></td><td>Solar time constant</td><td>How quickly room responds to solar radiation (hours)</td></tr>
+        <tr><td>g<sub>out</sub></td><td>Outdoor gain</td><td>°C room change per °C outdoor change</td></tr>
+        <tr><td>g<sub>eff</sub></td><td>Effort gain</td><td>°C room change per °C heating effort</td></tr>
+        <tr><td>g<sub>pv</sub></td><td>Solar gain</td><td>°C room change per kWh PV generation</td></tr>
     </table>
+
+    <h3>Low-Pass Filter (LPF) Details</h3>
+    <p>The model uses first-order exponential smoothing to capture thermal inertia.
+    This is a discrete-time IIR filter with the difference equation:</p>
+    <div class="equation-box">
+    $$y[n] = \alpha \cdot x[n] + (1-\alpha) \cdot y[n-1]$$
+    </div>
+    <p>where <em>α</em> = 1 − e<sup>−1/τ</sup> and <em>τ</em> is the time constant in timesteps
+    (multiply hours by 4 for 15-min data).</p>
+
+    <h4>Time Constant Interpretation</h4>
+    <table>
+        <tr><th>Time</th><th>Response</th><th>Physical Meaning</th></tr>
+        <tr><td>1τ</td><td>63.2%</td><td>Most of the response has occurred</td></tr>
+        <tr><td>2τ</td><td>86.5%</td><td>Nearly at steady state</td></tr>
+        <tr><td>3τ</td><td>95.0%</td><td>Effectively at steady state</td></tr>
+        <tr><td>5τ</td><td>99.3%</td><td>Full response complete</td></tr>
+    </table>
+
+    <figure>
+        <img src="fig18a_lpf_visualization.png" alt="Low-Pass Filter Visualization">
+        <figcaption><strong>Figure 18a:</strong> Low-pass filter behavior: step response (left),
+        impulse response/decay (middle), and filter equations (right).</figcaption>
+    </figure>
 
     <h3>Results by Room</h3>
     <p><strong>Weighted temperature sensors:</strong> davis_inside: 100%</p>
@@ -218,13 +240,13 @@
             <th>Room</th>
             <th>Weight</th>
             <th>Points</th>
-            <th>$\tau_{out}$</th>
-            <th>$\tau_{eff}$</th>
-            <th>$\tau_{pv}$</th>
-            <th>$g_{out}$</th>
-            <th>$g_{eff}$</th>
-            <th>$g_{pv}$</th>
-            <th>$R^2$</th>
+            <th>τ<sub>out</sub></th>
+            <th>τ<sub>eff</sub></th>
+            <th>τ<sub>pv</sub></th>
+            <th>g<sub>out</sub></th>
+            <th>g<sub>eff</sub></th>
+            <th>g<sub>pv</sub></th>
+            <th>R²</th>
             <th>RMSE</th>
         </tr>
         
@@ -247,38 +269,38 @@
     <h3>Physical Interpretation</h3>
 
     <h4>Heating Response</h4>
-    <p>The $g_{eff}$ coefficient shows how much each room responds to additional
+    <p>The g<sub>eff</sub> coefficient shows how much each room responds to additional
     heating beyond the baseline heating curve:</p>
     <ul>
-    <li><strong>davis_inside</strong>: $g_{{eff}} = +0.208$ °C per °C effort (weak response)</li>
+    <li><strong>davis_inside</strong>: g<sub>eff</sub> = +0.208 °C per °C effort (weak response)</li>
 
     </ul>
 
     <h4>Solar Response</h4>
-    <p>The $g_{pv}$ coefficient shows how much each room heats up from solar radiation
+    <p>The g<sub>pv</sub> coefficient shows how much each room heats up from solar radiation
     (using PV generation as a proxy for irradiance):</p>
     <ul>
-    <li><strong>davis_inside</strong>: $g_{{pv}} = +4.170$ °C per kWh PV</li>
+    <li><strong>davis_inside</strong>: g<sub>pv</sub> = +4.170 °C per kWh PV</li>
 
     </ul>
 
     <h4>Time Constants</h4>
     <ul>
-        <li>$\tau_{out}$: 24-120h — rooms respond slowly to outdoor changes (3-5 days)</li>
-        <li>$\tau_{eff}$: 4-48h — rooms respond faster to heating changes</li>
-        <li>$\tau_{pv}$: ~24h for all rooms — consistent solar response time</li>
+        <li>τ<sub>out</sub>: 24-120h — rooms respond slowly to outdoor changes (3-5 days)</li>
+        <li>τ<sub>eff</sub>: 4-48h — rooms respond faster to heating changes</li>
+        <li>τ<sub>pv</sub>: ~24h for all rooms — consistent solar response time</li>
     </ul>
 
     <h3>Weighted Average Model Performance</h3>
-    <p>Overall weighted $R^2 = $ <strong>0.679</strong></p>
+    <p>Overall weighted R² = <strong>0.679</strong></p>
 
     <h3>Implications for Optimization</h3>
     <ul>
-        <li><strong>Pre-heating timing</strong>: With $\tau_{eff}$ of 4-48h, rooms need advance notice
+        <li><strong>Pre-heating timing</strong>: With τ<sub>eff</sub> of 4-48h, rooms need advance notice
             to reach target temperature</li>
-        <li><strong>Solar preheating</strong>: Positive $g_{pv}$ means rooms benefit from solar gain.
+        <li><strong>Solar preheating</strong>: Positive g<sub>pv</sub> means rooms benefit from solar gain.
             Schedule comfort periods during/after sunny periods.</li>
-        <li><strong>Room variation</strong>: Different rooms respond differently to heating based on $g_{eff}$.</li>
+        <li><strong>Room variation</strong>: Different rooms respond differently to heating based on g<sub>eff</sub>.</li>
     </ul>
 
     <figure>
@@ -286,162 +308,17 @@
         <figcaption><strong>Figure 18:</strong> Thermal model: heating curve (left),
         actual vs predicted scatter (middle), time series validation (right).</figcaption>
     </figure>
-    </section>
-    
-    <section id="greybox-thermal-model">
-    <h2>3.1b Grey-Box Thermal Model</h2>
 
-    <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
-        
-        <strong>⚠️ Reference Model Only:</strong> Forward simulation diverges (R² = -3.19).
-        This model is kept for reference but is <strong>not used for Phase 4 optimization</strong>.
-        The transfer function model (Section 3.1) with R² = 0.68 is used instead.
-        
-    </div>
-
-    <h3>Model Formulation</h3>
-    <p>A physics-based discrete-time state-space model with two states:</p>
-
-    <h4>State Variables</h4>
-    <table>
-        <tr><th>Symbol</th><th>Variable</th><th>Description</th></tr>
-        <tr><td>$T_{buf}$</td><td>Buffer tank temperature</td><td>Intermediate thermal storage (°C)</td></tr>
-        <tr><td>$T_{room}$</td><td>Room temperature</td><td>Indoor/comfort objective (°C)</td></tr>
-    </table>
-
-    <h4>Discrete-Time Equations ($\Delta t = 0.25$ h)</h4>
-    <div class="equation-box">
-    $$T_{buf}[k+1] = T_{buf}[k] + \frac{\Delta t}{\tau_{buf}} \left[ (T_{HK2}[k] - T_{buf}[k]) - r_{emit} \cdot (T_{buf}[k] - T_{room}[k]) \right]$$
-    </div>
-    <div class="equation-box">
-    $$T_{room}[k+1] = T_{room}[k] + \frac{\Delta t}{\tau_{room}} \left[ r_{heat} \cdot (T_{buf}[k] - T_{room}[k]) - (T_{room}[k] - T_{out}[k]) \right] + k_{solar} \cdot P_{pv}[k]$$
-    </div>
-
-    <h3>Estimated Parameters</h3>
-    <table>
-        <tr>
-            <th>Symbol</th>
-            <th>Value</th>
-            <th>Std Error</th>
-            <th>Bounds</th>
-        </tr>
-        
-        <tr>
-            <td>$\tau_{buf}$</td>
-            <td>2.580 h</td>
-            <td>±0.125</td>
-            <td>[0.5, 4.0]</td>
-        </tr>
-        
-        <tr>
-            <td>$\tau_{room}$</td>
-            <td>72.000 h</td>
-            <td>±45.691</td>
-            <td>[12.0, 72.0]</td>
-        </tr>
-        
-        <tr>
-            <td>$r_{emit}$</td>
-            <td>0.100 —</td>
-            <td>±0.019</td>
-            <td>[0.1, 3.0]</td>
-        </tr>
-        
-        <tr>
-            <td>$r_{heat}$</td>
-            <td>1.051 —</td>
-            <td>±0.613</td>
-            <td>[0.1, 3.0]</td>
-        </tr>
-        
-        <tr>
-            <td>$k_{solar}$</td>
-            <td>0.017 K/kWh</td>
-            <td>±0.021</td>
-            <td>[0.0, 2.0]</td>
-        </tr>
-        
-        <tr>
-            <td>$c_{offset}$</td>
-            <td>-0.086 K/h</td>
-            <td>±0.115</td>
-            <td>[-3.0, 3.0]</td>
-        </tr>
-        
-    </table>
-
-    <h3>Physical Interpretation</h3>
-    <ul>
-        <li>$\tau_{buf} = 2.58$ h: Buffer tank time constant (~155 min)</li>
-        <li>$\tau_{room} = 72.0$ h: Building thermal mass time constant (~72 hours)</li>
-        <li>$r_{emit} = 0.10$: Heat transfer ratio (buffer→room vs HP→buffer)</li>
-        <li>$r_{heat} = 1.05$: Heat transfer ratio (buffer→room vs room→outdoor)</li>
-        <li>$k_{solar} = 0.017$ K/kWh: Solar gain coefficient</li>
-    </ul>
-
-    <h3>Forward Simulation Performance (Actual Model Quality)</h3>
-    <p>Forward simulation runs the model recursively from initial conditions—the true test of predictive ability.</p>
-    <table>
-        <tr>
-            <th>Metric</th>
-            <th>Value</th>
-            <th>Interpretation</th>
-        </tr>
-        <tr style="background-color: #f8d7da;">
-            <td><strong>$R^2$</strong></td>
-            <td><strong>-3.191</strong></td>
-            <td>⚠️ Negative = model diverges, worse than predicting mean</td>
-        </tr>
-        <tr>
-            <td>RMSE</td>
-            <td>1.79°C</td>
-            <td>Model error accumulates over time</td>
-        </tr>
-    </table>
-
-    <h3>One-Step Prediction (Misleading Metric)</h3>
-    <p><em>Note: One-step $R^2 \approx 0.99$ is artificially high because temperature is highly autocorrelated.
-    Predicting "$T[k+1] \approx T[k]$" trivially achieves $R^2 > 0.95$. These metrics are shown for reference only.</em></p>
-    <table>
-        <tr>
-            <th>Metric</th>
-            <th>$T_{buf}$</th>
-            <th>$T_{room}$</th>
-        </tr>
-        <tr>
-            <td>$R^2$ (one-step)</td>
-            <td>0.784</td>
-            <td>0.995 <em>(inflated)</em></td>
-        </tr>
-        <tr>
-            <td>RMSE (one-step)</td>
-            <td>2.77°C</td>
-            <td>0.06°C</td>
-        </tr>
-    </table>
-
-    <h3>Residual Diagnostics</h3>
-    <ul>
-        <li><strong>Durbin-Watson</strong>: 1.46
-            (ideal = 2.0; $< 1.5$ indicates positive autocorrelation)</li>
-        <li><strong>Decorrelation lag</strong>: 1.2 hours
-            (residuals become uncorrelated after this time)</li>
-        <li><strong>Residual $\sigma$</strong>: 0.064°C</li>
-    </ul>
-
-    <h3>Comparison with Transfer Function Model</h3>
-    <p>The grey-box model provides:</p>
-    <ul>
-        <li><strong>Explicit buffer tank modeling</strong>: Captures intermediate thermal storage dynamics</li>
-        <li><strong>Physical parameters</strong>: Time constants and heat transfer ratios with clear interpretation</li>
-        <li><strong>Constrained estimation</strong>: Parameters bounded to physically plausible ranges</li>
-    </ul>
+    <h3>Model Term Decomposition</h3>
+    <p>The following figure shows how each input term contributes to the predicted room temperature
+    over a representative one-week period. Each panel shows the raw input signal (blue, left axis)
+    and its contribution to the room temperature prediction (orange, right axis):</p>
 
     <figure>
-        <img src="fig18b_greybox_model.png" alt="Grey-Box Thermal Model Results">
-        <figcaption><strong>Figure 18b:</strong> Grey-box thermal model: state trajectories (top-left),
-        actual vs predicted scatter (top-right), residual distribution (bottom-left),
-        model comparison (bottom-right).</figcaption>
+        <img src="fig18c_model_decomposition.png" alt="Model Term Decomposition">
+        <figcaption><strong>Figure 18c:</strong> Model term decomposition for a representative week.
+        Panel 1: Actual vs predicted room temperature. Panel 2: Outdoor temperature contribution.
+        Panel 3: Heating effort contribution. Panel 4: Solar/PV contribution.</figcaption>
     </figure>
     </section>
     
@@ -459,15 +336,15 @@
         <tr>
             <td>COP Range</td>
             <td>2.37 – 5.80</td>
-            <td>Varies with $T_{out}$ and $T_{HK2}$</td>
+            <td>Varies with T<sub>out</sub> and T<sub>HK2</sub></td>
         </tr>
         <tr>
-            <td>$\partial \text{COP} / \partial T_{out}$</td>
+            <td>∂COP/∂T<sub>out</sub></td>
             <td>0.2034 COP/°C</td>
             <td>Increases with warmer outdoor</td>
         </tr>
         <tr>
-            <td>$\partial \text{COP} / \partial T_{HK2}$</td>
+            <td>∂COP/∂T<sub>HK2</sub></td>
             <td>-0.2199 COP/°C</td>
             <td>Decreases with higher flow temp</td>
         </tr>
@@ -476,47 +353,47 @@
     <h3>COP Model</h3>
     <p>Multi-variable regression model:</p>
     <div class="equation-box">
-    $$\text{COP} = 5.93 + 0.1280 \cdot T_{out} + -0.0832 \cdot T_{HK2}$$
+    COP = 5.93 + 0.1280 × T<sub>out</sub> + -0.0832 × T<sub>HK2</sub>
     </div>
-    <p>$R^2 = 0.941$, $\text{RMSE} = 0.196$</p>
+    <p>R² = 0.941, RMSE = 0.196</p>
 
     <h3>Capacity Analysis</h3>
     <table>
         <tr><th>Metric</th><th>Mean</th><th>Max</th><th>Min</th></tr>
         <tr>
-            <td>Daily electricity consumed ($E_{elec}$)</td>
+            <td>Daily electricity consumed (E<sub>elec</sub>)</td>
             <td>23.5 kWh</td>
             <td>59.0 kWh</td>
             <td>5.0 kWh</td>
         </tr>
         <tr>
-            <td>Daily heat produced ($Q_{heat}$)</td>
+            <td>Daily heat produced (Q<sub>heat</sub>)</td>
             <td>82.0 kWh</td>
             <td>140.0 kWh</td>
             <td>29.0 kWh</td>
         </tr>
         <tr>
-            <td>Compressor runtime ($t_{comp}$)</td>
+            <td>Compressor runtime (t<sub>comp</sub>)</td>
             <td>2.1 h/day</td>
             <td>2.8 h/day</td>
             <td>—</td>
         </tr>
     </table>
-    <p>Relationship: $Q_{heat} = \text{COP} \times E_{elec}$</p>
+    <p>Relationship: Q<sub>heat</sub> = COP × E<sub>elec</sub></p>
 
     <h3>Buffer Tank Dynamics</h3>
     <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Mean $T_{buf}$</td><td>36.0°C</td></tr>
+        <tr><td>Mean T<sub>buf</sub></td><td>36.0°C</td></tr>
         <tr><td>Range</td><td>22.3 – 55.5°C</td></tr>
-        <tr><td>Variability ($\sigma$)</td><td>5.95°C</td></tr>
+        <tr><td>Variability (σ)</td><td>5.95°C</td></tr>
     </table>
 
     <h3>Implications for Optimization</h3>
     <ul>
-        <li><strong>COP optimization</strong>: Lower $T_{HK2}$ improves COP.
-            With $\partial \text{COP}/\partial T_{HK2} = -0.2199$, reducing $T_{HK2}$ by 5°C improves COP by ~1.10.</li>
-        <li><strong>Timing strategy</strong>: Run heat pump during warmest $T_{out}$ (daytime/solar hours)
+        <li><strong>COP optimization</strong>: Lower T<sub>HK2</sub> improves COP.
+            With ∂COP/∂T<sub>HK2</sub> = -0.2199, reducing T<sub>HK2</sub> by 5°C improves COP by ~1.10.</li>
+        <li><strong>Timing strategy</strong>: Run heat pump during warmest T<sub>out</sub> (daytime/solar hours)
             for better COP. Each +1°C outdoor improves COP by ~0.203.</li>
         <li><strong>Capacity headroom</strong>: Max observed 59 kWh/day
             suggests capacity is sufficient for current heating demand.</li>
@@ -538,8 +415,8 @@
     <h3>PV Generation Patterns</h3>
     <table>
         <tr><th>Metric</th><th>Symbol</th><th>Value</th></tr>
-        <tr><td>Mean daily generation</td><td>$\bar{P}_{pv}$</td><td><strong>55.7 kWh</strong></td></tr>
-        <tr><td>Peak daily generation</td><td>$P_{pv,max}$</td><td>145.7 kWh</td></tr>
+        <tr><td>Mean daily generation</td><td>P̄<sub>pv</sub></td><td><strong>55.7 kWh</strong></td></tr>
+        <tr><td>Peak daily generation</td><td>P<sub>pv,max</sub></td><td>145.7 kWh</td></tr>
         <tr><td>Peak generation hours</td><td>—</td><td>10:00 - 16:00</td></tr>
     </table>
 
@@ -547,12 +424,12 @@
     <table>
         <tr><th>Metric</th><th>Value</th><th>Notes</th></tr>
         <tr>
-            <td>Round-trip efficiency ($\eta_{bat}$)</td>
+            <td>Round-trip efficiency (η<sub>bat</sub>)</td>
             <td><strong>83.7%</strong></td>
             <td>Within normal range</td>
         </tr>
         <tr>
-            <td>Mean daily discharge ($E_{discharge}$)</td>
+            <td>Mean daily discharge (E<sub>discharge</sub>)</td>
             <td>6.3 kWh</td>
             <td>Energy supplied to home from battery</td>
         </tr>
@@ -561,14 +438,14 @@
     <h3>Grid Interaction</h3>
     <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Mean daily import ($E_{import}$)</td><td>10.6 kWh</td></tr>
-        <tr><td>Mean daily export ($E_{export}$)</td><td>40.5 kWh</td></tr>
+        <tr><td>Mean daily import (E<sub>import</sub>)</td><td>10.6 kWh</td></tr>
+        <tr><td>Mean daily export (E<sub>export</sub>)</td><td>40.5 kWh</td></tr>
         <tr><td>Net export</td><td>29.9 kWh/day</td></tr>
-        <tr><td>Current self-sufficiency ($\eta_{ss}$)</td><td><strong>75.3%</strong></td></tr>
+        <tr><td>Current self-sufficiency (η<sub>ss</sub>)</td><td><strong>75.3%</strong></td></tr>
     </table>
     <p>Self-sufficiency definition:</p>
     <div class="equation-box">
-    $$\eta_{ss} = 1 - \frac{E_{import}}{E_{consumption}} = \frac{E_{direct} + E_{battery}}{E_{consumption}}$$
+    η<sub>ss</sub> = 1 − E<sub>import</sub>/E<sub>consumption</sub> = (E<sub>direct</sub> + E<sub>battery</sub>)/E<sub>consumption</sub>
     </div>
 
     <h3>Self-Sufficiency Optimization Scenarios</h3>
@@ -628,31 +505,31 @@
     <h3>Cost Definitions</h3>
     <p>Electricity cost components:</p>
     <div class="equation-box">
-    $$C_{grid} = E_{import} \times p_{purchase}$$
-    $$R_{feedin} = E_{export} \times p_{feedin}$$
-    $$C_{net} = C_{grid} - R_{feedin}$$
+    C<sub>grid</sub> = E<sub>import</sub> × p<sub>purchase</sub><br>
+    R<sub>feedin</sub> = E<sub>export</sub> × p<sub>feedin</sub><br>
+    C<sub>net</sub> = C<sub>grid</sub> − R<sub>feedin</sub>
     </div>
-    <p>where $E_{import}$ is grid import (kWh), $E_{export}$ is grid export (kWh),
-    $p_{purchase}$ is purchase rate (CHF/kWh), $p_{feedin}$ is feed-in rate (CHF/kWh).</p>
+    <p>where E<sub>import</sub> is grid import (kWh), E<sub>export</sub> is grid export (kWh),
+    p<sub>purchase</sub> is purchase rate (CHF/kWh), p<sub>feedin</sub> is feed-in rate (CHF/kWh).</p>
 
     <h3>Historical Cost Analysis</h3>
     <table>
         <tr><th>Metric</th><th>Symbol</th><th>Daily Average</th><th>Annual Projection</th></tr>
         <tr>
             <td>Grid purchase cost</td>
-            <td>$C_{grid}$</td>
+            <td>C<sub>grid</sub></td>
             <td>CHF 3.27</td>
             <td>CHF 1,194</td>
         </tr>
         <tr>
             <td>Feed-in revenue</td>
-            <td>$R_{feedin}$</td>
+            <td>R<sub>feedin</sub></td>
             <td>CHF 5.95</td>
             <td>CHF 2,173</td>
         </tr>
         <tr>
             <td><strong>Net cost</strong></td>
-            <td>$C_{net}$</td>
+            <td>C<sub>net</sub></td>
             <td><strong>CHF -2.68</strong></td>
             <td><strong>CHF -979</strong></td>
         </tr>
@@ -675,7 +552,7 @@
         </tr>
     </table>
 
-    <p><strong>Insight:</strong> 49% of grid costs ($C_{grid}$) occur during high-tariff
+    <p><strong>Insight:</strong> 49% of grid costs (C<sub>grid</sub>) occur during high-tariff
     periods. Shifting consumption to low-tariff hours (21:00-06:00 weekdays, weekends) can reduce costs.</p>
 
     <h3>Seasonal Patterns</h3>
@@ -696,27 +573,27 @@
     <h3>Cost Forecast Model</h3>
     <p>Seasonal model with heating degree-days:</p>
     <div class="equation-box">
-    $$C_{net}(t) = \beta_0 + \beta_{HDD} \cdot \text{HDD}(t) + \beta_{sin} \cdot \sin\left(\frac{2\pi m}{12}\right) + \beta_{cos} \cdot \cos\left(\frac{2\pi m}{12}\right) + \beta_{we} \cdot \mathbf{1}_{weekend}$$
+    C<sub>net</sub>(t) = β<sub>0</sub> + β<sub>HDD</sub> × HDD(t) + β<sub>sin</sub> × sin(2πm/12) + β<sub>cos</sub> × cos(2πm/12) + β<sub>we</sub> × 𝟙<sub>weekend</sub>
     </div>
-    <p>where $\text{HDD} = \max(0, 18 - T_{out})$ is heating degree-days, $m$ is month, and $\mathbf{1}_{weekend}$ is weekend indicator.</p>
+    <p>where HDD = max(0, 18 − T<sub>out</sub>) is heating degree-days, m is month, and 𝟙<sub>weekend</sub> is weekend indicator.</p>
     <table>
-        <tr><th>Model</th><th>$R^2$</th><th>RMSE</th><th>Key Coefficient</th></tr>
+        <tr><th>Model</th><th>R²</th><th>RMSE</th><th>Key Coefficient</th></tr>
         <tr>
             <td>Seasonal model</td>
             <td>0.708</td>
             <td>CHF 5.38</td>
-            <td>$\beta_{we}$ = CHF -0.10</td>
+            <td>β<sub>we</sub> = CHF -0.10</td>
         </tr>
-        <tr><td>HDD model</td><td>0.694</td><td>CHF 2.92</td><td>$\beta_{HDD}$ = CHF 1.00/HDD</td></tr>
+        <tr><td>HDD model</td><td>0.694</td><td>CHF 2.92</td><td>β<sub>HDD</sub> = CHF 1.00/HDD</td></tr>
     </table>
 
     <h3>Cost Optimization Scenarios</h3>
-    <p>Load shifting potential based on moving high-tariff consumption ($E_{HT}$) to low-tariff periods:</p>
+    <p>Load shifting potential based on moving high-tariff consumption (E<sub>HT</sub>) to low-tariff periods:</p>
     <div class="equation-box">
-    $$\Delta C = E_{shift} \times (p_{HT} - p_{NT})$$
+    ΔC = E<sub>shift</sub> × (p<sub>HT</sub> − p<sub>NT</sub>)
     </div>
     <table>
-        <tr><th>Scenario</th><th>$C_{net}$</th><th>Annual</th><th>$\Delta C$</th><th>Reduction</th></tr>
+        <tr><th>Scenario</th><th>C<sub>net</sub></th><th>Annual</th><th>ΔC</th><th>Reduction</th></tr>
         <tr>
             <td>Baseline (current)</td>
             <td>CHF -2,813.68</td>
@@ -751,11 +628,11 @@
     <ul>
         <li><strong>Load shifting</strong>: Schedule heating comfort mode to start during solar hours
             and extend into low-tariff evening periods.</li>
-        <li><strong>High-tariff avoidance</strong>: Reduce $E_{import}$ during 06:00-21:00 weekdays
+        <li><strong>High-tariff avoidance</strong>: Reduce E<sub>import</sub> during 06:00-21:00 weekdays
             by pre-heating with PV or using stored heat/battery.</li>
         <li><strong>Potential savings</strong>: 4% reduction (~CHF 38/year)
             achievable through combined load shifting and battery optimization.</li>
-        <li><strong>Rate differential</strong>: $(p_{HT} - p_{NT}) \approx$ 8.0 Rp/kWh
+        <li><strong>Rate differential</strong>: (p<sub>HT</sub> − p<sub>NT</sub>) ≈ 8.0 Rp/kWh
             provides economic incentive for time-shifting.</li>
     </ul>
 

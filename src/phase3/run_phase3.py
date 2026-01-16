@@ -52,9 +52,7 @@ def generate_html_report():
     if thermal_path.exists():
         sections.append(thermal_path.read_text())
 
-    greybox_path = OUTPUT_DIR / 'greybox_report_section.html'
-    if greybox_path.exists():
-        sections.append(greybox_path.read_text())
+    # Note: greybox_report_section.html removed (abandoned approach)
 
     heat_pump_path = OUTPUT_DIR / 'heat_pump_model_report_section.html'
     if heat_pump_path.exists():
@@ -179,17 +177,19 @@ def generate_html_report():
             overflow-x: auto;
         }}
     </style>
-    <!-- MathJax for LaTeX rendering -->
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- MathJax for LaTeX rendering - config MUST come before script -->
     <script>
         window.MathJax = {{
             tex: {{
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }},
+            startup: {{
+                typeset: true
             }}
         }};
     </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
     <h1>Phase 3: System Modeling Report</h1>
@@ -209,8 +209,11 @@ def generate_html_report():
     <nav class="table-of-contents">
         <h2>Table of Contents</h2>
         <ol>
-            <li><a href="#thermal-model">Thermal Model (Transfer Function)</a></li>
-            <li><a href="#greybox-thermal-model">Thermal Model (Grey-Box)</a></li>
+            <li><a href="#thermal-model">Building Thermal Model</a>
+                <ul style="list-style-type: disc; margin: 5px 0 0 20px;">
+                    <li><a href="weekly_decomposition/weekly_decomposition_report.html">Weekly Model Decomposition</a> (detailed per-week analysis)</li>
+                </ul>
+            </li>
             <li><a href="#heat-pump-model">Heat Pump Model</a></li>
             <li><a href="#energy-system-model">Energy System Model</a></li>
             <li><a href="#tariff-cost-model">Tariff Cost Model</a></li>
@@ -352,10 +355,11 @@ def main():
     # Run each modeling script
     scripts = [
         '01_thermal_model.py',
-        '01b_greybox_thermal_model.py',
+        # '01b_greybox_thermal_model.py',  # Removed: abandoned approach (see CLAUDE.md)
         '02_heat_pump_model.py',
         '03_energy_system_model.py',
-        '04_tariff_cost_model.py'
+        '04_tariff_cost_model.py',
+        '05_weekly_decomposition.py'
     ]
 
     for script in scripts:
@@ -375,11 +379,13 @@ def main():
     print(f"\nOutputs saved to: {OUTPUT_DIR}")
     print("\nKey outputs:")
     print("  - fig18_thermal_model.png")
-    print("  - fig18b_greybox_model.png")
+    print("  - fig18a_lpf_visualization.png")
+    print("  - fig18c_model_decomposition.png")
     print("  - fig19_heat_pump_model.png")
     print("  - fig20_energy_system_model.png")
     print("  - fig21_tariff_cost_model.png")
     print("  - phase3_report.html")
+    print("  - weekly_decomposition/weekly_decomposition_report.html")
 
 
 if __name__ == '__main__':

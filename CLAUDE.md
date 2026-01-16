@@ -124,7 +124,8 @@ src/
 │   ├── 01b_greybox_thermal_model.py  # Grey-box state-space model (abandoned)
 │   ├── 02_heat_pump_model.py         # COP relationships, buffer tank
 │   ├── 03_energy_system_model.py     # PV patterns, battery, self-sufficiency
-│   └── 04_tariff_cost_model.py       # Electricity cost analysis + forecasting
+│   ├── 04_tariff_cost_model.py       # Electricity cost analysis + forecasting
+│   └── 05_weekly_decomposition.py    # Weekly thermal model decomposition report
 ├── phase4/              # Optimization Strategy Development
 │   ├── run_optimization.py           # Wrapper: runs all steps + HTML report
 │   ├── run_pareto.py                 # CLI wrapper for Pareto optimization
@@ -159,6 +160,7 @@ output/
 ├── phase1/       # Preprocessing outputs (parquet files, reports)
 ├── phase2/       # EDA outputs (figures, HTML reports)
 ├── phase3/       # System modeling outputs (figures, model results)
+│   └── weekly_decomposition/  # Per-week thermal model analysis
 ├── phase4/       # Optimization outputs (strategies, predictions)
 ├── phase5/       # Intervention study outputs (schedules, logs, analysis)
 ├── phase5_pilot/ # Pilot experiment outputs (Jan-Mar 2026)

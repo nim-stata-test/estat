@@ -583,31 +583,31 @@ def generate_report(cost_patterns: dict, forecast_results: dict,
     <h3>Cost Definitions</h3>
     <p>Electricity cost components:</p>
     <div class="equation-box">
-    $$C_{{grid}} = E_{{import}} \\times p_{{purchase}}$$
-    $$R_{{feedin}} = E_{{export}} \\times p_{{feedin}}$$
-    $$C_{{net}} = C_{{grid}} - R_{{feedin}}$$
+    C<sub>grid</sub> = E<sub>import</sub> × p<sub>purchase</sub><br>
+    R<sub>feedin</sub> = E<sub>export</sub> × p<sub>feedin</sub><br>
+    C<sub>net</sub> = C<sub>grid</sub> − R<sub>feedin</sub>
     </div>
-    <p>where $E_{{import}}$ is grid import (kWh), $E_{{export}}$ is grid export (kWh),
-    $p_{{purchase}}$ is purchase rate (CHF/kWh), $p_{{feedin}}$ is feed-in rate (CHF/kWh).</p>
+    <p>where E<sub>import</sub> is grid import (kWh), E<sub>export</sub> is grid export (kWh),
+    p<sub>purchase</sub> is purchase rate (CHF/kWh), p<sub>feedin</sub> is feed-in rate (CHF/kWh).</p>
 
     <h3>Historical Cost Analysis</h3>
     <table>
         <tr><th>Metric</th><th>Symbol</th><th>Daily Average</th><th>Annual Projection</th></tr>
         <tr>
             <td>Grid purchase cost</td>
-            <td>$C_{{grid}}$</td>
+            <td>C<sub>grid</sub></td>
             <td>CHF {daily['mean_cost']:.2f}</td>
             <td>CHF {daily['mean_cost'] * 365:,.0f}</td>
         </tr>
         <tr>
             <td>Feed-in revenue</td>
-            <td>$R_{{feedin}}$</td>
+            <td>R<sub>feedin</sub></td>
             <td>CHF {daily['mean_revenue']:.2f}</td>
             <td>CHF {daily['mean_revenue'] * 365:,.0f}</td>
         </tr>
         <tr>
             <td><strong>Net cost</strong></td>
-            <td>$C_{{net}}$</td>
+            <td>C<sub>net</sub></td>
             <td><strong>CHF {daily['mean_net']:.2f}</strong></td>
             <td><strong>CHF {daily['mean_net'] * 365:,.0f}</strong></td>
         </tr>
@@ -630,7 +630,7 @@ def generate_report(cost_patterns: dict, forecast_results: dict,
         </tr>
     </table>
 
-    <p><strong>Insight:</strong> {tariff['high_tariff_pct']*100:.0f}% of grid costs ($C_{{grid}}$) occur during high-tariff
+    <p><strong>Insight:</strong> {tariff['high_tariff_pct']*100:.0f}% of grid costs (C<sub>grid</sub>) occur during high-tariff
     periods. Shifting consumption to low-tariff hours (21:00-06:00 weekdays, weekends) can reduce costs.</p>
 
     <h3>Seasonal Patterns</h3>
@@ -651,27 +651,27 @@ def generate_report(cost_patterns: dict, forecast_results: dict,
     <h3>Cost Forecast Model</h3>
     <p>Seasonal model with heating degree-days:</p>
     <div class="equation-box">
-    $$C_{{net}}(t) = \\beta_0 + \\beta_{{HDD}} \\cdot \\text{{HDD}}(t) + \\beta_{{sin}} \\cdot \\sin\\left(\\frac{{2\\pi m}}{{12}}\\right) + \\beta_{{cos}} \\cdot \\cos\\left(\\frac{{2\\pi m}}{{12}}\\right) + \\beta_{{we}} \\cdot \\mathbf{{1}}_{{weekend}}$$
+    C<sub>net</sub>(t) = β<sub>0</sub> + β<sub>HDD</sub> × HDD(t) + β<sub>sin</sub> × sin(2πm/12) + β<sub>cos</sub> × cos(2πm/12) + β<sub>we</sub> × 𝟙<sub>weekend</sub>
     </div>
-    <p>where $\\text{{HDD}} = \\max(0, 18 - T_{{out}})$ is heating degree-days, $m$ is month, and $\\mathbf{{1}}_{{weekend}}$ is weekend indicator.</p>
+    <p>where HDD = max(0, 18 − T<sub>out</sub>) is heating degree-days, m is month, and 𝟙<sub>weekend</sub> is weekend indicator.</p>
     <table>
-        <tr><th>Model</th><th>$R^2$</th><th>RMSE</th><th>Key Coefficient</th></tr>
+        <tr><th>Model</th><th>R²</th><th>RMSE</th><th>Key Coefficient</th></tr>
         <tr>
             <td>Seasonal model</td>
             <td>{seasonal_model.get('r2', 0):.3f}</td>
             <td>CHF {seasonal_model.get('rmse', 0):.2f}</td>
-            <td>$\\beta_{{we}}$ = CHF {seasonal_model.get('coefficients', {}).get('is_weekend', 0):.2f}</td>
+            <td>β<sub>we</sub> = CHF {seasonal_model.get('coefficients', {}).get('is_weekend', 0):.2f}</td>
         </tr>
-        {"<tr><td>HDD model</td><td>" + f"{hdd_model.get('r2', 0):.3f}</td><td>CHF {hdd_model.get('rmse', 0):.2f}</td><td>$\\beta_{{HDD}}$ = CHF {hdd_model.get('hdd_coefficient', 0):.2f}/HDD</td></tr>" if hdd_model else ""}
+        {"<tr><td>HDD model</td><td>" + f"{hdd_model.get('r2', 0):.3f}</td><td>CHF {hdd_model.get('rmse', 0):.2f}</td><td>β<sub>HDD</sub> = CHF {hdd_model.get('hdd_coefficient', 0):.2f}/HDD</td></tr>" if hdd_model else ""}
     </table>
 
     <h3>Cost Optimization Scenarios</h3>
-    <p>Load shifting potential based on moving high-tariff consumption ($E_{{HT}}$) to low-tariff periods:</p>
+    <p>Load shifting potential based on moving high-tariff consumption (E<sub>HT</sub>) to low-tariff periods:</p>
     <div class="equation-box">
-    $$\\Delta C = E_{{shift}} \\times (p_{{HT}} - p_{{NT}})$$
+    ΔC = E<sub>shift</sub> × (p<sub>HT</sub> − p<sub>NT</sub>)
     </div>
     <table>
-        <tr><th>Scenario</th><th>$C_{{net}}$</th><th>Annual</th><th>$\\Delta C$</th><th>Reduction</th></tr>
+        <tr><th>Scenario</th><th>C<sub>net</sub></th><th>Annual</th><th>ΔC</th><th>Reduction</th></tr>
         <tr>
             <td>Baseline (current)</td>
             <td>CHF {baseline['net_cost']:,.2f}</td>
@@ -706,11 +706,11 @@ def generate_report(cost_patterns: dict, forecast_results: dict,
     <ul>
         <li><strong>Load shifting</strong>: Schedule heating comfort mode to start during solar hours
             and extend into low-tariff evening periods.</li>
-        <li><strong>High-tariff avoidance</strong>: Reduce $E_{{import}}$ during 06:00-21:00 weekdays
+        <li><strong>High-tariff avoidance</strong>: Reduce E<sub>import</sub> during 06:00-21:00 weekdays
             by pre-heating with PV or using stored heat/battery.</li>
         <li><strong>Potential savings</strong>: {combined['reduction_pct']:.0f}% reduction (~CHF {combined['total_savings'] * annual_factor:,.0f}/year)
             achievable through combined load shifting and battery optimization.</li>
-        <li><strong>Rate differential</strong>: $(p_{{HT}} - p_{{NT}}) \\approx$ {shift_20['rate_differential']:.1f} Rp/kWh
+        <li><strong>Rate differential</strong>: (p<sub>HT</sub> − p<sub>NT</sub>) ≈ {shift_20['rate_differential']:.1f} Rp/kWh
             provides economic incentive for time-shifting.</li>
     </ul>
 
