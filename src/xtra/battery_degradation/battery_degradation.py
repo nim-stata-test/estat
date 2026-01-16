@@ -5,6 +5,9 @@ Battery Degradation Analysis (xtra)
 Standalone analysis investigating whether the Feb-Mar 2025 deep-discharge event
 (caused by a faulty inverter) significantly affected battery round-trip efficiency.
 
+Important confounding factor: After the event, the minimum state-of-charge (SoC)
+setting was changed from 5% to 20%, which changes the battery's operating range.
+
 Outputs:
 - battery_degradation_analysis.png - Figure with efficiency trends
 - battery_degradation_report.html - Detailed HTML report with methods and results
@@ -29,6 +32,11 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 EVENT_START = pd.Timestamp('2025-02-01')
 EVENT_END = pd.Timestamp('2025-03-31')
 EVENT_DESCRIPTION = "Deep discharge due to faulty inverter (no charging)"
+
+# Confounding factor: Min SoC setting change
+MIN_SOC_BEFORE = 5   # % - before event
+MIN_SOC_AFTER = 20   # % - after event (raised as precaution)
+# This means usable capacity went from 95% to 80% of total capacity
 
 
 def load_data():
@@ -530,7 +538,24 @@ def generate_html_report(monthly, stats, fig_path):
     </div>
     <p>Deep discharge events are known to potentially cause irreversible capacity loss and efficiency degradation in lithium-ion batteries, particularly when the battery remains at low state-of-charge for extended periods.</p>
 
-    <h3>1.3 Research Question</h3>
+    <h3>1.3 Confounding Factor: Min SoC Setting Change</h3>
+    <div class="highlight" style="background: #fef9c3; border-color: #ca8a04;">
+        <p><strong>Important:</strong> After the deep-discharge event, the minimum state-of-charge (SoC) setting was changed:</p>
+        <ul>
+            <li><strong>Before event:</strong> Min SoC = {MIN_SOC_BEFORE}% (usable capacity: {100-MIN_SOC_BEFORE}%)</li>
+            <li><strong>After event:</strong> Min SoC = {MIN_SOC_AFTER}% (usable capacity: {100-MIN_SOC_AFTER}%)</li>
+        </ul>
+        <p>This change was made as a precaution to protect the battery from future deep discharges.</p>
+    </div>
+    <p><strong>Why this matters:</strong> The min SoC change means the battery now operates in a different part of its capacity range (20-100% vs 5-100%). This could independently affect measured efficiency because:</p>
+    <ul>
+        <li>Li-ion batteries may have different efficiency at different SoC levels</li>
+        <li>Shallower cycles (higher min SoC) might show different charge/discharge characteristics</li>
+        <li>The change makes it difficult to separate degradation effects from operational changes</li>
+    </ul>
+    <p><em>Implication:</em> Any observed efficiency change could be due to (a) actual battery degradation, (b) the min SoC setting change, or (c) both. These effects cannot be cleanly separated with the available data.</p>
+
+    <h3>1.4 Research Question</h3>
     <p><em>Did the deep-discharge event in February-March 2025 significantly affect the battery's round-trip efficiency?</em></p>
 
     <h2>2. Methods</h2>
@@ -693,7 +718,7 @@ def generate_html_report(monthly, stats, fig_path):
 
         if n_sig >= 3 and event_effect < 0:
             html += f"""    <div class="result-box">
-        <p><strong>Strong and consistent statistical evidence</strong> indicates that the deep-discharge event significantly degraded battery efficiency.</p>
+        <p><strong>Statistically significant efficiency reduction observed</strong> after the deep-discharge event period.</p>
         <ul>
             <li>Basic model: {abs(event_effect):.1f} pp reduction (p={event_pval:.4f})</li>
 """
@@ -706,16 +731,31 @@ def generate_html_report(monthly, stats, fig_path):
                 html += f"""            <li>Matched-month comparison: {abs(mm['mean_diff']):.1f} pp reduction (p={mm['pvalue']:.4f})</li>
 """
             html += f"""        </ul>
-        <p>The effect is <strong>robust across multiple specifications</strong>, including models that control for seasonal variation. This rules out the possibility that the observed decline is merely a seasonal artifact.</p>
-        <p>Efficiency degraded from approximately <strong>{stats['pre_mean']:.0f}%</strong> to <strong>{stats['post_mean']:.0f}%</strong>.</p>
+        <p>Efficiency changed from approximately <strong>{stats['pre_mean']:.0f}%</strong> to <strong>{stats['post_mean']:.0f}%</strong>.</p>
     </div>
 
-    <h3>Recommendations</h3>
+    <h3>4.1 Important Caveat: Confounding</h3>
+    <div class="highlight" style="background: #fef9c3; border-color: #ca8a04;">
+        <p><strong>Causal interpretation is limited</strong> because two changes occurred simultaneously:</p>
+        <ol>
+            <li>The deep-discharge event (potential battery degradation)</li>
+            <li>Min SoC setting change from {MIN_SOC_BEFORE}% to {MIN_SOC_AFTER}% (operational change)</li>
+        </ol>
+        <p>The observed efficiency reduction could be due to:</p>
+        <ul>
+            <li><strong>Degradation:</strong> Actual battery damage from prolonged deep discharge</li>
+            <li><strong>Operating range:</strong> Different efficiency characteristics at higher SoC levels</li>
+            <li><strong>Both factors combined</strong></li>
+        </ul>
+        <p>Without reverting the min SoC setting (which would risk further damage), these effects cannot be separated.</p>
+    </div>
+
+    <h3>4.2 Recommendations</h3>
     <ul>
         <li>Monitor battery capacity and efficiency metrics going forward</li>
-        <li>Consider professional battery health assessment</li>
-        <li>Implement low-voltage protection to prevent future deep-discharge events</li>
-        <li>Factor reduced efficiency into energy management calculations</li>
+        <li>The {MIN_SOC_AFTER}% min SoC setting is prudent protection against future deep discharge</li>
+        <li>Consider professional battery health assessment if efficiency continues to decline</li>
+        <li>Factor current efficiency (~{stats['post_mean']:.0f}%) into energy management calculations</li>
     </ul>
 """
         elif n_sig >= 1:
@@ -770,6 +810,8 @@ def main():
     print("="*60)
     print(f"Event period: {EVENT_START.strftime('%Y-%m')} to {EVENT_END.strftime('%Y-%m')}")
     print(f"Event: {EVENT_DESCRIPTION}")
+    print(f"\nConfounding factor:")
+    print(f"  Min SoC changed from {MIN_SOC_BEFORE}% to {MIN_SOC_AFTER}% after event")
     print()
 
     # Load data
