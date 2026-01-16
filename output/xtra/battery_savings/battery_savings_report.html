@@ -23,13 +23,13 @@
 <body>
     <h1>Battery Cost Savings Analysis</h1>
 
-    <p><em>Generated: 2026-01-16 11:24</em></p>
+    <p><em>Generated: 2026-01-16 11:50</em></p>
 
     <div class="summary-box">
         <h3>Key Finding</h3>
-        <p>The battery has saved a total of <strong class="positive">CHF 1,143.04</strong>
+        <p>The battery has saved a total of <strong class="positive">CHF 1,047.15</strong>
         over 1,035 days (2.8 years),
-        averaging <strong>CHF 1.10</strong> per day.</p>
+        averaging <strong>CHF 1.01</strong> per day.</p>
     </div>
 
     <h2>Summary Statistics</h2>
@@ -38,11 +38,38 @@
         <tr><th>Metric</th><th>Value</th></tr>
         <tr><td>Analysis period</td><td>2023-03-02 to 2025-12-30</td></tr>
         <tr><td>Total days</td><td>1,035</td></tr>
-        <tr class="highlight"><td>Total battery savings</td><td class="positive">CHF 1,143.04</td></tr>
-        <tr><td>Average daily savings</td><td>CHF 1.10</td></tr>
-        <tr><td>Median daily savings</td><td>CHF 0.91</td></tr>
-        <tr><td>Days with positive savings</td><td>982 (94.9%)</td></tr>
-        <tr><td>Days with negative savings</td><td class="negative">29 (2.8%)</td></tr>
+        <tr class="highlight"><td>Total battery savings</td><td class="positive">CHF 1,047.15</td></tr>
+        <tr><td>Average daily savings</td><td>CHF 1.01</td></tr>
+        <tr><td>Median daily savings</td><td>CHF 0.83</td></tr>
+        <tr><td>Days with positive savings</td><td>980 (94.7%)</td></tr>
+        <tr><td>Days with negative savings</td><td class="negative">31 (3.0%)</td></tr>
+    </table>
+
+    <h2>Savings by Tariff Period</h2>
+
+    <table>
+        <tr><th>Tariff</th><th>Savings (CHF)</th><th>Avoided Purchase</th><th>Foregone Feed-in</th><th>Discharge (kWh)</th></tr>
+        <tr>
+            <td>Hochtarif (high)</td>
+            <td>CHF 143.89</td>
+            <td>CHF 805.89</td>
+            <td>CHF 660.26</td>
+            <td>2,268</td>
+        </tr>
+        <tr>
+            <td>Niedertarif (low)</td>
+            <td>CHF 903.26</td>
+            <td>CHF 1,084.07</td>
+            <td>CHF 177.92</td>
+            <td>3,946</td>
+        </tr>
+        <tr class="highlight">
+            <td><strong>Total</strong></td>
+            <td><strong>CHF 1,047.15</strong></td>
+            <td>CHF 1,889.97</td>
+            <td>CHF 838.18</td>
+            <td>6,213</td>
+        </tr>
     </table>
 
     <h2>Savings Breakdown</h2>
@@ -56,12 +83,12 @@
         </tr>
         <tr>
             <td>Foregone feed-in revenue</td>
-            <td class="negative">-742.29</td>
-            <td>Revenue lost by storing instead of selling (after 30% tax)</td>
+            <td class="negative">-838.18</td>
+            <td>Revenue lost by storing instead of selling (after 30% tax, using HKN rate)</td>
         </tr>
         <tr class="highlight">
             <td><strong>Net savings</strong></td>
-            <td><strong>CHF 1,143.04</strong></td>
+            <td><strong>CHF 1,047.15</strong></td>
             <td>Total benefit from having the battery</td>
         </tr>
     </table>
@@ -80,17 +107,17 @@
 
     <table>
         <tr><th>Year</th><th>Savings (CHF)</th></tr>
-        <tr><td>2023</td><td>CHF 254.84</td></tr>
-        <tr><td>2024</td><td>CHF 451.47</td></tr>
-        <tr><td>2025</td><td>CHF 436.73</td></tr>
+        <tr><td>2023</td><td>CHF 232.91</td></tr>
+        <tr><td>2024</td><td>CHF 422.78</td></tr>
+        <tr><td>2025</td><td>CHF 391.46</td></tr>
     </table>
 
     <h2>Monthly Performance</h2>
 
     <table>
         <tr><th>Statistic</th><th>Month</th><th>Savings</th></tr>
-        <tr><td>Best month</td><td>2024-10</td><td class="positive">CHF 62.83</td></tr>
-        <tr><td>Worst month</td><td>2023-06</td><td>CHF 8.38</td></tr>
+        <tr><td>Best month</td><td>2024-10</td><td class="positive">CHF 59.31</td></tr>
+        <tr><td>Worst month</td><td>2023-06</td><td>CHF 7.21</td></tr>
     </table>
 
     <h2>Visualization</h2>
@@ -107,9 +134,11 @@
             exported to the grid; battery discharging energy would have been imported from the grid</li>
         </ul>
         <p><strong>Battery savings = </strong>
-        (Battery discharge × Purchase rate) - (Battery charge × Feed-in rate × 0.70)</p>
+        (Battery discharge × Purchase rate) - (Battery charge × Feed-in rate with HKN × 0.70)</p>
         <p>The 0.70 factor accounts for the 30% income tax on feed-in revenue.</p>
-        <p>Time-varying tariffs (high/low periods) are applied at 15-minute resolution for accuracy.</p>
+        <p><strong>Feed-in rates use HKN bonus:</strong> Base rate + 1.5 Rp (2023-2024) or + 2.5 Rp (2025+)</p>
+        <p>Time-varying tariffs (Hochtarif/Niedertarif) are applied at 15-minute resolution.</p>
+        <p><strong>Output format:</strong> Daily CSV contains separate rows for high and low tariff periods.</p>
     </div>
 
 </body>

@@ -4,7 +4,8 @@ Battery Cost Savings Analysis (xtra)
 
 Analyzes how much cost the battery saves compared to a hypothetical system
 without a battery. The analysis considers:
-- Time-varying purchase and feed-in tariffs
+- Time-varying purchase tariffs (Hochtarif/Niedertarif)
+- Feed-in tariffs with HKN bonus (not base rate)
 - 30% tax on feed-in income
 - Battery round-trip efficiency (implicit in the data)
 
@@ -13,10 +14,10 @@ Logic:
 - Without battery: Battery charging energy would have been fed to grid,
   and battery discharging energy would have been imported from grid
 
-Savings = battery_discharge × purchase_rate - battery_charge × feedin_rate × 0.70
+Savings = battery_discharge × purchase_rate - battery_charge × feedin_rate_hkn × 0.70
 
 Outputs:
-- battery_savings_daily.csv - Daily cost savings data
+- battery_savings_daily.csv - Daily cost savings by tariff period (high/low)
 - battery_savings_analysis.png - Cumulative savings visualization
 - battery_savings_report.html - Summary report
 """
@@ -38,6 +39,22 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Tax rate on feed-in income
 FEEDIN_TAX_RATE = 0.30
+
+# HKN bonus rates (CHF/kWh) - added to base feed-in rate
+# From CLAUDE.md: HKN bonus is 1.5 Rp until Dec 2024, then 2.5 Rp from Jan 2025
+HKN_BONUS = {
+    # (start_date, end_date): bonus in CHF/kWh
+    (pd.Timestamp('2023-01-01'), pd.Timestamp('2024-12-31')): 0.015,  # 1.5 Rp
+    (pd.Timestamp('2025-01-01'), pd.Timestamp('2099-12-31')): 0.025,  # 2.5 Rp
+}
+
+
+def get_hkn_bonus(timestamp):
+    """Get HKN bonus for a given timestamp."""
+    for (start, end), bonus in HKN_BONUS.items():
+        if start <= timestamp <= end:
+            return bonus
+    return 0.015  # Default to 1.5 Rp
 
 
 def load_data():
@@ -64,7 +81,7 @@ def merge_tariffs_to_energy(energy, tariffs):
     # Create hourly index for merging (floor to hour)
     energy['hour'] = energy.index.floor('H')
 
-    # Select relevant tariff columns
+    # Select relevant tariff columns - use the time-specific purchase rate
     tariff_cols = ['purchase_rate_chf_kwh', 'feedin_rate_chf_kwh', 'is_high_tariff']
     tariffs_subset = tariffs[tariff_cols].copy()
 
@@ -78,11 +95,24 @@ def merge_tariffs_to_energy(energy, tariffs):
     merged.index = energy.index
     merged = merged.drop(columns=['hour'])
 
+    # Add HKN bonus to feed-in rate
+    print("  Adding HKN bonus to feed-in rates...")
+    merged['hkn_bonus_chf_kwh'] = merged.index.map(get_hkn_bonus)
+    merged['feedin_rate_hkn_chf_kwh'] = merged['feedin_rate_chf_kwh'] + merged['hkn_bonus_chf_kwh']
+
     # Check for missing tariff data
     missing = merged['purchase_rate_chf_kwh'].isna().sum()
     if missing > 0:
         print(f"  Warning: {missing} rows missing tariff data, will be excluded")
         merged = merged.dropna(subset=['purchase_rate_chf_kwh'])
+
+    # Verify HKN rates
+    print("  Feed-in rates with HKN by period:")
+    monthly_rates = merged.groupby(merged.index.to_period('M'))['feedin_rate_hkn_chf_kwh'].first()
+    for period in ['2023-03', '2023-07', '2024-01', '2024-07', '2025-01']:
+        if period in monthly_rates.index.astype(str).values:
+            rate = monthly_rates[monthly_rates.index.astype(str) == period].iloc[0]
+            print(f"    {period}: {rate:.3f} CHF/kWh ({rate*100:.1f} Rp)")
 
     print(f"  Merged data: {len(merged):,} rows")
     return merged
@@ -92,8 +122,8 @@ def calculate_costs(df):
     """Calculate actual costs and hypothetical costs without battery."""
     print("Calculating costs...")
 
-    # Net feed-in rate after 30% tax
-    feedin_rate_net = df['feedin_rate_chf_kwh'] * (1 - FEEDIN_TAX_RATE)
+    # Net feed-in rate after 30% tax (using HKN rate)
+    feedin_rate_net = df['feedin_rate_hkn_chf_kwh'] * (1 - FEEDIN_TAX_RATE)
 
     # Actual system (with battery)
     # Cost = grid_import × purchase_rate - grid_feedin × feedin_rate_net
@@ -125,9 +155,52 @@ def calculate_costs(df):
     return df
 
 
-def aggregate_daily(df):
-    """Aggregate 15-minute data to daily totals."""
-    print("Aggregating to daily data...")
+def aggregate_daily_by_tariff(df):
+    """Aggregate 15-minute data to daily totals, split by tariff period."""
+    print("Aggregating to daily data by tariff period...")
+
+    # Add date and tariff type columns
+    df['date'] = df.index.date
+    df['tariff_type'] = df['is_high_tariff'].map({True: 'high', False: 'low'})
+
+    # Group by date and tariff type
+    grouped = df.groupby(['date', 'tariff_type']).agg({
+        # Energy quantities
+        'external_supply_kwh': 'sum',
+        'grid_feedin_kwh': 'sum',
+        'battery_charging_kwh': 'sum',
+        'battery_discharging_kwh': 'sum',
+        'pv_generation_kwh': 'sum',
+        'total_consumption_kwh': 'sum',
+        # Costs
+        'cost_actual_chf': 'sum',
+        'cost_no_battery_chf': 'sum',
+        'battery_savings_chf': 'sum',
+        'savings_avoided_purchase_chf': 'sum',
+        'cost_foregone_feedin_chf': 'sum',
+        # Tariff rates (should be constant within tariff type for a day)
+        'purchase_rate_chf_kwh': 'first',
+        'feedin_rate_hkn_chf_kwh': 'first',
+    }).reset_index()
+
+    # Convert date to datetime for proper indexing
+    grouped['date'] = pd.to_datetime(grouped['date'])
+
+    # Remove incomplete days (first and last)
+    min_date = grouped['date'].min() + pd.Timedelta(days=1)
+    max_date = grouped['date'].max() - pd.Timedelta(days=1)
+    grouped = grouped[(grouped['date'] >= min_date) & (grouped['date'] <= max_date)]
+
+    # Sort by date and tariff type
+    grouped = grouped.sort_values(['date', 'tariff_type'])
+
+    print(f"  Daily data by tariff: {len(grouped)} records ({len(grouped)//2} days × 2 tariff types)")
+    return grouped
+
+
+def aggregate_daily_totals(df):
+    """Aggregate 15-minute data to daily totals (for visualization)."""
+    print("Aggregating to daily totals...")
 
     daily = df.resample('D').agg({
         # Energy quantities
@@ -143,9 +216,6 @@ def aggregate_daily(df):
         'battery_savings_chf': 'sum',
         'savings_avoided_purchase_chf': 'sum',
         'cost_foregone_feedin_chf': 'sum',
-        # Tariff info (average for the day)
-        'purchase_rate_chf_kwh': 'mean',
-        'feedin_rate_chf_kwh': 'mean',
     })
 
     # Remove incomplete days (first and last)
@@ -161,7 +231,7 @@ def aggregate_daily(df):
         np.nan
     )
 
-    print(f"  Daily data: {len(daily)} days")
+    print(f"  Daily totals: {len(daily)} days")
     return daily
 
 
@@ -243,36 +313,35 @@ def create_visualizations(daily):
                  fontsize=9, verticalalignment='top',
                  bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
 
-    # Panel 4: Savings vs tariff spread
+    # Panel 4: Savings by tariff type (monthly)
     ax4 = axes[1, 1]
-    # Calculate effective tariff spread (purchase - net feedin)
-    daily['tariff_spread'] = daily['purchase_rate_chf_kwh'] - daily['feedin_rate_chf_kwh'] * (1 - FEEDIN_TAX_RATE)
 
-    # Color by season
-    colors = ['steelblue' if m in [11, 12, 1, 2, 3] else 'orange'
-              for m in daily.index.month]
-    ax4.scatter(daily['tariff_spread'] * 100, daily['battery_savings_chf'],
-                c=colors, alpha=0.5, s=20)
+    # We need to recalculate from 15-min data split by tariff
+    # For now, show yearly savings trend
+    yearly = daily.resample('Y').agg({
+        'battery_savings_chf': 'sum',
+        'battery_charging_kwh': 'sum',
+        'battery_discharging_kwh': 'sum',
+    })
+    yearly['savings_per_kwh_discharged'] = yearly['battery_savings_chf'] / yearly['battery_discharging_kwh']
 
-    # Add trend line
-    z = np.polyfit(daily['tariff_spread'], daily['battery_savings_chf'], 1)
-    p = np.poly1d(z)
-    spread_range = np.linspace(daily['tariff_spread'].min(), daily['tariff_spread'].max(), 100)
-    ax4.plot(spread_range * 100, p(spread_range), 'r--', linewidth=2,
-             label=f'Trend: {z[0]*100:.2f} CHF per Rp spread')
+    years = [d.year for d in yearly.index]
+    x = range(len(years))
 
-    ax4.set_xlabel('Tariff Spread (Rp/kWh)\n(Purchase rate - Net feed-in rate)')
-    ax4.set_ylabel('Daily Savings (CHF)')
-    ax4.set_title('Battery Savings vs Tariff Spread')
-    ax4.axhline(y=0, color='black', linestyle='-', linewidth=0.5)
-    ax4.legend(loc='upper left')
-    ax4.grid(True, alpha=0.3)
+    bars = ax4.bar(x, yearly['battery_savings_chf'], color='green', alpha=0.7)
+    ax4.set_xlabel('Year')
+    ax4.set_ylabel('Annual Savings (CHF)')
+    ax4.set_title('Annual Battery Savings')
+    ax4.set_xticks(x)
+    ax4.set_xticklabels(years)
+    ax4.grid(True, alpha=0.3, axis='y')
 
-    # Add season legend
-    from matplotlib.patches import Patch
-    legend_elements = [Patch(facecolor='steelblue', alpha=0.5, label='Winter (Nov-Mar)'),
-                       Patch(facecolor='orange', alpha=0.5, label='Summer (Apr-Oct)')]
-    ax4.legend(handles=legend_elements, loc='lower right', fontsize=9)
+    # Add value labels on bars
+    for i, (bar, val) in enumerate(zip(bars, yearly['battery_savings_chf'])):
+        ax4.annotate(f'CHF {val:.0f}',
+                     xy=(bar.get_x() + bar.get_width()/2, bar.get_height()),
+                     xytext=(0, 5), textcoords='offset points',
+                     ha='center', fontsize=10, fontweight='bold')
 
     plt.tight_layout()
 
@@ -284,7 +353,7 @@ def create_visualizations(daily):
     return fig_path
 
 
-def generate_report(daily):
+def generate_report(daily, daily_by_tariff):
     """Generate HTML summary report."""
     print("Generating report...")
 
@@ -314,6 +383,15 @@ def generate_report(daily):
 
     # Yearly totals
     yearly = daily.resample('Y')['battery_savings_chf'].sum()
+
+    # Tariff breakdown
+    tariff_summary = daily_by_tariff.groupby('tariff_type').agg({
+        'battery_savings_chf': 'sum',
+        'savings_avoided_purchase_chf': 'sum',
+        'cost_foregone_feedin_chf': 'sum',
+        'battery_charging_kwh': 'sum',
+        'battery_discharging_kwh': 'sum',
+    })
 
     html = f"""<!DOCTYPE html>
 <html>
@@ -362,6 +440,33 @@ def generate_report(daily):
         <tr><td>Days with negative savings</td><td class="negative">{neg_days:,} ({100*neg_days/total_days:.1f}%)</td></tr>
     </table>
 
+    <h2>Savings by Tariff Period</h2>
+
+    <table>
+        <tr><th>Tariff</th><th>Savings (CHF)</th><th>Avoided Purchase</th><th>Foregone Feed-in</th><th>Discharge (kWh)</th></tr>
+        <tr>
+            <td>Hochtarif (high)</td>
+            <td>CHF {tariff_summary.loc['high', 'battery_savings_chf']:,.2f}</td>
+            <td>CHF {tariff_summary.loc['high', 'savings_avoided_purchase_chf']:,.2f}</td>
+            <td>CHF {tariff_summary.loc['high', 'cost_foregone_feedin_chf']:,.2f}</td>
+            <td>{tariff_summary.loc['high', 'battery_discharging_kwh']:,.0f}</td>
+        </tr>
+        <tr>
+            <td>Niedertarif (low)</td>
+            <td>CHF {tariff_summary.loc['low', 'battery_savings_chf']:,.2f}</td>
+            <td>CHF {tariff_summary.loc['low', 'savings_avoided_purchase_chf']:,.2f}</td>
+            <td>CHF {tariff_summary.loc['low', 'cost_foregone_feedin_chf']:,.2f}</td>
+            <td>{tariff_summary.loc['low', 'battery_discharging_kwh']:,.0f}</td>
+        </tr>
+        <tr class="highlight">
+            <td><strong>Total</strong></td>
+            <td><strong>CHF {total_savings:,.2f}</strong></td>
+            <td>CHF {total_avoided_purchase:,.2f}</td>
+            <td>CHF {total_foregone_feedin:,.2f}</td>
+            <td>{total_battery_discharge:,.0f}</td>
+        </tr>
+    </table>
+
     <h2>Savings Breakdown</h2>
 
     <table>
@@ -374,7 +479,7 @@ def generate_report(daily):
         <tr>
             <td>Foregone feed-in revenue</td>
             <td class="negative">-{total_foregone_feedin:,.2f}</td>
-            <td>Revenue lost by storing instead of selling (after {FEEDIN_TAX_RATE*100:.0f}% tax)</td>
+            <td>Revenue lost by storing instead of selling (after {FEEDIN_TAX_RATE*100:.0f}% tax, using HKN rate)</td>
         </tr>
         <tr class="highlight">
             <td><strong>Net savings</strong></td>
@@ -426,9 +531,11 @@ def generate_report(daily):
             exported to the grid; battery discharging energy would have been imported from the grid</li>
         </ul>
         <p><strong>Battery savings = </strong>
-        (Battery discharge × Purchase rate) - (Battery charge × Feed-in rate × 0.70)</p>
+        (Battery discharge × Purchase rate) - (Battery charge × Feed-in rate with HKN × 0.70)</p>
         <p>The 0.70 factor accounts for the {FEEDIN_TAX_RATE*100:.0f}% income tax on feed-in revenue.</p>
-        <p>Time-varying tariffs (high/low periods) are applied at 15-minute resolution for accuracy.</p>
+        <p><strong>Feed-in rates use HKN bonus:</strong> Base rate + 1.5 Rp (2023-2024) or + 2.5 Rp (2025+)</p>
+        <p>Time-varying tariffs (Hochtarif/Niedertarif) are applied at 15-minute resolution.</p>
+        <p><strong>Output format:</strong> Daily CSV contains separate rows for high and low tariff periods.</p>
     </div>
 
 </body>
@@ -452,25 +559,28 @@ def main():
     # Load data
     energy, tariffs = load_data()
 
-    # Merge tariffs to energy data
+    # Merge tariffs to energy data (adds HKN bonus)
     df = merge_tariffs_to_energy(energy, tariffs)
 
     # Calculate costs
     df = calculate_costs(df)
 
-    # Aggregate to daily
-    daily = aggregate_daily(df)
+    # Aggregate to daily by tariff type (for CSV output)
+    daily_by_tariff = aggregate_daily_by_tariff(df)
 
-    # Save daily data
+    # Aggregate to daily totals (for visualization)
+    daily = aggregate_daily_totals(df)
+
+    # Save daily data by tariff
     csv_path = OUTPUT_DIR / 'battery_savings_daily.csv'
-    daily.to_csv(csv_path)
+    daily_by_tariff.to_csv(csv_path, index=False)
     print(f"Saved: {csv_path}")
 
     # Create visualizations
     create_visualizations(daily)
 
     # Generate report
-    generate_report(daily)
+    generate_report(daily, daily_by_tariff)
 
     # Print summary
     print("\n" + "=" * 60)
@@ -482,6 +592,12 @@ def main():
     print(f"Average daily savings: CHF {avg_savings:.2f}")
     print(f"Analysis period: {daily.index.min().date()} to {daily.index.max().date()}")
     print(f"Total days: {len(daily):,}")
+
+    # Tariff breakdown
+    tariff_summary = daily_by_tariff.groupby('tariff_type')['battery_savings_chf'].sum()
+    print(f"\nBy tariff:")
+    print(f"  Hochtarif:   CHF {tariff_summary['high']:,.2f}")
+    print(f"  Niedertarif: CHF {tariff_summary['low']:,.2f}")
     print("=" * 60)
 
 
