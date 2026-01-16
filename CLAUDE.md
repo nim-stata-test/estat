@@ -81,7 +81,6 @@ python src/phase1/04_preprocess_tariffs.py         # Phase 1, Step 4 (tariffs)
 python src/phase2/01_eda.py                        # Phase 2, Step 1
 python src/phase2/04_tariff_analysis.py            # Phase 2, Step 4 (tariff EDA)
 python src/phase3/01_thermal_model.py              # Phase 3, Step 1
-python src/phase3/01b_greybox_thermal_model.py     # Phase 3, Step 1b (grey-box)
 python src/phase3/02_heat_pump_model.py            # Phase 3, Step 2
 python src/phase3/03_energy_system_model.py        # Phase 3, Step 3
 python src/phase4/01_rule_based_strategies.py      # Phase 4, Step 1
@@ -98,9 +97,7 @@ python src/phase5_pilot/run_pilot.py               # Generate T_HK2 design + sch
 python src/phase5_pilot/run_pilot.py --ref-outdoor 3   # Use different reference temp
 python src/phase5_pilot/run_pilot.py --design-only # Generate design only
 python src/phase5_pilot/run_pilot.py --schedule-only # Generate schedule from existing design
-python src/phase5_pilot/run_pilot.py --analyze     # Dynamical analysis (preferred, uses grey-box model)
-python src/phase5_pilot/run_pilot.py --analyze-rsm # RSM block-averaged analysis (comparison)
-python src/phase5_pilot/04_dynamical_analysis.py   # Run dynamical analysis directly
+python src/phase5_pilot/run_pilot.py --analyze-rsm # RSM block-averaged analysis
 python src/phase5_pilot/03_pilot_analysis.py       # RSM analysis (run after each block)
 python src/phase5_pilot/03_pilot_analysis.py --block 5  # Analyze through block 5 only
 ```
@@ -125,7 +122,7 @@ src/
 ├── phase3/              # System Modeling
 │   ├── run_phase3.py                 # Wrapper: runs all models + HTML report
 │   ├── 01_thermal_model.py           # Building thermal characteristics
-│   ├── 01b_greybox_thermal_model.py  # Grey-box state-space model
+│   ├── 01b_greybox_thermal_model.py  # Grey-box state-space model (abandoned)
 │   ├── 02_heat_pump_model.py         # COP relationships, buffer tank
 │   ├── 03_energy_system_model.py     # PV patterns, battery, self-sufficiency
 │   └── 04_tariff_cost_model.py       # Electricity cost analysis + forecasting
@@ -146,8 +143,8 @@ src/
     ├── run_pilot.py                  # Main runner: design + schedule + analysis
     ├── 01_generate_thk2_design.py    # T_HK2-targeted design generation
     ├── 02_generate_pilot_schedule.py # Dated block schedule
-    ├── 03_pilot_analysis.py          # RSM block-averaged analysis (comparison)
-    └── 04_dynamical_analysis.py      # Grey-box dynamical analysis (preferred)
+    ├── 03_pilot_analysis.py          # RSM block-averaged analysis
+    └── 04_dynamical_analysis.py      # Grey-box dynamical analysis (abandoned)
 ```
 
 ## Output Directory Structure
@@ -373,7 +370,6 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
 
 **Figures (fig18-fig21):**
 - fig18: Thermal model (temperature simulation, decay analysis)
-- fig18b: Grey-box model (state trajectories, residuals, model comparison)
 - fig19: Heat pump model (COP vs temperature, capacity, buffer tank)
 - fig20: Energy system (daily profiles, battery patterns, self-sufficiency)
 - fig21: Tariff cost model (cost breakdown, high/low tariff, forecasting)
@@ -381,8 +377,6 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
 **Reports:**
 - `phase3_report.html` - Combined modeling report
 - `thermal_model_results.csv` - Per-room thermal parameters (transfer function)
-- `greybox_model_params.json` - Grey-box model parameters and fit statistics
-- `greybox_model_results.csv` - Grey-box predictions and residuals
 - `heat_pump_daily_stats.csv` - Daily COP and energy statistics
 - `cost_model_daily_stats.csv` - Daily cost breakdown (grid, feedin, net)
 - `cost_forecast_model.json` - Cost forecasting model coefficients
@@ -408,51 +402,21 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
 - COP model (R²=0.94): `COP = 5.93 + 0.13×T_outdoor - 0.08×T_HK2`
 - Current self-sufficiency: 58%, potential with optimization: 85%
 
-## Grey-Box Thermal Model
+## Grey-Box Thermal Model (Abandoned)
 
 Physics-based two-state discrete-time model for room temperature prediction.
-Improves on the transfer function model by explicitly modeling buffer tank dynamics.
-
-**Command:**
-```bash
-python src/phase3/01b_greybox_thermal_model.py
-```
+**Status:** Tried but did not work well - poor predictive accuracy on validation data.
 
 **Model Formulation (Δt = 15 min):**
 ```
 T_buffer[k+1] = T_buffer[k] + (dt/tau_buf) × [(T_HK2[k] - T_buffer[k]) - r_emit × (T_buffer[k] - T_room[k])]
-
 T_room[k+1] = T_room[k] + (dt/tau_room) × [r_heat × (T_buffer[k] - T_room[k]) - (T_room[k] - T_out[k])] + k_solar × PV[k]
 ```
 
-**Physical Parameters:**
-| Parameter | Description | Expected Range |
-|-----------|-------------|----------------|
-| `tau_buf` | Buffer tank time constant | 0.5-4 hours |
-| `tau_room` | Building time constant | 12-72 hours |
-| `r_emit` | Emitter/HP coupling ratio | 0.1-3.0 |
-| `r_heat` | Heat transfer ratio | 0.1-3.0 |
-| `k_solar` | Solar gain coefficient | 0-2 K/kWh |
-| `c_offset` | Temperature offset | -3 to +3 K |
+Parameters: `tau_buf` (buffer time constant), `tau_room` (building time constant),
+`r_emit`/`r_heat` (coupling ratios), `k_solar` (solar gain), `c_offset` (bias).
 
-**Sensors Used:**
-- `stiebel_eltron_isg_actual_temperature_buffer` - Buffer tank
-- `davis_inside_temperature` - Room temperature
-- `wp_anlage_hk2_ist` - Flow temperature (T_HK2)
-- `stiebel_eltron_isg_outdoor_temperature` - Outdoor
-- `pv_generation_kwh` - Solar proxy
-
-**Outputs:**
-- `output/phase3/greybox_model_params.json` - Fitted parameters with confidence intervals
-- `output/phase3/greybox_model_results.csv` - Predictions and residuals
-- `output/phase3/fig18b_greybox_model.png` - 4-panel visualization
-- `output/phase3/greybox_report_section.html` - HTML report section
-
-**Advantages over Transfer Function Model:**
-- Explicit buffer tank state captures intermediate thermal storage
-- Physical parameters with clear interpretation (time constants, heat transfer ratios)
-- Constrained estimation ensures physical plausibility
-- Better foundation for forward simulation and control
+Script: `src/phase3/01b_greybox_thermal_model.py`
 
 ## Phase 4: Optimization Strategy Outputs
 
@@ -700,17 +664,15 @@ python src/phase5_pilot/run_pilot.py
 # Use different reference outdoor temperature for T_HK2 calculation
 python src/phase5_pilot/run_pilot.py --ref-outdoor 3
 
-# Analyze data - two approaches available:
-python src/phase5_pilot/run_pilot.py --analyze     # Dynamical (preferred)
-python src/phase5_pilot/run_pilot.py --analyze-rsm # RSM block-averaged (comparison)
-python src/phase5_pilot/04_dynamical_analysis.py   # Dynamical analysis directly
+# Analyze data (RSM block-averaged analysis)
+python src/phase5_pilot/run_pilot.py --analyze-rsm
 python src/phase5_pilot/03_pilot_analysis.py --block 5  # RSM through block 5
 ```
 
 **Design:**
 - Type: T_HK2-targeted (optimizes for flow temperature spread)
 - Blocks: 10 (70 days = 10 weeks)
-- Block length: 7 days (washout period optional with dynamical analysis)
+- Block length: 7 days
 - Period: Jan 13 - Mar 23, 2026
 
 **T_HK2 Spread (at reference T_outdoor = 5°C):**
@@ -742,53 +704,18 @@ output/phase5_pilot/
 ├── pilot_schedule.csv          # Dated block schedule
 ├── pilot_schedule.json         # Machine-readable schedule
 ├── pilot_protocol.html         # Human-readable protocol with T_HK2 values
-# RSM analysis outputs (03_pilot_analysis.py):
-├── pilot_analysis_results.csv  # Block-level metrics
+├── pilot_analysis_results.csv  # Block-level metrics (RSM)
 ├── pilot_model_coefficients.json # T_HK2-based RSM model results
-├── pilot_analysis_report.html  # RSM analysis report
-# Dynamical analysis outputs (04_dynamical_analysis.py):
-├── dynamical_model_params.json # Grey-box model parameters from pilot
-├── step_response_analysis.csv  # Transition analysis at parameter changes
-├── model_validation.csv        # Holdout block validation metrics
-├── fig_dynamical_model.png     # Model fit visualization
-├── fig_step_responses.png      # Step response analysis
-└── dynamical_analysis_report.html # Dynamical analysis report
+└── pilot_analysis_report.html  # RSM analysis report
 ```
 
-**Two Analysis Approaches:**
-
-| Approach | Script | Uses Washout | Data Points | Best For |
-|----------|--------|--------------|-------------|----------|
-| **Dynamical** (preferred) | `04_dynamical_analysis.py` | No | ~6,700 (15-min) | Learning dynamics, model validation |
-| RSM (comparison) | `03_pilot_analysis.py` | Yes | 10 (block means) | Simple parameter effects |
-
-**Why Dynamical Analysis is Preferred:**
-
-With the grey-box state-space model, washout periods are unnecessary because:
-1. The model explicitly handles non-equilibrium states
-2. Transitions between settings are **informative step responses**
-3. All 15-min data points are used (not just block averages)
-4. Better estimates of time constants (τ_buf, τ_room)
-
-**Dynamical Model (Grey-Box State-Space):**
-```
-T_buffer[k+1] = T_buffer[k] + (dt/τ_buf) × [(T_HK2[k] - T_buffer[k]) - r_emit×(T_buffer[k] - T_room[k])]
-T_room[k+1] = T_room[k] + (dt/τ_room) × [r_heat×(T_buffer[k] - T_room[k]) - (T_room[k] - T_outdoor[k])] + k_solar×PV[k]
-```
-
-**Key Outputs from Dynamical Analysis:**
-- Steady-state gain: ∂T_room/∂T_HK2 (how much room warms per degree of flow temp)
-- Response time: time to reach 63% of new equilibrium after parameter change
-- Step response metrics: prediction accuracy at each transition
-
-**RSM Model (Block-Averaged, for comparison):**
+**Analysis (RSM Block-Averaged):**
 ```
 T_indoor = b0 + b1×T_HK2_comfort + b2×T_HK2_eco + b3×comfort_hours + b4×T_outdoor
 ```
 
-**Expected Outcome:** Learn the thermal transfer function - how T_indoor responds
-to T_HK2 levels. The dynamical analysis validates whether the grey-box model
-can predict temperature trajectories during the main Phase 5 study.
+**Note:** A grey-box dynamical analysis approach was also tried (`04_dynamical_analysis.py`)
+but did not produce reliable predictions. The RSM approach uses block averages with washout.
 
 ## Phase 5: Intervention Study
 
