@@ -242,12 +242,17 @@ def calculate_projection(daily, daily_by_tariff):
     """
     Project when savings will reach the target amount.
 
-    Uses recent data (2025+) to estimate savings rate under current tariffs,
-    accounting for the high/low tariff distribution.
+    Uses 2025 energy data but recalculates savings assuming the CURRENT feed-in
+    rate of 13 Rp (Apr 2025+), since earlier months had the higher 15.5 Rp rate.
+
+    Savings formula: discharge × purchase_rate - charge × feedin_rate × 0.70
     """
     print(f"Calculating projection to CHF {TARGET_SAVINGS_CHF:,}...")
 
-    # Current cumulative savings
+    # Current feed-in rate (Apr 2025+): 10.5 Rp base + 2.5 Rp HKN = 13 Rp
+    CURRENT_FEEDIN_RATE = 0.13  # CHF/kWh
+
+    # Current cumulative savings (actual, with historical rates)
     current_savings = daily['battery_savings_chf'].sum()
     remaining = TARGET_SAVINGS_CHF - current_savings
 
@@ -261,28 +266,51 @@ def calculate_projection(daily, daily_by_tariff):
             'target_date': daily.index.max(),
         }
 
-    # Use 2025 data for projection (reflects current tariff structure)
-    recent_data = daily[daily.index.year >= 2025]
+    # Use 2025 data for energy patterns, but recalculate with current tariff
+    recent_data = daily[daily.index.year >= 2025].copy()
     if len(recent_data) < 30:
-        # Fall back to last 365 days if not enough 2025 data
-        recent_data = daily.iloc[-365:]
+        recent_data = daily.iloc[-365:].copy()
         projection_basis = "last 365 days"
     else:
-        projection_basis = "2025 data"
+        projection_basis = "2025 energy patterns"
 
-    # Calculate average daily savings rate from recent period
-    avg_daily_savings = recent_data['battery_savings_chf'].mean()
+    # Recalculate savings using current 13 Rp feed-in rate
+    # Savings = avoided_purchase - foregone_feedin
+    # avoided_purchase stays the same (purchase rates unchanged)
+    # foregone_feedin = charge × feedin_rate × 0.70 (after tax)
+    recent_data['projected_foregone_feedin'] = (
+        recent_data['battery_charging_kwh'] * CURRENT_FEEDIN_RATE * (1 - FEEDIN_TAX_RATE)
+    )
+    recent_data['projected_savings'] = (
+        recent_data['savings_avoided_purchase_chf'] - recent_data['projected_foregone_feedin']
+    )
 
-    # Calculate tariff breakdown from recent period
-    recent_by_tariff = daily_by_tariff[daily_by_tariff['date'].dt.year >= 2025]
+    # Calculate average daily savings at current tariff
+    avg_daily_savings = recent_data['projected_savings'].mean()
+    daily_std = recent_data['projected_savings'].std()
+
+    # Compare with actual 2025 savings to show the difference
+    actual_avg_savings = recent_data['battery_savings_chf'].mean()
+
+    # Calculate tariff breakdown from recent period (recalculated)
+    recent_by_tariff = daily_by_tariff[daily_by_tariff['date'].dt.year >= 2025].copy()
     if len(recent_by_tariff) < 30:
-        recent_by_tariff = daily_by_tariff.iloc[-730:]  # Last 365 days × 2 tariff types
+        recent_by_tariff = daily_by_tariff.iloc[-730:].copy()
+
+    # Recalculate with current feed-in rate
+    recent_by_tariff['projected_foregone_feedin'] = (
+        recent_by_tariff['battery_charging_kwh'] * CURRENT_FEEDIN_RATE * (1 - FEEDIN_TAX_RATE)
+    )
+    recent_by_tariff['projected_savings'] = (
+        recent_by_tariff['savings_avoided_purchase_chf'] - recent_by_tariff['projected_foregone_feedin']
+    )
 
     tariff_breakdown = recent_by_tariff.groupby('tariff_type').agg({
-        'battery_savings_chf': 'sum',
+        'projected_savings': 'sum',
         'battery_discharging_kwh': 'sum',
         'battery_charging_kwh': 'sum',
     })
+    tariff_breakdown = tariff_breakdown.rename(columns={'projected_savings': 'battery_savings_chf'})
 
     # Days to target
     days_to_target = remaining / avg_daily_savings if avg_daily_savings > 0 else float('inf')
@@ -293,9 +321,6 @@ def calculate_projection(daily, daily_by_tariff):
     target_date = last_date + pd.Timedelta(days=days_to_target)
 
     # Calculate confidence interval using recent data variability
-    daily_std = recent_data['battery_savings_chf'].std()
-    # Using CLT: std of mean over N days ≈ std / sqrt(N)
-    # For 95% CI on the time estimate
     savings_rate_se = daily_std / np.sqrt(len(recent_data))
 
     # Pessimistic and optimistic estimates (±2 SE on savings rate)
@@ -315,7 +340,9 @@ def calculate_projection(daily, daily_by_tariff):
         'target_reached': False,
         'projection_basis': projection_basis,
         'projection_days': len(recent_data),
+        'current_feedin_rate': CURRENT_FEEDIN_RATE,
         'avg_daily_savings': avg_daily_savings,
+        'actual_avg_savings': actual_avg_savings,
         'daily_savings_std': daily_std,
         'days_to_target': days_to_target,
         'years_to_target': years_to_target,
@@ -327,9 +354,11 @@ def calculate_projection(daily, daily_by_tariff):
     }
 
     print(f"  Projection basis: {projection_basis} ({len(recent_data)} days)")
+    print(f"  Current feed-in rate: {CURRENT_FEEDIN_RATE*100:.1f} Rp (Apr 2025+)")
+    print(f"  Actual 2025 avg savings: CHF {actual_avg_savings:.2f}/day (mixed rates)")
+    print(f"  Projected avg savings:   CHF {avg_daily_savings:.2f}/day (at 13 Rp)")
     print(f"  Current savings: CHF {current_savings:,.2f}")
     print(f"  Remaining to target: CHF {remaining:,.2f}")
-    print(f"  Average daily savings: CHF {avg_daily_savings:.2f} ± {daily_std:.2f}")
     print(f"  Days to target: {days_to_target:,.0f} ({years_to_target:.1f} years)")
     print(f"  Estimated target date: {target_date.strftime('%Y-%m')}")
     print(f"  Range: {target_date_optimistic.strftime('%Y-%m')} to {target_date_pessimistic.strftime('%Y-%m')}")
@@ -644,7 +673,8 @@ def generate_report(daily, daily_by_tariff, projection=None):
 
     <div class="summary-box">
         <h3>Estimated Target Date: {projection['target_date'].strftime('%B %Y')}</h3>
-        <p>Based on {projection['projection_basis']} ({projection['projection_days']} days), the battery is expected to reach
+        <p>Based on {projection['projection_basis']} recalculated at the current feed-in rate of
+        <strong>{projection['current_feedin_rate']*100:.1f} Rp</strong>, the battery is expected to reach
         <strong>CHF {projection['target_savings']:,}</strong> in cumulative savings by
         <strong>{projection['target_date'].strftime('%B %Y')}</strong>
         ({projection['years_to_target']:.1f} years from now).</p>
@@ -656,7 +686,9 @@ def generate_report(daily, daily_by_tariff, projection=None):
         <tr><th>Metric</th><th>Value</th></tr>
         <tr><td>Current cumulative savings</td><td>CHF {projection['current_savings']:,.2f}</td></tr>
         <tr><td>Remaining to target</td><td>CHF {projection['remaining']:,.2f}</td></tr>
-        <tr><td>Average daily savings (recent)</td><td>CHF {projection['avg_daily_savings']:.2f} ± {projection['daily_savings_std']:.2f}</td></tr>
+        <tr><td>Current feed-in rate (Apr 2025+)</td><td>{projection['current_feedin_rate']*100:.1f} Rp</td></tr>
+        <tr><td>Actual 2025 avg savings (mixed rates)</td><td>CHF {projection['actual_avg_savings']:.2f}/day</td></tr>
+        <tr class="highlight"><td>Projected avg savings (at {projection['current_feedin_rate']*100:.0f} Rp)</td><td>CHF {projection['avg_daily_savings']:.2f}/day</td></tr>
         <tr><td>Days to target</td><td>{projection['days_to_target']:,.0f}</td></tr>
         <tr class="highlight"><td>Years to target</td><td>{projection['years_to_target']:.1f}</td></tr>
         <tr><td>Estimated target date</td><td>{projection['target_date'].strftime('%Y-%m')}</td></tr>
@@ -664,11 +696,12 @@ def generate_report(daily, daily_by_tariff, projection=None):
     </table>
 
     <div class="methodology">
-        <h4>Projection Assumptions</h4>
+        <h4>Projection Methodology</h4>
         <ul>
-            <li>Based on {projection['projection_basis']} to reflect current tariff structure</li>
-            <li>Assumes constant electricity usage patterns and tariff rates</li>
-            <li>Feed-in tariffs may decrease further, which would improve savings</li>
+            <li>Uses 2025 energy patterns (charging/discharging volumes)</li>
+            <li><strong>Recalculates savings at the current 13 Rp feed-in rate</strong> (not the mixed 2025 rates)</li>
+            <li>Feed-in changed from 15.5 Rp (Jan-Mar 2025) to 13 Rp (Apr 2025+)</li>
+            <li>Purchase rates assumed constant (~32.6 Rp average)</li>
             <li>Range estimates use ±2 standard errors on the daily savings rate</li>
         </ul>
     </div>
