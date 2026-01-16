@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Battery Cost Savings Analysis</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+               max-width: 900px; margin: 40px auto; padding: 0 20px; line-height: 1.6; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #27ae60; padding-bottom: 10px; }
+        h2 { color: #34495e; margin-top: 30px; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #27ae60; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .highlight { background-color: #d5f5e3; font-weight: bold; }
+        .negative { color: #c0392b; }
+        .positive { color: #27ae60; }
+        .summary-box { background-color: #eafaf1; border-left: 4px solid #27ae60;
+                       padding: 15px; margin: 20px 0; }
+        img { max-width: 100%; height: auto; margin: 20px 0; }
+        .methodology { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>Battery Cost Savings Analysis</h1>
+
+    <p><em>Generated: 2026-01-16 11:24</em></p>
+
+    <div class="summary-box">
+        <h3>Key Finding</h3>
+        <p>The battery has saved a total of <strong class="positive">CHF 1,143.04</strong>
+        over 1,035 days (2.8 years),
+        averaging <strong>CHF 1.10</strong> per day.</p>
+    </div>
+
+    <h2>Summary Statistics</h2>
+
+    <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Analysis period</td><td>2023-03-02 to 2025-12-30</td></tr>
+        <tr><td>Total days</td><td>1,035</td></tr>
+        <tr class="highlight"><td>Total battery savings</td><td class="positive">CHF 1,143.04</td></tr>
+        <tr><td>Average daily savings</td><td>CHF 1.10</td></tr>
+        <tr><td>Median daily savings</td><td>CHF 0.91</td></tr>
+        <tr><td>Days with positive savings</td><td>982 (94.9%)</td></tr>
+        <tr><td>Days with negative savings</td><td class="negative">29 (2.8%)</td></tr>
+    </table>
+
+    <h2>Savings Breakdown</h2>
+
+    <table>
+        <tr><th>Component</th><th>Amount (CHF)</th><th>Description</th></tr>
+        <tr>
+            <td>Avoided grid purchases</td>
+            <td class="positive">+1,889.97</td>
+            <td>Value of battery discharge at purchase tariff</td>
+        </tr>
+        <tr>
+            <td>Foregone feed-in revenue</td>
+            <td class="negative">-742.29</td>
+            <td>Revenue lost by storing instead of selling (after 30% tax)</td>
+        </tr>
+        <tr class="highlight">
+            <td><strong>Net savings</strong></td>
+            <td><strong>CHF 1,143.04</strong></td>
+            <td>Total benefit from having the battery</td>
+        </tr>
+    </table>
+
+    <h2>Battery Energy Statistics</h2>
+
+    <table>
+        <tr><th>Metric</th><th>Value</th></tr>
+        <tr><td>Total energy charged</td><td>7,425 kWh</td></tr>
+        <tr><td>Total energy discharged</td><td>6,213 kWh</td></tr>
+        <tr><td>Average round-trip efficiency</td><td>83.7%</td></tr>
+        <tr><td>Energy lost to inefficiency</td><td>1,211 kWh</td></tr>
+    </table>
+
+    <h2>Yearly Totals</h2>
+
+    <table>
+        <tr><th>Year</th><th>Savings (CHF)</th></tr>
+        <tr><td>2023</td><td>CHF 254.84</td></tr>
+        <tr><td>2024</td><td>CHF 451.47</td></tr>
+        <tr><td>2025</td><td>CHF 436.73</td></tr>
+    </table>
+
+    <h2>Monthly Performance</h2>
+
+    <table>
+        <tr><th>Statistic</th><th>Month</th><th>Savings</th></tr>
+        <tr><td>Best month</td><td>2024-10</td><td class="positive">CHF 62.83</td></tr>
+        <tr><td>Worst month</td><td>2023-06</td><td>CHF 8.38</td></tr>
+    </table>
+
+    <h2>Visualization</h2>
+
+    <img src="battery_savings_analysis.png" alt="Battery Savings Analysis">
+
+    <div class="methodology">
+        <h3>Methodology</h3>
+        <p>This analysis compares the actual electricity costs with a hypothetical scenario
+        where no battery exists:</p>
+        <ul>
+            <li><strong>With battery (actual):</strong> Grid costs based on actual imports and exports</li>
+            <li><strong>Without battery (hypothetical):</strong> Battery charging energy would have been
+            exported to the grid; battery discharging energy would have been imported from the grid</li>
+        </ul>
+        <p><strong>Battery savings = </strong>
+        (Battery discharge × Purchase rate) - (Battery charge × Feed-in rate × 0.70)</p>
+        <p>The 0.70 factor accounts for the 30% income tax on feed-in revenue.</p>
+        <p>Time-varying tariffs (high/low periods) are applied at 15-minute resolution for accuracy.</p>
+    </div>
+
+</body>
+</html>

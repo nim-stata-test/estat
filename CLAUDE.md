@@ -145,8 +145,10 @@ src/
 │   ├── 03_pilot_analysis.py          # RSM block-averaged analysis
 │   └── 04_dynamical_analysis.py      # Grey-box dynamical analysis (abandoned)
 └── xtra/                # Standalone analyses (not part of Phase 5 study)
-    └── battery_degradation/          # Battery efficiency degradation study
-        └── battery_degradation.py
+    ├── battery_degradation/          # Battery efficiency degradation study
+    │   └── battery_degradation.py
+    └── battery_savings/              # Battery cost savings analysis
+        └── battery_savings.py
 ```
 
 ## Output Directory Structure
@@ -161,7 +163,8 @@ output/
 ├── phase5/       # Intervention study outputs (schedules, logs, analysis)
 ├── phase5_pilot/ # Pilot experiment outputs (Jan-Mar 2026)
 └── xtra/         # Standalone analysis outputs
-    └── battery_degradation/  # Battery efficiency study
+    ├── battery_degradation/  # Battery efficiency study
+    └── battery_savings/      # Battery cost savings analysis
 ```
 
 ## Processed Data
@@ -270,6 +273,30 @@ python src/xtra/battery_degradation/battery_degradation.py
 - OLS regression with time trend and post-event indicator
 - Welch's t-test as robustness check
 - Key finding: Statistically significant efficiency drop of ~10.8 percentage points (p<0.001)
+
+## Battery Cost Savings Analysis (xtra)
+
+Analyzes how much the battery saves compared to a hypothetical system without a battery.
+Considers time-varying tariffs and 30% tax on feed-in income.
+
+```bash
+python src/xtra/battery_savings/battery_savings.py
+```
+
+**Outputs** (in `output/xtra/battery_savings/`):
+- `battery_savings_daily.csv` - Daily cost savings data
+- `battery_savings_analysis.png` - Cumulative savings visualization
+- `battery_savings_report.html` - Summary report with methodology
+
+**Methodology:**
+```
+Savings = battery_discharge × purchase_rate - battery_charge × feedin_rate × 0.70
+```
+- Without battery: charging energy would be fed to grid, discharging energy would be imported
+- The 0.70 factor accounts for 30% income tax on feed-in revenue
+- Time-varying tariffs applied at 15-minute resolution
+
+**Key finding:** Battery saved CHF 1,143 over ~2.8 years (CHF 1.10/day average)
 
 ## Heating Curve Analysis
 
