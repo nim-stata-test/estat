@@ -476,45 +476,57 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
     # === Panel 10: Heat Pump COP ===
     ax = axes[9]
     if len(heating_week) > 0:
-        # Calculate instantaneous COP from today's counters
-        q_heat = heating_week.get('stiebel_eltron_isg_produced_heating_today', pd.Series())
-        e_elec = heating_week.get('stiebel_eltron_isg_consumed_heating_today', pd.Series())
+        # Get daily COP from daily counter max values
+        # Q and E report at different timestamps, so use daily aggregation
+        q_col = 'stiebel_eltron_isg_produced_heating_today'
+        e_col = 'stiebel_eltron_isg_consumed_heating_today'
 
-        if len(q_heat) > 0 and len(e_elec) > 0 and q_heat.notna().sum() > 10:
-            # Use differences for incremental COP calculation
-            q_diff = q_heat.diff().fillna(0)
-            e_diff = e_elec.diff().fillna(0)
+        q_heat = heating_week.get(q_col, pd.Series())
+        e_elec = heating_week.get(e_col, pd.Series())
 
-            # Calculate COP where both are positive
-            valid_cop = (e_diff > 0.01) & (q_diff > 0)
-            cop = pd.Series(index=heating_week.index, dtype=float)
-            cop[valid_cop] = q_diff[valid_cop] / e_diff[valid_cop]
-            cop = cop.clip(1, 8)  # Reasonable COP range
+        if len(q_heat) > 0 and len(e_elec) > 0:
+            # Get daily max (end-of-day cumulative value)
+            q_daily = q_heat.dropna().groupby(q_heat.dropna().index.date).max()
+            e_daily = e_elec.dropna().groupby(e_elec.dropna().index.date).max()
 
-            if valid_cop.sum() > 0:
-                # Smooth COP
-                cop_smooth = cop.rolling(window=16, min_periods=1).mean()
+            # Align on common dates
+            common_dates = q_daily.index.intersection(e_daily.index)
 
-                ax.scatter(heating_week.index[valid_cop], cop[valid_cop],
-                          color=COLORS['cop'], alpha=0.2, s=8, label='Instantaneous')
-                ax.plot(heating_week.index, cop_smooth, color=COLORS['cop'],
-                       linewidth=2, label='Smoothed (4h)')
-                mean_cop = cop[valid_cop].mean()
-                ax.axhline(y=mean_cop, color=COLORS['baseline'], linestyle='--',
-                          label=f'Mean: {mean_cop:.2f}')
-                ax.set_ylabel('COP')
-                ax.set_ylim(1, 7)
-                ax.legend(loc='upper right')
+            if len(common_dates) > 0:
+                q_aligned = q_daily.loc[common_dates]
+                e_aligned = e_daily.loc[common_dates]
+
+                # Calculate daily COP where E > 0
+                valid = e_aligned > 0.1
+                cop_daily = pd.Series(index=common_dates, dtype=float)
+                cop_daily[valid] = q_aligned[valid] / e_aligned[valid]
+                cop_daily = cop_daily.clip(1, 8)
+
+                if cop_daily.notna().sum() > 0:
+                    # Convert dates to datetime for plotting
+                    dates = pd.to_datetime(cop_daily.index)
+
+                    ax.bar(dates, cop_daily.values, width=0.8, color=COLORS['cop'],
+                           alpha=0.6, label='Daily COP')
+                    mean_cop = cop_daily.mean()
+                    ax.axhline(y=mean_cop, color=COLORS['baseline'], linestyle='--',
+                              linewidth=2, label=f'Mean: {mean_cop:.2f}')
+                    ax.set_ylabel('COP')
+                    ax.set_ylim(1, 7)
+                    ax.legend(loc='upper right')
+                else:
+                    ax.text(0.5, 0.5, 'No valid daily COP values', ha='center', va='center',
+                            transform=ax.transAxes, fontsize=11)
             else:
-                ax.text(0.5, 0.5, 'No valid COP values', ha='center', va='center',
+                ax.text(0.5, 0.5, 'No overlapping Q/E dates', ha='center', va='center',
                         transform=ax.transAxes, fontsize=11)
         else:
-            ax.text(0.5, 0.5, 'Insufficient COP data', ha='center', va='center',
+            ax.text(0.5, 0.5, 'Missing COP sensors', ha='center', va='center',
                     transform=ax.transAxes, fontsize=11)
     else:
         ax.text(0.5, 0.5, 'No heating data', ha='center', va='center',
                 transform=ax.transAxes, fontsize=11)
-    ax.set_title('10. Heat Pump COP')
+    ax.set_title('10. Heat Pump COP (Daily)')
     ax.grid(True, alpha=0.3)
 
     # Format x-axes for all panels
