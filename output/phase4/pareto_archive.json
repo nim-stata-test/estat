@@ -1,14 +1,14 @@
 {
   "metadata": {
-    "timestamp": "2026-01-17T15:38:45.137785",
-    "n_solutions": 6,
+    "timestamp": "2026-01-17T15:45:44.331600",
+    "n_solutions": 5,
     "n_gen": 50,
     "pop_size": 100,
     "seed": 42,
     "use_epsilon": true,
     "epsilon": {
       "mean_temp": 0.1,
-      "grid_kwh": 100.0,
+      "grid_kwh": 50.0,
       "cost_chf": 10.0
     }
   },
@@ -88,23 +88,6 @@
         "setpoint_eco": 19.0,
         "comfort_start": 12.0,
         "comfort_end": 16.0,
-        "curve_rise": 1.16
-      },
-      "objectives": {
-        "mean_temp": 20.070368885566438,
-        "grid_kwh": 2234.9723137307624,
-        "cost_chf": 646.4229516076026
-      },
-      "is_pareto": true,
-      "label": "Comfort-First"
-    },
-    {
-      "id": "strategy_06",
-      "variables": {
-        "setpoint_comfort": 22.0,
-        "setpoint_eco": 19.0,
-        "comfort_start": 12.0,
-        "comfort_end": 16.0,
         "curve_rise": 1.19
       },
       "objectives": {
@@ -113,14 +96,14 @@
         "cost_chf": 654.8645644643152
       },
       "is_pareto": true,
-      "label": "Comfort-First-2"
+      "label": "Comfort-First"
     }
   ],
   "optimization_history": {
     "generations": [
       {
         "generation": 1,
-        "timestamp": "2026-01-17T15:36:25.510083",
+        "timestamp": "2026-01-17T15:43:26.455826",
         "population_size": 100,
         "n_pareto": 16,
         "solutions": [
@@ -628,7 +611,7 @@
       },
       {
         "generation": 2,
-        "timestamp": "2026-01-17T15:36:28.267048",
+        "timestamp": "2026-01-17T15:43:29.056230",
         "population_size": 100,
         "n_pareto": 12,
         "solutions": [
@@ -1136,7 +1119,7 @@
       },
       {
         "generation": 3,
-        "timestamp": "2026-01-17T15:36:31.027141",
+        "timestamp": "2026-01-17T15:43:31.754338",
         "population_size": 100,
         "n_pareto": 8,
         "solutions": [
@@ -1644,7 +1627,7 @@
       },
       {
         "generation": 4,
-        "timestamp": "2026-01-17T15:36:33.758351",
+        "timestamp": "2026-01-17T15:43:34.469881",
         "population_size": 100,
         "n_pareto": 13,
         "solutions": [
@@ -2152,7 +2135,7 @@
       },
       {
         "generation": 5,
-        "timestamp": "2026-01-17T15:36:36.545194",
+        "timestamp": "2026-01-17T15:43:37.170172",
         "population_size": 100,
         "n_pareto": 13,
         "solutions": [
@@ -2660,7 +2643,7 @@
       },
       {
         "generation": 6,
-        "timestamp": "2026-01-17T15:36:39.286451",
+        "timestamp": "2026-01-17T15:43:39.905127",
         "population_size": 100,
         "n_pareto": 17,
         "solutions": [
@@ -3168,7 +3151,7 @@
       },
       {
         "generation": 7,
-        "timestamp": "2026-01-17T15:36:42.056445",
+        "timestamp": "2026-01-17T15:43:42.634862",
         "population_size": 100,
         "n_pareto": 25,
         "solutions": [
@@ -3676,7 +3659,7 @@
       },
       {
         "generation": 8,
-        "timestamp": "2026-01-17T15:36:44.855025",
+        "timestamp": "2026-01-17T15:43:45.352987",
         "population_size": 100,
         "n_pareto": 30,
         "solutions": [
@@ -4184,7 +4167,7 @@
       },
       {
         "generation": 9,
-        "timestamp": "2026-01-17T15:36:47.656617",
+        "timestamp": "2026-01-17T15:43:48.167193",
         "population_size": 100,
         "n_pareto": 32,
         "solutions": [
@@ -4692,7 +4675,7 @@
       },
       {
         "generation": 10,
-        "timestamp": "2026-01-17T15:36:50.458307",
+        "timestamp": "2026-01-17T15:43:50.899377",
         "population_size": 100,
         "n_pareto": 36,
         "solutions": [
@@ -5200,7 +5183,7 @@
       },
       {
         "generation": 11,
-        "timestamp": "2026-01-17T15:36:53.289133",
+        "timestamp": "2026-01-17T15:43:53.646550",
         "population_size": 100,
         "n_pareto": 33,
         "solutions": [
@@ -5708,7 +5691,7 @@
       },
       {
         "generation": 12,
-        "timestamp": "2026-01-17T15:36:56.138731",
+        "timestamp": "2026-01-17T15:43:56.392945",
         "population_size": 100,
         "n_pareto": 34,
         "solutions": [
@@ -6216,7 +6199,7 @@
       },
       {
         "generation": 13,
-        "timestamp": "2026-01-17T15:36:58.962445",
+        "timestamp": "2026-01-17T15:43:59.145083",
         "population_size": 100,
         "n_pareto": 37,
         "solutions": [
@@ -6724,7 +6707,7 @@
       },
       {
         "generation": 14,
-        "timestamp": "2026-01-17T15:37:01.802660",
+        "timestamp": "2026-01-17T15:44:01.983651",
         "population_size": 100,
         "n_pareto": 44,
         "solutions": [
@@ -7232,7 +7215,7 @@
       },
       {
         "generation": 15,
-        "timestamp": "2026-01-17T15:37:04.679018",
+        "timestamp": "2026-01-17T15:44:04.852114",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -7740,7 +7723,7 @@
       },
       {
         "generation": 16,
-        "timestamp": "2026-01-17T15:37:07.527249",
+        "timestamp": "2026-01-17T15:44:07.659422",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -8248,7 +8231,7 @@
       },
       {
         "generation": 17,
-        "timestamp": "2026-01-17T15:37:10.394056",
+        "timestamp": "2026-01-17T15:44:10.543623",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -8756,7 +8739,7 @@
       },
       {
         "generation": 18,
-        "timestamp": "2026-01-17T15:37:13.284091",
+        "timestamp": "2026-01-17T15:44:13.409039",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -9264,7 +9247,7 @@
       },
       {
         "generation": 19,
-        "timestamp": "2026-01-17T15:37:16.169163",
+        "timestamp": "2026-01-17T15:44:16.220665",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -9772,7 +9755,7 @@
       },
       {
         "generation": 20,
-        "timestamp": "2026-01-17T15:37:18.981497",
+        "timestamp": "2026-01-17T15:44:19.090627",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -10280,7 +10263,7 @@
       },
       {
         "generation": 21,
-        "timestamp": "2026-01-17T15:37:21.855130",
+        "timestamp": "2026-01-17T15:44:21.939946",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -10788,7 +10771,7 @@
       },
       {
         "generation": 22,
-        "timestamp": "2026-01-17T15:37:24.780874",
+        "timestamp": "2026-01-17T15:44:24.776578",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -11296,7 +11279,7 @@
       },
       {
         "generation": 23,
-        "timestamp": "2026-01-17T15:37:27.646156",
+        "timestamp": "2026-01-17T15:44:27.683267",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -11804,7 +11787,7 @@
       },
       {
         "generation": 24,
-        "timestamp": "2026-01-17T15:37:30.469908",
+        "timestamp": "2026-01-17T15:44:30.502012",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -12312,7 +12295,7 @@
       },
       {
         "generation": 25,
-        "timestamp": "2026-01-17T15:37:33.350603",
+        "timestamp": "2026-01-17T15:44:33.306361",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -12820,7 +12803,7 @@
       },
       {
         "generation": 26,
-        "timestamp": "2026-01-17T15:37:36.215983",
+        "timestamp": "2026-01-17T15:44:36.110638",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -13328,7 +13311,7 @@
       },
       {
         "generation": 27,
-        "timestamp": "2026-01-17T15:37:39.085483",
+        "timestamp": "2026-01-17T15:44:38.896819",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -13836,7 +13819,7 @@
       },
       {
         "generation": 28,
-        "timestamp": "2026-01-17T15:37:41.975367",
+        "timestamp": "2026-01-17T15:44:41.792844",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -14344,7 +14327,7 @@
       },
       {
         "generation": 29,
-        "timestamp": "2026-01-17T15:37:44.805099",
+        "timestamp": "2026-01-17T15:44:44.628451",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -14852,7 +14835,7 @@
       },
       {
         "generation": 30,
-        "timestamp": "2026-01-17T15:37:47.704661",
+        "timestamp": "2026-01-17T15:44:47.455009",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -15360,7 +15343,7 @@
       },
       {
         "generation": 31,
-        "timestamp": "2026-01-17T15:37:50.670629",
+        "timestamp": "2026-01-17T15:44:50.372122",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -15868,7 +15851,7 @@
       },
       {
         "generation": 32,
-        "timestamp": "2026-01-17T15:37:53.564193",
+        "timestamp": "2026-01-17T15:44:53.215741",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -16376,7 +16359,7 @@
       },
       {
         "generation": 33,
-        "timestamp": "2026-01-17T15:37:56.561894",
+        "timestamp": "2026-01-17T15:44:56.095337",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -16884,7 +16867,7 @@
       },
       {
         "generation": 34,
-        "timestamp": "2026-01-17T15:37:59.429232",
+        "timestamp": "2026-01-17T15:44:59.004860",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -17392,7 +17375,7 @@
       },
       {
         "generation": 35,
-        "timestamp": "2026-01-17T15:38:02.311781",
+        "timestamp": "2026-01-17T15:45:01.885803",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -17900,7 +17883,7 @@
       },
       {
         "generation": 36,
-        "timestamp": "2026-01-17T15:38:05.170885",
+        "timestamp": "2026-01-17T15:45:04.731603",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -18408,7 +18391,7 @@
       },
       {
         "generation": 37,
-        "timestamp": "2026-01-17T15:38:08.054704",
+        "timestamp": "2026-01-17T15:45:07.623611",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -18916,7 +18899,7 @@
       },
       {
         "generation": 38,
-        "timestamp": "2026-01-17T15:38:10.890317",
+        "timestamp": "2026-01-17T15:45:10.430825",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -19424,7 +19407,7 @@
       },
       {
         "generation": 39,
-        "timestamp": "2026-01-17T15:38:13.804261",
+        "timestamp": "2026-01-17T15:45:13.296261",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -19932,7 +19915,7 @@
       },
       {
         "generation": 40,
-        "timestamp": "2026-01-17T15:38:16.684563",
+        "timestamp": "2026-01-17T15:45:16.173748",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -20440,7 +20423,7 @@
       },
       {
         "generation": 41,
-        "timestamp": "2026-01-17T15:38:19.484616",
+        "timestamp": "2026-01-17T15:45:18.948783",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -20948,7 +20931,7 @@
       },
       {
         "generation": 42,
-        "timestamp": "2026-01-17T15:38:22.342445",
+        "timestamp": "2026-01-17T15:45:21.766395",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -21456,7 +21439,7 @@
       },
       {
         "generation": 43,
-        "timestamp": "2026-01-17T15:38:25.191380",
+        "timestamp": "2026-01-17T15:45:24.583941",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -21964,7 +21947,7 @@
       },
       {
         "generation": 44,
-        "timestamp": "2026-01-17T15:38:28.065744",
+        "timestamp": "2026-01-17T15:45:27.423478",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -22472,7 +22455,7 @@
       },
       {
         "generation": 45,
-        "timestamp": "2026-01-17T15:38:30.859853",
+        "timestamp": "2026-01-17T15:45:30.193083",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -22980,7 +22963,7 @@
       },
       {
         "generation": 46,
-        "timestamp": "2026-01-17T15:38:33.695941",
+        "timestamp": "2026-01-17T15:45:32.992162",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -23488,7 +23471,7 @@
       },
       {
         "generation": 47,
-        "timestamp": "2026-01-17T15:38:36.587028",
+        "timestamp": "2026-01-17T15:45:35.832224",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -23996,7 +23979,7 @@
       },
       {
         "generation": 48,
-        "timestamp": "2026-01-17T15:38:39.421821",
+        "timestamp": "2026-01-17T15:45:38.650929",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -24504,7 +24487,7 @@
       },
       {
         "generation": 49,
-        "timestamp": "2026-01-17T15:38:42.274542",
+        "timestamp": "2026-01-17T15:45:41.459965",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [
@@ -25012,7 +24995,7 @@
       },
       {
         "generation": 50,
-        "timestamp": "2026-01-17T15:38:45.132740",
+        "timestamp": "2026-01-17T15:45:44.327699",
         "population_size": 100,
         "n_pareto": 41,
         "solutions": [

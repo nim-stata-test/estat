@@ -159,7 +159,7 @@ OCCUPIED_END = 22    # 22:00
 # Solutions must differ by at least these amounts to be considered meaningfully different
 EPSILON = {
     'mean_temp': 0.1,   # °C - below this, comfort difference is imperceptible
-    'grid_kwh': 100.0,  # kWh - ~5% of typical total range
+    'grid_kwh': 50.0,   # kWh - ~2.5% of typical total range
     'cost_chf': 10.0,   # CHF - fine-grained cost differences
 }
 

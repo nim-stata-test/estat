@@ -74,23 +74,6 @@
       "setpoint_eco": 19.0,
       "comfort_start": 12.0,
       "comfort_end": 16.0,
-      "curve_rise": 1.16
-    },
-    "objectives": {
-      "mean_temp": 20.070368885566438,
-      "grid_kwh": 2234.9723137307624,
-      "cost_chf": 646.4229516076026
-    },
-    "is_pareto": true,
-    "label": "Comfort-First"
-  },
-  {
-    "id": "strategy_06",
-    "variables": {
-      "setpoint_comfort": 22.0,
-      "setpoint_eco": 19.0,
-      "comfort_start": 12.0,
-      "comfort_end": 16.0,
       "curve_rise": 1.19
     },
     "objectives": {
@@ -99,6 +82,6 @@
       "cost_chf": 654.8645644643152
     },
     "is_pareto": true,
-    "label": "Comfort-First-2"
+    "label": "Comfort-First"
   }
 ]
