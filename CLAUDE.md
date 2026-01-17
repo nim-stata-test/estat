@@ -146,6 +146,11 @@ src/
 │   ├── 02_generate_pilot_schedule.py # Dated block schedule
 │   ├── 03_pilot_analysis.py          # RSM block-averaged analysis
 │   └── 04_dynamical_analysis.py      # Grey-box dynamical analysis (abandoned)
+├── shared/              # Shared modules used across phases
+│   ├── __init__.py
+│   ├── report_style.py               # CSS and colors for HTML reports
+│   ├── thermal_simulator.py          # Grey-box thermal model (abandoned)
+│   └── energy_system.py              # Battery-aware energy system simulation
 └── xtra/                # Standalone analyses (not part of Phase 5 study)
     ├── battery_degradation/          # Battery efficiency degradation study
     │   └── battery_degradation.py
@@ -459,6 +464,54 @@ After running `python src/phase3/run_phase3.py`, outputs are saved to `output/ph
 - davis_inside: tau=24h (primary comfort sensor)
 - COP model (R²=0.94): `COP = 5.93 + 0.13×T_outdoor - 0.08×T_HK2`
 - Current self-sufficiency: 58%, potential with optimization: 85%
+
+## Energy System Simulation Module
+
+Shared module (`src/shared/energy_system.py`) providing intra-day energy system simulation
+with battery constraints. Used by Phase 3 extended decomposition and Phase 4 optimization.
+
+**Battery Model:**
+```python
+BATTERY_PARAMS = {
+    'capacity_kwh': 11.0,        # Total capacity
+    'max_charge_kw': 5.0,        # Max charging rate
+    'max_discharge_kw': 5.0,     # Max discharging rate
+    'efficiency': 0.84,          # Round-trip efficiency
+    'initial_soc_pct': 50.0,     # Default starting SoC
+}
+```
+
+**COP Model:**
+```
+COP = 5.93 + 0.13×T_outdoor - 0.08×T_HK2
+```
+Clipped to [1.5, 8.0] for physical limits.
+
+**Heating Curve Model:**
+```
+T_HK2 = setpoint + curve_rise × (T_ref - T_outdoor)
+```
+Where T_ref = 21.32°C (comfort) or 19.18°C (eco).
+
+**Key Functions:**
+| Function | Description |
+|----------|-------------|
+| `simulate_battery_soc()` | SoC tracking with capacity constraints |
+| `predict_cop()` | Intra-day COP from T_outdoor and T_HK2 |
+| `predict_t_hk2_variable_setpoint()` | Heating curve with comfort/eco modes |
+| `is_high_tariff()` | Tariff period detection |
+| `calculate_electricity_cost()` | Tariff-aware cost calculation |
+| `simulate_energy_system()` | Full system simulation |
+
+**Energy Flow Logic:**
+1. Net = PV - consumption
+2. If Net > 0: charge battery (up to capacity), excess to grid
+3. If Net < 0: discharge battery (if available), deficit from grid
+
+**Used by:**
+- `src/phase3/06_extended_decomposition.py` - Panels 5-8, 10
+- `src/phase4/04_pareto_optimization.py` - Strategy evaluation
+- `src/phase4/02_strategy_simulation.py` - Strategy comparison
 
 ## Grey-Box Thermal Model (Abandoned)
 
