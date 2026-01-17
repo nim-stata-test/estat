@@ -56,6 +56,39 @@ COLORS = {
     'baseline': '#bababa',
 }
 
+# ============================================================================
+# INTRA-DAY MODEL PARAMETERS (estimated from data)
+# ============================================================================
+BATTERY_PARAMS = {
+    'capacity_kwh': 11.0,        # Battery capacity
+    'max_charge_kw': 5.0,        # Max charge rate
+    'max_discharge_kw': 5.0,     # Max discharge rate
+    'efficiency': 0.84,          # Round-trip efficiency (84%)
+    'initial_soc_pct': 50.0,     # Initial SoC as % of capacity
+}
+
+# COP model coefficients (from Phase 3 heat pump model)
+COP_MODEL = {
+    'intercept': 5.93,
+    'coef_t_outdoor': 0.13,
+    'coef_t_hk2': -0.08,
+}
+
+# Heating curve parameters (from Phase 2)
+HEATING_CURVE = {
+    't_ref_comfort': 21.32,
+    't_ref_eco': 19.18,
+    'default_setpoint': 20.0,
+    'default_curve_rise': 1.08,
+}
+
+# Tariff parameters (Primeo Energie)
+TARIFF_PARAMS = {
+    'high_rate_rp': 32.6,        # High tariff (Rp/kWh)
+    'low_rate_rp': 26.0,         # Low tariff (Rp/kWh) - approximate
+    'feedin_rate_rp': 13.0,      # Feed-in rate (Rp/kWh) with HKN
+}
+
 
 def load_data():
     """Load all required datasets."""
@@ -178,6 +211,208 @@ def compute_model_terms(df, params, hc_params):
         'contrib_eff': contrib_eff,
         'contrib_pv': contrib_pv,
         't_pred': t_pred,
+    }
+
+
+# ============================================================================
+# INTRA-DAY MODEL FUNCTIONS
+# ============================================================================
+
+def predict_cop_intraday(t_outdoor, t_hk2):
+    """Predict COP at 15-minute resolution using heat pump model.
+
+    COP = intercept + coef_outdoor × T_outdoor + coef_hk2 × T_HK2
+    """
+    cop = (COP_MODEL['intercept'] +
+           COP_MODEL['coef_t_outdoor'] * t_outdoor +
+           COP_MODEL['coef_t_hk2'] * t_hk2)
+    # Clip to reasonable range
+    return np.clip(cop, 1.5, 8.0)
+
+
+def predict_t_hk2(t_outdoor, setpoint=None, curve_rise=None, is_comfort=None):
+    """Predict flow temperature (T_HK2) from heating curve.
+
+    T_HK2 = setpoint + curve_rise × (T_ref - T_outdoor)
+    """
+    if setpoint is None:
+        setpoint = HEATING_CURVE['default_setpoint']
+    if curve_rise is None:
+        curve_rise = HEATING_CURVE['default_curve_rise']
+
+    # Use comfort or eco reference temperature
+    if is_comfort is None:
+        t_ref = HEATING_CURVE['t_ref_comfort']
+    else:
+        t_ref = np.where(is_comfort,
+                         HEATING_CURVE['t_ref_comfort'],
+                         HEATING_CURVE['t_ref_eco'])
+
+    t_hk2 = setpoint + curve_rise * (t_ref - t_outdoor)
+    return np.clip(t_hk2, 20, 55)  # Reasonable flow temp range
+
+
+def simulate_battery_soc(pv, consumption, dt_hours=0.25):
+    """Simulate battery state of charge with capacity constraints.
+
+    Strategy: charge from excess PV, discharge to cover deficit.
+
+    Args:
+        pv: PV generation (kWh per interval)
+        consumption: Total consumption (kWh per interval)
+        dt_hours: Time step in hours (0.25 for 15-min)
+
+    Returns:
+        dict with soc, charge, discharge, grid_import, grid_export arrays
+    """
+    n = len(pv)
+    cap = BATTERY_PARAMS['capacity_kwh']
+    max_charge = BATTERY_PARAMS['max_charge_kw'] * dt_hours  # kWh per interval
+    max_discharge = BATTERY_PARAMS['max_discharge_kw'] * dt_hours
+    eff = np.sqrt(BATTERY_PARAMS['efficiency'])  # One-way efficiency
+
+    # Initialize arrays
+    soc = np.zeros(n)
+    charge = np.zeros(n)
+    discharge = np.zeros(n)
+    grid_import = np.zeros(n)
+    grid_export = np.zeros(n)
+
+    # Initial SoC
+    soc[0] = cap * BATTERY_PARAMS['initial_soc_pct'] / 100
+
+    for i in range(n):
+        net = pv[i] - consumption[i]  # Positive = excess
+
+        if net > 0:
+            # Excess PV - try to charge battery, export rest
+            available_capacity = cap - soc[max(0, i-1) if i > 0 else 0]
+            charge_possible = min(net * eff, max_charge, available_capacity)
+            charge[i] = charge_possible
+            grid_export[i] = net - charge_possible / eff  # Excess goes to grid
+        else:
+            # Deficit - try to discharge battery, import rest
+            deficit = -net
+            available_energy = soc[max(0, i-1) if i > 0 else 0]
+            discharge_possible = min(deficit, max_discharge, available_energy)
+            discharge[i] = discharge_possible
+            grid_import[i] = deficit - discharge_possible
+
+        # Update SoC
+        if i > 0:
+            soc[i] = soc[i-1] + charge[i] - discharge[i]
+        else:
+            soc[i] = cap * BATTERY_PARAMS['initial_soc_pct'] / 100 + charge[i] - discharge[i]
+
+        soc[i] = np.clip(soc[i], 0, cap)
+
+    return {
+        'soc': soc,
+        'soc_pct': soc / cap * 100,
+        'charge': charge,
+        'discharge': discharge,
+        'grid_import': grid_import,
+        'grid_export': grid_export,
+    }
+
+
+def is_high_tariff(timestamps):
+    """Determine if each timestamp is in high tariff period.
+
+    High tariff: Mon-Fri 06:00-21:00, Sat 06:00-12:00
+    Low tariff: All other times
+    """
+    hour = timestamps.hour
+    dayofweek = timestamps.dayofweek  # Monday=0, Sunday=6
+
+    # Weekday (Mon-Fri): 06:00-21:00
+    weekday_high = (dayofweek < 5) & (hour >= 6) & (hour < 21)
+    # Saturday: 06:00-12:00
+    saturday_high = (dayofweek == 5) & (hour >= 6) & (hour < 12)
+
+    return weekday_high | saturday_high
+
+
+def calculate_costs(grid_import, grid_export, timestamps, dt_hours=0.25):
+    """Calculate costs at 15-minute resolution with tariff awareness.
+
+    Returns costs in CHF.
+    """
+    high_tariff = is_high_tariff(timestamps)
+
+    # Rates in CHF/kWh (convert from Rp)
+    import_rate = np.where(high_tariff,
+                           TARIFF_PARAMS['high_rate_rp'] / 100,
+                           TARIFF_PARAMS['low_rate_rp'] / 100)
+    export_rate = TARIFF_PARAMS['feedin_rate_rp'] / 100
+
+    import_cost = grid_import * import_rate
+    export_revenue = grid_export * export_rate
+    net_cost = import_cost - export_revenue
+
+    return {
+        'import_cost': import_cost,
+        'export_revenue': export_revenue,
+        'net_cost': net_cost,
+        'high_tariff': high_tariff,
+    }
+
+
+def predict_intraday_energy(energy_week, t_outdoor, consumption_model):
+    """Full intra-day energy prediction with battery and costs.
+
+    Args:
+        energy_week: DataFrame with energy data
+        t_outdoor: Outdoor temperature array (cleaned)
+        consumption_model: Dict with base_load and heating_coef
+
+    Returns:
+        Dict with all predicted values at 15-minute resolution
+    """
+    n = len(t_outdoor)
+    dt = 0.25  # 15-minute intervals
+
+    # 1. Predict consumption from temperature (HDD model)
+    if consumption_model:
+        hdd = np.maximum(0, consumption_model['t_ref'] - t_outdoor)
+        consumption_pred = consumption_model['base_load'] + consumption_model['heating_coef'] * hdd
+        consumption_pred = np.maximum(0, consumption_pred)
+    else:
+        consumption_pred = np.full(n, 0.5)  # Default 0.5 kW
+
+    # 2. Get observed PV (we don't model PV, use actual)
+    if 'pv_generation_kwh' in energy_week.columns:
+        pv = energy_week['pv_generation_kwh'].fillna(0).values
+    else:
+        pv = np.zeros(n)
+
+    # 3. Predict T_HK2 from heating curve (assume comfort mode during day)
+    hour = energy_week.index.hour if hasattr(energy_week.index, 'hour') else np.zeros(n)
+    is_comfort = (hour >= 6) & (hour < 20)  # Simplified schedule
+    t_hk2_pred = predict_t_hk2(t_outdoor, is_comfort=is_comfort)
+
+    # 4. Predict COP from T_outdoor and T_HK2
+    cop_pred = predict_cop_intraday(t_outdoor, t_hk2_pred)
+
+    # 5. Simulate battery with constraints
+    battery_sim = simulate_battery_soc(pv, consumption_pred, dt)
+
+    # 6. Calculate costs with tariff awareness
+    costs = calculate_costs(
+        battery_sim['grid_import'],
+        battery_sim['grid_export'],
+        energy_week.index,
+        dt
+    )
+
+    return {
+        'consumption': consumption_pred,
+        'pv': pv,
+        't_hk2': t_hk2_pred,
+        'cop': cop_pred,
+        'is_comfort': is_comfort,
+        **battery_sim,
+        **costs,
     }
 
 
@@ -356,58 +591,55 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
     ax.set_title(f'4. Solar Gain → Room Temp (τ={params["tau_pv"]:.0f}h, g={params["g_pv"]:.3f})')
     ax.grid(True, alpha=0.3)
 
-    # Get energy model predictions
-    energy_pred = predict_energy(energy_week, terms['t_out'], energy_model) if energy_model else {}
+    # Get intra-day model predictions (with battery constraints and tariff awareness)
+    t_out_clean = pd.Series(terms['t_out']).ffill().bfill().values
+    intraday_pred = predict_intraday_energy(energy_week, t_out_clean, energy_model)
 
     # === Panel 5: Battery State of Charge ===
     ax = axes[4]
     if len(energy_week) > 0 and 'battery_charging_kwh' in energy_week.columns:
-        # Calculate cumulative battery state (observed)
-        charge = energy_week['battery_charging_kwh'].fillna(0).values
-        discharge = energy_week['battery_discharging_kwh'].fillna(0).values
-        net_flow = charge - discharge  # Positive = charging
+        # Calculate observed SoC from cumulative charge/discharge
+        charge_obs = energy_week['battery_charging_kwh'].fillna(0).values
+        discharge_obs = energy_week['battery_discharging_kwh'].fillna(0).values
+        net_obs = charge_obs - discharge_obs
+        cumsum_obs = np.cumsum(net_obs)
+        # Normalize: assume starts at 50%, scale by capacity
+        cap = BATTERY_PARAMS['capacity_kwh']
+        soc_obs = 50 + (cumsum_obs - cumsum_obs[0]) / cap * 100
+        soc_obs = np.clip(soc_obs, 0, 100)
 
-        # Cumulative SoC (observed) - normalized around 50%
-        cumsum = np.cumsum(net_flow)
-        soc_observed = 50 + (cumsum - np.mean(cumsum)) / 10 * 100
-        soc_observed = np.clip(soc_observed, 0, 100)
-
-        # Plot observed fill first (so model line appears on top)
-        ax.fill_between(energy_week.index, 0, soc_observed, color=COLORS['battery'],
+        # Plot observed fill first
+        ax.fill_between(energy_week.index, 0, soc_obs, color=COLORS['battery'],
                         alpha=0.3, label='Observed')
 
-        # Predicted from energy balance model (plotted on top)
-        if 'battery_charge' in energy_pred:
-            net_pred = energy_pred['battery_charge'] - energy_pred['battery_discharge']
-            cumsum_pred = np.cumsum(net_pred)
-            soc_pred = 50 + (cumsum_pred - np.mean(cumsum_pred)) / 10 * 100
-            soc_pred = np.clip(soc_pred, 0, 100)
-            ax.plot(energy_week.index, soc_pred, color=COLORS['baseline'],
-                    linewidth=2, linestyle='--', label='Model', zorder=5)
+        # Model prediction with capacity constraints (plotted on top)
+        if 'soc_pct' in intraday_pred:
+            ax.plot(energy_week.index, intraday_pred['soc_pct'], color=COLORS['baseline'],
+                    linewidth=2, linestyle='--', label=f'Model ({cap:.0f}kWh)', zorder=5)
 
-        ax.set_ylabel('Est. SoC (%)')
+        ax.set_ylabel('SoC (%)')
         ax.set_ylim(0, 100)
         ax.legend(loc='upper right')
     else:
         ax.text(0.5, 0.5, 'No battery data', ha='center', va='center', transform=ax.transAxes)
-    ax.set_title('5. Battery State of Charge: Observed vs Model')
+    ax.set_title(f'5. Battery SoC: Observed vs Model (Cap={BATTERY_PARAMS["capacity_kwh"]:.0f}kWh, η={BATTERY_PARAMS["efficiency"]:.0%})')
     ax.grid(True, alpha=0.3)
 
     # === Panel 6: Power Consumption ===
     ax = axes[5]
     if len(energy_week) > 0 and 'total_consumption_kwh' in energy_week.columns:
-        consumption = energy_week['total_consumption_kwh'].fillna(0).values
+        consumption_obs = energy_week['total_consumption_kwh'].fillna(0).values
 
         # Plot observed fill first
-        ax.fill_between(energy_week.index, 0, consumption, color=COLORS['consumption'],
+        ax.fill_between(energy_week.index, 0, consumption_obs, color=COLORS['consumption'],
                         alpha=0.3, label='Observed')
 
-        # Predicted from temperature model (on top)
-        if 'consumption' in energy_pred:
-            ax.plot(energy_week.index, energy_pred['consumption'], color=COLORS['baseline'],
+        # HDD model prediction (on top)
+        if 'consumption' in intraday_pred:
+            ax.plot(energy_week.index, intraday_pred['consumption'], color=COLORS['baseline'],
                     linewidth=2, linestyle='--', label='Model (HDD)', zorder=5)
 
-        ax.set_ylabel('Power (kW)')
+        ax.set_ylabel('Power (kWh/15min)')
         ax.legend(loc='upper right')
     else:
         ax.text(0.5, 0.5, 'No consumption data', ha='center', va='center', transform=ax.transAxes)
@@ -417,18 +649,18 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
     # === Panel 7: Grid Feed-in ===
     ax = axes[6]
     if len(energy_week) > 0 and 'grid_feedin_kwh' in energy_week.columns:
-        feedin = energy_week['grid_feedin_kwh'].fillna(0).values
+        feedin_obs = energy_week['grid_feedin_kwh'].fillna(0).values
 
         # Plot observed fill first
-        ax.fill_between(energy_week.index, 0, feedin, color=COLORS['grid_export'],
+        ax.fill_between(energy_week.index, 0, feedin_obs, color=COLORS['grid_export'],
                         alpha=0.3, label='Observed')
 
-        # Predicted from energy balance (on top)
-        if 'feedin' in energy_pred:
-            ax.plot(energy_week.index, energy_pred['feedin'], color=COLORS['baseline'],
+        # Model prediction with battery (on top)
+        if 'grid_export' in intraday_pred:
+            ax.plot(energy_week.index, intraday_pred['grid_export'], color=COLORS['baseline'],
                     linewidth=2, linestyle='--', label='Model', zorder=5)
 
-        ax.set_ylabel('Power (kW)')
+        ax.set_ylabel('Power (kWh/15min)')
         ax.legend(loc='upper right')
     else:
         ax.text(0.5, 0.5, 'No feed-in data', ha='center', va='center', transform=ax.transAxes)
@@ -438,22 +670,28 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
     # === Panel 8: Grid Import ===
     ax = axes[7]
     if len(energy_week) > 0 and 'external_supply_kwh' in energy_week.columns:
-        grid_import = energy_week['external_supply_kwh'].fillna(0).values
+        import_obs = energy_week['external_supply_kwh'].fillna(0).values
 
         # Plot observed fill first
-        ax.fill_between(energy_week.index, 0, grid_import, color=COLORS['grid_import'],
+        ax.fill_between(energy_week.index, 0, import_obs, color=COLORS['grid_import'],
                         alpha=0.3, label='Observed')
 
-        # Predicted from energy balance (on top)
-        if 'import' in energy_pred:
-            ax.plot(energy_week.index, energy_pred['import'], color=COLORS['baseline'],
+        # Model prediction with battery (on top)
+        if 'grid_import' in intraday_pred:
+            ax.plot(energy_week.index, intraday_pred['grid_import'], color=COLORS['baseline'],
                     linewidth=2, linestyle='--', label='Model', zorder=5)
 
-        ax.set_ylabel('Power (kW)')
+        # Show tariff periods as background
+        if 'high_tariff' in intraday_pred:
+            high = intraday_pred['high_tariff']
+            ax.fill_between(energy_week.index, 0, ax.get_ylim()[1] if ax.get_ylim()[1] > 0 else 1,
+                           where=high, alpha=0.1, color='red', label='High tariff')
+
+        ax.set_ylabel('Power (kWh/15min)')
         ax.legend(loc='upper right')
     else:
         ax.text(0.5, 0.5, 'No grid import data', ha='center', va='center', transform=ax.transAxes)
-    ax.set_title('8. Grid Import: Observed vs Model')
+    ax.set_title('8. Grid Import: Observed vs Model (tariff-aware)')
     ax.grid(True, alpha=0.3)
 
     # === Panel 9: Outdoor Temperature ===
@@ -473,60 +711,55 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
     ax.set_title('9. Outdoor Temperature')
     ax.grid(True, alpha=0.3)
 
-    # === Panel 10: Heat Pump COP ===
+    # === Panel 10: Heat Pump COP (Intra-day Model) ===
     ax = axes[9]
-    if len(heating_week) > 0:
-        # Get daily COP from daily counter max values
-        # Q and E report at different timestamps, so use daily aggregation
-        q_col = 'stiebel_eltron_isg_produced_heating_today'
-        e_col = 'stiebel_eltron_isg_consumed_heating_today'
 
-        q_heat = heating_week.get(q_col, pd.Series())
-        e_elec = heating_week.get(e_col, pd.Series())
+    # Plot intra-day COP model prediction
+    if 'cop' in intraday_pred:
+        cop_pred = intraday_pred['cop']
+        is_comfort = intraday_pred.get('is_comfort', np.ones(len(cop_pred), dtype=bool))
 
-        if len(q_heat) > 0 and len(e_elec) > 0:
-            # Get daily max (end-of-day cumulative value)
-            q_daily = q_heat.dropna().groupby(q_heat.dropna().index.date).max()
-            e_daily = e_elec.dropna().groupby(e_elec.dropna().index.date).max()
+        # Fill for comfort/eco periods
+        ax.fill_between(energy_week.index, 1.5, cop_pred,
+                        where=is_comfort, alpha=0.3, color=COLORS['heating'],
+                        label='Comfort mode')
+        ax.fill_between(energy_week.index, 1.5, cop_pred,
+                        where=~is_comfort, alpha=0.3, color=COLORS['outdoor'],
+                        label='Eco mode')
 
-            # Align on common dates
-            common_dates = q_daily.index.intersection(e_daily.index)
+        # Model line
+        ax.plot(energy_week.index, cop_pred, color=COLORS['cop'],
+                linewidth=1.5, label='Model COP')
 
-            if len(common_dates) > 0:
-                q_aligned = q_daily.loc[common_dates]
-                e_aligned = e_daily.loc[common_dates]
+        # Add daily observed COP as markers for comparison
+        if len(heating_week) > 0:
+            q_col = 'stiebel_eltron_isg_produced_heating_today'
+            e_col = 'stiebel_eltron_isg_consumed_heating_today'
+            q_heat = heating_week.get(q_col, pd.Series())
+            e_elec = heating_week.get(e_col, pd.Series())
 
-                # Calculate daily COP where E > 0
-                valid = e_aligned > 0.1
-                cop_daily = pd.Series(index=common_dates, dtype=float)
-                cop_daily[valid] = q_aligned[valid] / e_aligned[valid]
-                cop_daily = cop_daily.clip(1, 8)
+            if len(q_heat) > 0 and len(e_elec) > 0:
+                q_daily = q_heat.dropna().groupby(q_heat.dropna().index.date).max()
+                e_daily = e_elec.dropna().groupby(e_elec.dropna().index.date).max()
+                common_dates = q_daily.index.intersection(e_daily.index)
 
-                if cop_daily.notna().sum() > 0:
-                    # Convert dates to datetime for plotting
-                    dates = pd.to_datetime(cop_daily.index)
+                if len(common_dates) > 0:
+                    cop_obs = (q_daily.loc[common_dates] / e_daily.loc[common_dates]).clip(1, 8)
+                    dates = pd.to_datetime(common_dates) + pd.Timedelta(hours=12)  # Plot at midday
+                    ax.scatter(dates, cop_obs.values, s=80, color=COLORS['actual'],
+                              marker='o', zorder=10, label='Observed (daily)', edgecolors='white')
 
-                    ax.bar(dates, cop_daily.values, width=0.8, color=COLORS['cop'],
-                           alpha=0.6, label='Daily COP')
-                    mean_cop = cop_daily.mean()
-                    ax.axhline(y=mean_cop, color=COLORS['baseline'], linestyle='--',
-                              linewidth=2, label=f'Mean: {mean_cop:.2f}')
-                    ax.set_ylabel('COP')
-                    ax.set_ylim(1, 7)
-                    ax.legend(loc='upper right')
-                else:
-                    ax.text(0.5, 0.5, 'No valid daily COP values', ha='center', va='center',
-                            transform=ax.transAxes, fontsize=11)
-            else:
-                ax.text(0.5, 0.5, 'No overlapping Q/E dates', ha='center', va='center',
-                        transform=ax.transAxes, fontsize=11)
-        else:
-            ax.text(0.5, 0.5, 'Missing COP sensors', ha='center', va='center',
-                    transform=ax.transAxes, fontsize=11)
+        mean_cop = cop_pred.mean()
+        ax.axhline(y=mean_cop, color=COLORS['baseline'], linestyle='--',
+                  linewidth=2, label=f'Model mean: {mean_cop:.2f}')
+        ax.set_ylabel('COP')
+        ax.set_ylim(1.5, 6)
+        ax.legend(loc='upper right', fontsize=7, ncol=2)
     else:
-        ax.text(0.5, 0.5, 'No heating data', ha='center', va='center',
+        ax.text(0.5, 0.5, 'No COP model prediction', ha='center', va='center',
                 transform=ax.transAxes, fontsize=11)
-    ax.set_title('10. Heat Pump COP (Daily)')
+
+    ax.set_title(f'10. Heat Pump COP: Model (COP = {COP_MODEL["intercept"]:.1f} + {COP_MODEL["coef_t_outdoor"]:.2f}×T_out - {abs(COP_MODEL["coef_t_hk2"]):.2f}×T_HK2)')
     ax.grid(True, alpha=0.3)
 
     # Format x-axes for all panels
