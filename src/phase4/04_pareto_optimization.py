@@ -38,6 +38,16 @@ sys.path.insert(0, str(PROJECT_ROOT / 'src'))
 # Using TEMP_REGRESSION instead (transfer function model)
 # from shared.thermal_simulator import ThermalSimulator, compute_T_HK2_from_schedule_vectorized
 
+# Import shared energy system module with battery model
+from shared.energy_system import (
+    simulate_battery_soc,
+    predict_cop,
+    predict_t_hk2_variable_setpoint,
+    is_high_tariff,
+    calculate_electricity_cost,
+    BATTERY_PARAMS,
+)
+
 try:
     from pymoo.core.problem import Problem
     from pymoo.core.callback import Callback
@@ -439,48 +449,43 @@ def simulate_parameters(params: dict, sim_data_obj: 'SimulationData') -> dict:
     violation_count = np.sum(T_weighted_occupied < threshold_temp)
     violation_pct = violation_count / len(T_weighted_occupied) if len(T_weighted_occupied) > 0 else 0.0
 
-    # --- Vectorized Energy/Cost Simulation ---
+    # --- Battery-Aware Energy/Cost Simulation ---
+    # Uses shared energy_system module with capacity-constrained battery model
 
     # Constants (calibrated from historical data analysis)
-    # Historical: total consumption 39.7 kWh/day, heating ~28 kWh/day, base ~11 kWh/day
-    BASE_LOAD_KWH = 11.0  # Non-heating consumption (appliances, lighting, etc.)
+    BASE_LOAD_KWH = 11.0  # Non-heating consumption per day
     THERMAL_COEF = 10.0   # Thermal kWh needed per HDD (before COP division)
-    BASE_LOAD_TIMESTEP = BASE_LOAD_KWH / 96
+    BASE_LOAD_TIMESTEP = BASE_LOAD_KWH / 96  # Per 15-min interval
+    DT_HOURS = 0.25  # Time step in hours
 
     # Extract arrays for vectorized ops
     hours = sim_data['hour'].values
     T_outdoor = sim_data['T_outdoor'].values
-    pv_gen = sim_data['pv_generation'].values
-    purchase_rate = sim_data['purchase_rate_rp_kwh'].values
-    feedin_rate = sim_data['feedin_rate_rp_kwh'].values
+    pv_gen = sim_data['pv_generation'].fillna(0).values
     dates = sim_data['date'].values
 
     # Determine comfort mode for each timestep
     is_comfort = (hours >= comfort_start) & (hours < comfort_end)
 
-    # Calculate setpoint and T_ref for each timestep
-    setpoint = np.where(is_comfort, setpoint_comfort, setpoint_eco)
-    T_ref = np.where(is_comfort, HEATING_CURVE_PARAMS['t_ref_comfort'], HEATING_CURVE_PARAMS['t_ref_eco'])
+    # Calculate T_HK2 using shared module
+    T_HK2 = predict_t_hk2_variable_setpoint(
+        T_outdoor, setpoint_comfort, setpoint_eco, curve_rise, is_comfort,
+        params=HEATING_CURVE_PARAMS
+    )
 
-    # Flow temperature from heating curve
-    T_HK2 = setpoint + curve_rise * (T_ref - T_outdoor)
-    T_HK2 = np.clip(T_HK2, 20, 55)
-
-    # COP at each operating point - this is crucial for energy savings
-    cop = COP_PARAMS['intercept'] + COP_PARAMS['outdoor_coef'] * T_outdoor + COP_PARAMS['t_hk2_coef'] * T_HK2
-    cop = np.maximum(cop, 1.5)
+    # Calculate COP using shared module
+    cop = predict_cop(T_outdoor, T_HK2)
 
     # Mode factor: comfort=1.0, eco reduces heating effort based on setback
-    # Deeper setback = less heating during eco periods
     setback_range = setpoint_comfort - 12.0
     actual_setback = setpoint_comfort - setpoint_eco
     eco_mode_factor = max(0.1, 1.0 - 0.9 * (actual_setback / setback_range)) if setback_range > 0 else 1.0
     mode_factor = np.where(is_comfort, 1.0, eco_mode_factor)
 
-    # Thermal demand weight at each timestep (before COP)
+    # Thermal demand weight at each timestep
     thermal_demand_weight = np.maximum(0, T_HK2 - T_outdoor) * mode_factor
 
-    # Calculate daily heating energy - NOW accounting for COP properly
+    # Calculate daily heating energy with COP
     unique_dates = np.unique(dates)
     heating_kwh = np.zeros(len(sim_data))
 
@@ -489,45 +494,44 @@ def simulate_parameters(params: dict, sim_data_obj: 'SimulationData') -> dict:
         T_outdoor_mean = np.mean(T_outdoor[date_mask])
         hdd = max(0, 18 - T_outdoor_mean)
 
-        # Thermal energy needed for this day (independent of COP)
         daily_thermal_kwh = THERMAL_COEF * hdd
-
         if daily_thermal_kwh < 0.1:
             continue
 
-        # Calculate average COP for this day (weighted by when heating occurs)
         day_thermal_weights = thermal_demand_weight[date_mask]
         day_cops = cop[date_mask]
 
         total_thermal_weight = np.sum(day_thermal_weights)
         if total_thermal_weight > 0.01:
-            # Weighted average COP based on when heating demand is highest
             avg_cop = np.sum(day_cops * day_thermal_weights) / total_thermal_weight
-            # Distribution weights for spreading heating across timesteps
             normalized_weights = day_thermal_weights / total_thermal_weight
         else:
             avg_cop = np.mean(day_cops)
             normalized_weights = np.ones(np.sum(date_mask)) / np.sum(date_mask)
 
-        # ELECTRICAL heating energy = thermal / COP
-        # This is the key fix: better COP = less electrical consumption
         daily_electrical_kwh = daily_thermal_kwh / avg_cop
-
-        # Distribute across timesteps based on thermal demand pattern
         heating_kwh[date_mask] = daily_electrical_kwh * normalized_weights
 
-    # Total demand at each timestep
-    total_demand = BASE_LOAD_TIMESTEP + heating_kwh
+    # Total consumption at each timestep (kWh per 15-min interval)
+    total_consumption = BASE_LOAD_TIMESTEP + heating_kwh
 
-    # Grid import: demand minus PV (clamped to 0)
-    grid_import = np.maximum(0, total_demand - pv_gen)
+    # --- Battery-aware grid simulation ---
+    # Simulate battery SoC with capacity constraints (11 kWh, 84% efficiency)
+    battery_soc, grid_import, grid_export, battery_flow = simulate_battery_soc(
+        pv_generation=pv_gen,
+        consumption=total_consumption,
+        dt_hours=DT_HOURS,
+        battery_params=BATTERY_PARAMS,
+    )
 
-    # Feed-in: PV surplus after self-consumption
-    feedin = np.maximum(0, pv_gen - total_demand)
+    # Calculate tariff periods
+    timestamps = pd.DatetimeIndex(sim_data.index)
+    is_high = is_high_tariff(timestamps)
 
-    # Calculate costs
-    grid_cost = np.sum(grid_import * purchase_rate / 100)
-    feedin_revenue = np.sum(feedin * feedin_rate / 100)
+    # Calculate costs with tariff awareness
+    grid_cost, feedin_revenue, _ = calculate_electricity_cost(
+        grid_import, grid_export, is_high
+    )
 
     # Objective 2: Total grid import (kWh)
     grid_import_total = np.sum(grid_import)

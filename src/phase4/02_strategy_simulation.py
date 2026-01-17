@@ -22,9 +22,23 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from datetime import datetime, timedelta
 import json
+import sys
 
 # Project paths
 PROJECT_ROOT = Path(__file__).parent.parent.parent
+
+# Add src to path for shared imports
+sys.path.insert(0, str(PROJECT_ROOT / 'src'))
+
+# Import shared energy system module with battery model
+from shared.energy_system import (
+    simulate_battery_soc,
+    predict_cop,
+    predict_t_hk2_variable_setpoint,
+    is_high_tariff,
+    calculate_electricity_cost,
+    BATTERY_PARAMS,
+)
 PHASE1_DIR = PROJECT_ROOT / 'output' / 'phase1'
 PHASE2_DIR = PROJECT_ROOT / 'output' / 'phase2'
 PHASE3_DIR = PROJECT_ROOT / 'output' / 'phase3'
