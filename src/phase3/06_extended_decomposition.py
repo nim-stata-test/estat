@@ -232,8 +232,11 @@ def predict_energy(energy_week, t_out, energy_model):
     if energy_model is None:
         return {}
 
+    # Handle NaN in t_out by forward-filling
+    t_out_clean = pd.Series(t_out).ffill().bfill().values
+
     # Predict consumption from temperature
-    hdd = np.maximum(0, energy_model['t_ref'] - t_out)
+    hdd = np.maximum(0, energy_model['t_ref'] - t_out_clean)
     consumption_pred = energy_model['base_load'] + energy_model['heating_coef'] * hdd
     consumption_pred = np.maximum(0, consumption_pred)
 
@@ -369,17 +372,19 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
         soc_observed = 50 + (cumsum - np.mean(cumsum)) / 10 * 100
         soc_observed = np.clip(soc_observed, 0, 100)
 
-        # Predicted from energy balance model
+        # Plot observed fill first (so model line appears on top)
+        ax.fill_between(energy_week.index, 0, soc_observed, color=COLORS['battery'],
+                        alpha=0.3, label='Observed')
+
+        # Predicted from energy balance model (plotted on top)
         if 'battery_charge' in energy_pred:
             net_pred = energy_pred['battery_charge'] - energy_pred['battery_discharge']
             cumsum_pred = np.cumsum(net_pred)
             soc_pred = 50 + (cumsum_pred - np.mean(cumsum_pred)) / 10 * 100
             soc_pred = np.clip(soc_pred, 0, 100)
             ax.plot(energy_week.index, soc_pred, color=COLORS['baseline'],
-                    linewidth=2, linestyle='--', label='Model')
+                    linewidth=2, linestyle='--', label='Model', zorder=5)
 
-        ax.fill_between(energy_week.index, 0, soc_observed, color=COLORS['battery'],
-                        alpha=0.3, label='Observed')
         ax.set_ylabel('Est. SoC (%)')
         ax.set_ylim(0, 100)
         ax.legend(loc='upper right')
@@ -393,13 +398,15 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
     if len(energy_week) > 0 and 'total_consumption_kwh' in energy_week.columns:
         consumption = energy_week['total_consumption_kwh'].fillna(0).values
 
-        # Predicted from temperature model
-        if 'consumption' in energy_pred:
-            ax.plot(energy_week.index, energy_pred['consumption'], color=COLORS['baseline'],
-                    linewidth=2, linestyle='--', label='Model (HDD)')
-
+        # Plot observed fill first
         ax.fill_between(energy_week.index, 0, consumption, color=COLORS['consumption'],
                         alpha=0.3, label='Observed')
+
+        # Predicted from temperature model (on top)
+        if 'consumption' in energy_pred:
+            ax.plot(energy_week.index, energy_pred['consumption'], color=COLORS['baseline'],
+                    linewidth=2, linestyle='--', label='Model (HDD)', zorder=5)
+
         ax.set_ylabel('Power (kW)')
         ax.legend(loc='upper right')
     else:
@@ -412,13 +419,15 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
     if len(energy_week) > 0 and 'grid_feedin_kwh' in energy_week.columns:
         feedin = energy_week['grid_feedin_kwh'].fillna(0).values
 
-        # Predicted from energy balance
-        if 'feedin' in energy_pred:
-            ax.plot(energy_week.index, energy_pred['feedin'], color=COLORS['baseline'],
-                    linewidth=2, linestyle='--', label='Model')
-
+        # Plot observed fill first
         ax.fill_between(energy_week.index, 0, feedin, color=COLORS['grid_export'],
                         alpha=0.3, label='Observed')
+
+        # Predicted from energy balance (on top)
+        if 'feedin' in energy_pred:
+            ax.plot(energy_week.index, energy_pred['feedin'], color=COLORS['baseline'],
+                    linewidth=2, linestyle='--', label='Model', zorder=5)
+
         ax.set_ylabel('Power (kW)')
         ax.legend(loc='upper right')
     else:
@@ -431,13 +440,15 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
     if len(energy_week) > 0 and 'external_supply_kwh' in energy_week.columns:
         grid_import = energy_week['external_supply_kwh'].fillna(0).values
 
-        # Predicted from energy balance
-        if 'import' in energy_pred:
-            ax.plot(energy_week.index, energy_pred['import'], color=COLORS['baseline'],
-                    linewidth=2, linestyle='--', label='Model')
-
+        # Plot observed fill first
         ax.fill_between(energy_week.index, 0, grid_import, color=COLORS['grid_import'],
                         alpha=0.3, label='Observed')
+
+        # Predicted from energy balance (on top)
+        if 'import' in energy_pred:
+            ax.plot(energy_week.index, energy_pred['import'], color=COLORS['baseline'],
+                    linewidth=2, linestyle='--', label='Model', zorder=5)
+
         ax.set_ylabel('Power (kW)')
         ax.legend(loc='upper right')
     else:
