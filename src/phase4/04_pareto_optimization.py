@@ -1024,7 +1024,7 @@ def plot_pareto_front(solutions: list, selected: list = None):
     """Create Pareto front visualization."""
     print("\nCreating Pareto front visualization...")
 
-    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    fig, axes = plt.subplots(2, 2, figsize=(14, 11))
 
     # Extract objective values (3 objectives: mean_temp, grid_kwh, cost_chf)
     F = np.array([
@@ -1049,28 +1049,79 @@ def plot_pareto_front(solutions: list, selected: list = None):
         'Net Cost (CHF)'
     ]
 
-    # Plot pairs of objectives (3 unique pairs + one repeated for 4 panels)
-    pairs = [(0, 1), (0, 2), (1, 2), (0, 1)]  # Last panel repeats temp vs grid
-    panel_titles = ['Temp vs Grid', 'Temp vs Cost', 'Grid vs Cost', 'Temp vs Grid (zoom)']
+    # Color palette for selected strategies
+    colors = plt.cm.viridis(np.linspace(0.2, 0.8, len(selected) if selected else 1))
 
-    for ax_idx, (ax, (i, j)) in enumerate(zip(axes.flat, pairs)):
-        ax.scatter(F[:, i], F[:, j], c='lightgray', alpha=0.5, s=30, label='All Pareto')
+    # Plot first 3 panels: 2D projections
+    pairs = [(0, 1), (0, 2), (1, 2)]
+    panel_titles = ['Comfort vs Energy', 'Comfort vs Cost', 'Energy vs Cost']
+
+    for ax_idx, (ax, (i, j)) in enumerate(zip(axes.flat[:3], pairs)):
+        # All Pareto solutions (background)
+        ax.scatter(F[:, i], F[:, j], c='lightgray', alpha=0.3, s=20, label='All Pareto')
+
         if selected:
-            ax.scatter(F_sel[:, i], F_sel[:, j], c='blue', s=80, edgecolors='black',
-                      label='Selected', zorder=5)
+            # Selected strategies with colors
             for k, sol in enumerate(selected):
-                ax.annotate(sol.get('label', f'{k+1}')[:8],
-                           (F_sel[k, i], F_sel[k, j]),
-                           fontsize=7, ha='left', va='bottom')
-        ax.set_xlabel(obj_labels[i])
-        ax.set_ylabel(obj_labels[j])
-        ax.set_title(panel_titles[ax_idx], fontsize=10)
+                ax.scatter(F_sel[k, i], F_sel[k, j], c=[colors[k]], s=120,
+                          edgecolors='black', linewidth=1.5, zorder=5)
+                # Label with short name
+                label = sol.get('label', f'S{k+1}')
+                # Position label to avoid overlap
+                offset_x = 0.02 * (F[:, i].max() - F[:, i].min())
+                offset_y = 0.02 * (F[:, j].max() - F[:, j].min())
+                ax.annotate(label, (F_sel[k, i] + offset_x, F_sel[k, j] + offset_y),
+                           fontsize=8, fontweight='bold', ha='left', va='bottom')
+
+        ax.set_xlabel(obj_labels[i], fontsize=10)
+        ax.set_ylabel(obj_labels[j], fontsize=10)
+        ax.set_title(panel_titles[ax_idx], fontsize=11, fontweight='bold')
         ax.grid(True, alpha=0.3)
-        if ax == axes[0, 0]:
-            ax.legend(loc='upper right', fontsize=8)
+
+    # Fourth panel: Strategy parameters table
+    ax = axes[1, 1]
+    ax.axis('off')
+
+    if selected:
+        # Build table data
+        col_labels = ['Strategy', 'Schedule', 'Setpoints', 'Rise', 'Temp', 'Grid', 'Cost']
+        table_data = []
+        for k, sol in enumerate(selected):
+            v = sol['variables']
+            o = sol['objectives']
+            schedule = f"{v['comfort_start']:.0f}:00-{v['comfort_end']:.0f}:00"
+            setpoints = f"{v['setpoint_comfort']:.0f}/{v['setpoint_eco']:.0f}°C"
+            row = [
+                sol.get('label', f'S{k+1}'),
+                schedule,
+                setpoints,
+                f"{v['curve_rise']:.2f}",
+                f"{o['mean_temp']:.1f}°C",
+                f"{o['grid_kwh']:.0f}",
+                f"CHF {o['cost_chf']:.0f}",
+            ]
+            table_data.append(row)
+
+        table = ax.table(
+            cellText=table_data,
+            colLabels=col_labels,
+            cellLoc='center',
+            loc='center',
+            colColours=['#e6e6e6'] * len(col_labels),
+        )
+        table.auto_set_font_size(False)
+        table.set_fontsize(9)
+        table.scale(1.2, 1.8)
+
+        # Color rows to match scatter plot colors
+        for k in range(len(selected)):
+            for j in range(len(col_labels)):
+                table[(k + 1, j)].set_facecolor((*colors[k][:3], 0.3))
+
+        ax.set_title('Strategy Parameters', fontsize=11, fontweight='bold', pad=20)
 
     fig.suptitle('Pareto Front: Multi-Objective Heating Optimization\n'
-                 '(Maximize Avg Temp, Minimize Grid Import, Minimize Net Cost)', fontsize=12)
+                 '(Maximize Comfort, Minimize Grid Import, Minimize Cost)', fontsize=13, fontweight='bold')
     plt.tight_layout()
     plt.savefig(OUTPUT_DIR / 'fig25_pareto_front.png', dpi=150, bbox_inches='tight')
     plt.close()
