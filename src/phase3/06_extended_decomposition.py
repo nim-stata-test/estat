@@ -152,8 +152,8 @@ def compute_model_terms(df, params, hc_params):
     t_hk2_expected = hc_params.get('intercept', 39.9) + hc_params.get('slope', -0.869) * t_out
     effort = t_hk2 - t_hk2_expected
 
-    # Get PV generation
-    pv = df['pv_power_generation'].values if 'pv_power_generation' in df.columns else np.zeros(len(df))
+    # Get PV generation (column name is pv_generation_kwh)
+    pv = df['pv_generation_kwh'].values if 'pv_generation_kwh' in df.columns else np.zeros(len(df))
 
     # Apply low-pass filters
     lpf_out = apply_lpf(t_out, params['tau_out'])
