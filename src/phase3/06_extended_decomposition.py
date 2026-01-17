@@ -21,7 +21,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from pathlib import Path
-from scipy.ndimage import uniform_filter1d
 import json
 
 # Paths
@@ -182,8 +181,92 @@ def compute_model_terms(df, params, hc_params):
     }
 
 
+def fit_energy_models(energy_df, integrated_df):
+    """Fit simple energy models for prediction.
+
+    Returns dict with model coefficients for:
+    - consumption: base_load + temp_coef * (T_ref - T_outdoor)
+    - Battery/grid flows from energy balance
+    """
+    from sklearn.linear_model import LinearRegression
+
+    # Merge energy and temperature data
+    t_out_col = 'stiebel_eltron_isg_outdoor_temperature'
+    if t_out_col not in integrated_df.columns:
+        return None
+
+    # Align data
+    common_idx = energy_df.index.intersection(integrated_df.index)
+    if len(common_idx) < 100:
+        return None
+
+    consumption = energy_df.loc[common_idx, 'total_consumption_kwh'].fillna(0)
+    t_out = integrated_df.loc[common_idx, t_out_col].ffill()
+    pv = energy_df.loc[common_idx, 'pv_generation_kwh'].fillna(0)
+
+    # Fit consumption model: consumption = base + heating_coef * max(0, T_ref - T_out)
+    # Use HDD approach with reference temp 18°C
+    T_REF = 18.0
+    hdd = np.maximum(0, T_REF - t_out.values)
+
+    valid = ~(np.isnan(consumption.values) | np.isnan(hdd))
+    if valid.sum() < 50:
+        return None
+
+    X = hdd[valid].reshape(-1, 1)
+    y = consumption.values[valid]
+
+    model = LinearRegression()
+    model.fit(X, y)
+
+    return {
+        'base_load': model.intercept_,
+        'heating_coef': model.coef_[0],
+        't_ref': T_REF,
+        'r2': model.score(X, y),
+    }
+
+
+def predict_energy(energy_week, t_out, energy_model):
+    """Predict energy flows using fitted model."""
+    if energy_model is None:
+        return {}
+
+    # Predict consumption from temperature
+    hdd = np.maximum(0, energy_model['t_ref'] - t_out)
+    consumption_pred = energy_model['base_load'] + energy_model['heating_coef'] * hdd
+    consumption_pred = np.maximum(0, consumption_pred)
+
+    # Get PV (observed - no model for this)
+    pv = energy_week['pv_generation_kwh'].fillna(0).values if 'pv_generation_kwh' in energy_week.columns else np.zeros(len(t_out))
+
+    # Energy balance predictions
+    # Net = PV - Consumption
+    net = pv - consumption_pred
+
+    # Grid feed-in = excess (positive net)
+    feedin_pred = np.maximum(0, net)
+
+    # Grid import = deficit (negative net)
+    import_pred = np.maximum(0, -net)
+
+    # Battery absorbs some of the excess/provides some of deficit
+    # Simple model: battery smooths ~50% of imbalance
+    battery_charge_pred = 0.5 * feedin_pred
+    battery_discharge_pred = 0.5 * import_pred
+
+    return {
+        'consumption': consumption_pred,
+        'feedin': feedin_pred - battery_charge_pred,  # Reduced by battery charging
+        'import': import_pred - battery_discharge_pred,  # Reduced by battery discharge
+        'battery_charge': battery_charge_pred,
+        'battery_discharge': battery_discharge_pred,
+    }
+
+
 def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
-                                   start_date, end_date, output_path, title_suffix=''):
+                                   start_date, end_date, output_path, title_suffix='',
+                                   energy_model=None):
     """Create extended decomposition figure with all panels in single column layout."""
 
     # Filter data to date range
@@ -270,6 +353,9 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
     ax.set_title(f'4. Solar Gain → Room Temp (τ={params["tau_pv"]:.0f}h, g={params["g_pv"]:.3f})')
     ax.grid(True, alpha=0.3)
 
+    # Get energy model predictions
+    energy_pred = predict_energy(energy_week, terms['t_out'], energy_model) if energy_model else {}
+
     # === Panel 5: Battery State of Charge ===
     ax = axes[4]
     if len(energy_week) > 0 and 'battery_charging_kwh' in energy_week.columns:
@@ -283,71 +369,80 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
         soc_observed = 50 + (cumsum - np.mean(cumsum)) / 10 * 100
         soc_observed = np.clip(soc_observed, 0, 100)
 
-        # "Predicted" baseline: what we'd expect from daily pattern (24h rolling mean)
-        soc_baseline = uniform_filter1d(soc_observed, size=96, mode='nearest')
+        # Predicted from energy balance model
+        if 'battery_charge' in energy_pred:
+            net_pred = energy_pred['battery_charge'] - energy_pred['battery_discharge']
+            cumsum_pred = np.cumsum(net_pred)
+            soc_pred = 50 + (cumsum_pred - np.mean(cumsum_pred)) / 10 * 100
+            soc_pred = np.clip(soc_pred, 0, 100)
+            ax.plot(energy_week.index, soc_pred, color=COLORS['baseline'],
+                    linewidth=2, linestyle='--', label='Model')
 
         ax.fill_between(energy_week.index, 0, soc_observed, color=COLORS['battery'],
                         alpha=0.3, label='Observed')
-        ax.plot(energy_week.index, soc_baseline, color=COLORS['baseline'],
-                linewidth=2, linestyle='--', label='24h baseline')
         ax.set_ylabel('Est. SoC (%)')
         ax.set_ylim(0, 100)
         ax.legend(loc='upper right')
     else:
         ax.text(0.5, 0.5, 'No battery data', ha='center', va='center', transform=ax.transAxes)
-    ax.set_title('5. Battery State of Charge: Observed vs Baseline')
+    ax.set_title('5. Battery State of Charge: Observed vs Model')
     ax.grid(True, alpha=0.3)
 
     # === Panel 6: Power Consumption ===
     ax = axes[5]
     if len(energy_week) > 0 and 'total_consumption_kwh' in energy_week.columns:
         consumption = energy_week['total_consumption_kwh'].fillna(0).values
-        # 24-hour moving average as "predicted/baseline"
-        baseline = uniform_filter1d(consumption, size=96, mode='nearest')
+
+        # Predicted from temperature model
+        if 'consumption' in energy_pred:
+            ax.plot(energy_week.index, energy_pred['consumption'], color=COLORS['baseline'],
+                    linewidth=2, linestyle='--', label='Model (HDD)')
 
         ax.fill_between(energy_week.index, 0, consumption, color=COLORS['consumption'],
                         alpha=0.3, label='Observed')
-        ax.plot(energy_week.index, baseline, color=COLORS['baseline'],
-                linewidth=2, linestyle='--', label='24h baseline')
         ax.set_ylabel('Power (kW)')
         ax.legend(loc='upper right')
     else:
         ax.text(0.5, 0.5, 'No consumption data', ha='center', va='center', transform=ax.transAxes)
-    ax.set_title('6. Power Consumption: Observed vs Baseline')
+    ax.set_title('6. Power Consumption: Observed vs Model')
     ax.grid(True, alpha=0.3)
 
     # === Panel 7: Grid Feed-in ===
     ax = axes[6]
     if len(energy_week) > 0 and 'grid_feedin_kwh' in energy_week.columns:
         feedin = energy_week['grid_feedin_kwh'].fillna(0).values
-        baseline = uniform_filter1d(feedin, size=96, mode='nearest')
+
+        # Predicted from energy balance
+        if 'feedin' in energy_pred:
+            ax.plot(energy_week.index, energy_pred['feedin'], color=COLORS['baseline'],
+                    linewidth=2, linestyle='--', label='Model')
 
         ax.fill_between(energy_week.index, 0, feedin, color=COLORS['grid_export'],
                         alpha=0.3, label='Observed')
-        ax.plot(energy_week.index, baseline, color=COLORS['baseline'],
-                linewidth=2, linestyle='--', label='24h baseline')
         ax.set_ylabel('Power (kW)')
         ax.legend(loc='upper right')
     else:
         ax.text(0.5, 0.5, 'No feed-in data', ha='center', va='center', transform=ax.transAxes)
-    ax.set_title('7. Grid Feed-in: Observed vs Baseline')
+    ax.set_title('7. Grid Feed-in: Observed vs Model')
     ax.grid(True, alpha=0.3)
 
     # === Panel 8: Grid Import ===
     ax = axes[7]
     if len(energy_week) > 0 and 'external_supply_kwh' in energy_week.columns:
         grid_import = energy_week['external_supply_kwh'].fillna(0).values
-        baseline = uniform_filter1d(grid_import, size=96, mode='nearest')
+
+        # Predicted from energy balance
+        if 'import' in energy_pred:
+            ax.plot(energy_week.index, energy_pred['import'], color=COLORS['baseline'],
+                    linewidth=2, linestyle='--', label='Model')
 
         ax.fill_between(energy_week.index, 0, grid_import, color=COLORS['grid_import'],
                         alpha=0.3, label='Observed')
-        ax.plot(energy_week.index, baseline, color=COLORS['baseline'],
-                linewidth=2, linestyle='--', label='24h baseline')
         ax.set_ylabel('Power (kW)')
         ax.legend(loc='upper right')
     else:
         ax.text(0.5, 0.5, 'No grid import data', ha='center', va='center', transform=ax.transAxes)
-    ax.set_title('8. Grid Import: Observed vs Baseline')
+    ax.set_title('8. Grid Import: Observed vs Model')
     ax.grid(True, alpha=0.3)
 
     # === Panel 9: Outdoor Temperature ===
@@ -452,6 +547,15 @@ def main():
     overlap_end = min(integrated.index.max(), energy.index.max(), heating.index.max())
     print(f"\nData overlap: {overlap_start.date()} to {overlap_end.date()}")
 
+    # Fit energy models for prediction
+    print("\nFitting energy models...")
+    energy_model = fit_energy_models(energy, integrated)
+    if energy_model:
+        print(f"  Consumption model: base={energy_model['base_load']:.3f} kW, "
+              f"heating_coef={energy_model['heating_coef']:.4f} kW/°C, R²={energy_model['r2']:.3f}")
+    else:
+        print("  WARNING: Could not fit energy model")
+
     # Generate main extended decomposition figure (representative week)
     print("\nGenerating main extended decomposition figure...")
 
@@ -464,7 +568,8 @@ def main():
     success = create_extended_decomposition(
         integrated, energy, heating, params, hc_params,
         start_date, end_date, output_path,
-        title_suffix=f'\n{start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}'
+        title_suffix=f'\n{start_date.strftime("%Y-%m-%d")} to {end_date.strftime("%Y-%m-%d")}',
+        energy_model=energy_model
     )
 
     if success:
@@ -491,7 +596,8 @@ def main():
         success = create_extended_decomposition(
             integrated, energy, heating, params, hc_params,
             start, end, output_path,
-            title_suffix=f' - Week {week_num}\n{start.strftime("%Y-%m-%d")} to {end.strftime("%Y-%m-%d")}'
+            title_suffix=f' - Week {week_num}\n{start.strftime("%Y-%m-%d")} to {end.strftime("%Y-%m-%d")}',
+            energy_model=energy_model
         )
 
         if success:
