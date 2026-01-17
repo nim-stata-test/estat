@@ -226,16 +226,35 @@ def main():
         else:
             print(f"  WARNING: {script} failed")
 
-    # Generate Pareto animation (if archive exists)
+    # Run Pareto optimization (warm-start if archive exists, otherwise fresh)
+    print(f"\n{'='*60}")
+    print("Running Pareto Multi-Objective Optimization")
+    print('='*60)
+    pareto_script = Path(__file__).parent / '04_pareto_optimization.py'
     pareto_archive = OUTPUT_DIR / 'pareto_archive.json'
+
+    # Use warm-start with 20 generations if archive exists, otherwise fresh with 50
     if pareto_archive.exists():
-        print(f"\n{'='*60}")
-        print("Generating Pareto evolution animation")
-        print('='*60)
-        if run_script('07_pareto_animation.py'):
-            print("  Animation generated successfully")
-        else:
-            print("  WARNING: Animation generation failed")
+        pareto_args = [sys.executable, str(pareto_script), '-g', '20']
+        print("  Warm-starting from existing archive (20 generations)")
+    else:
+        pareto_args = [sys.executable, str(pareto_script), '--fresh', '-g', '50', '-p', '100']
+        print("  Starting fresh optimization (50 generations, pop=100)")
+
+    result = subprocess.run(pareto_args, cwd=str(PROJECT_ROOT))
+    if result.returncode == 0:
+        success_count += 1
+    else:
+        print("  WARNING: Pareto optimization failed")
+
+    # Generate Pareto animation
+    print(f"\n{'='*60}")
+    print("Generating Pareto evolution animation")
+    print('='*60)
+    if run_script('07_pareto_animation.py'):
+        print("  Animation generated successfully")
+    else:
+        print("  WARNING: Animation generation failed")
 
     # Generate combined report
     generate_html_report()
@@ -244,7 +263,8 @@ def main():
     print("\n" + "="*60)
     print("PHASE 4 COMPLETE")
     print("="*60)
-    print(f"Scripts completed: {success_count}/{len(scripts)}")
+    total_scripts = len(scripts) + 1  # +1 for Pareto optimization
+    print(f"Scripts completed: {success_count}/{total_scripts}")
     print(f"Output directory: {OUTPUT_DIR}")
     print("\nKey outputs:")
     print("  - phase4_report.html (combined report)")
