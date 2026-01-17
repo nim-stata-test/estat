@@ -226,6 +226,17 @@ def main():
         else:
             print(f"  WARNING: {script} failed")
 
+    # Generate Pareto animation (if archive exists)
+    pareto_archive = OUTPUT_DIR / 'pareto_archive.json'
+    if pareto_archive.exists():
+        print(f"\n{'='*60}")
+        print("Generating Pareto evolution animation")
+        print('='*60)
+        if run_script('07_pareto_animation.py'):
+            print("  Animation generated successfully")
+        else:
+            print("  WARNING: Animation generation failed")
+
     # Generate combined report
     generate_html_report()
 
@@ -248,10 +259,14 @@ def main():
     print("  - fig24_parameter_space.png")
     print("  - fig25_pareto_front.png (Pareto optimization)")
     print("  - fig26_pareto_strategy_comparison.png (Pareto strategies)")
+    print("  - fig27_pareto_evolution.png (Pareto evolution frame)")
     print("  - fig28_strategy_temperature_predictions.png (Comfort evaluation)")
     print("  - fig29_strategy_detailed_timeseries.png (Detailed time series)")
     print("  - fig30_strategy_hourly_patterns.png (Hourly patterns)")
     print("  - fig31_strategy_energy_patterns.png (Energy patterns)")
+    print("\nAnimations:")
+    print("  - pareto_evolution.gif / .mp4 (2D Pareto evolution)")
+    print("  - pareto_evolution_3d.gif / .mp4 (3D Pareto evolution)")
 
 
 if __name__ == '__main__':
