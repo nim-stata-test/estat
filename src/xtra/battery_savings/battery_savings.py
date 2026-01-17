@@ -22,6 +22,7 @@ Outputs:
 - battery_savings_report.html - Summary report
 """
 
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -35,6 +36,10 @@ warnings.filterwarnings('ignore')
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 PROCESSED_DIR = PROJECT_ROOT / 'output' / 'phase1'
 OUTPUT_DIR = PROJECT_ROOT / 'output' / 'xtra' / 'battery_savings'
+
+# Add src to path for shared imports
+sys.path.insert(0, str(PROJECT_ROOT / 'src'))
+from shared.report_style import CSS, COLORS
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Tax rate on feed-in income
@@ -549,26 +554,35 @@ def generate_report(daily, daily_by_tariff, projection=None):
         'battery_discharging_kwh': 'sum',
     })
 
+    # Extra CSS for battery report
+    extra_css = f"""
+        .highlight {{ background-color: {COLORS['light_green']}; font-weight: bold; }}
+        .negative {{ color: #c0392b; }}
+        .positive {{ color: {COLORS['primary_green']}; }}
+        .summary-box {{
+            background-color: {COLORS['light_green']};
+            border-left: 4px solid {COLORS['primary_green']};
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }}
+        .methodology {{
+            background-color: {COLORS['gray_light']};
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }}
+    """
+
     html = f"""<!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
     <title>Battery Cost Savings Analysis</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-               max-width: 900px; margin: 40px auto; padding: 0 20px; line-height: 1.6; }}
-        h1 {{ color: #2c3e50; border-bottom: 2px solid #27ae60; padding-bottom: 10px; }}
-        h2 {{ color: #34495e; margin-top: 30px; }}
-        table {{ border-collapse: collapse; width: 100%; margin: 20px 0; }}
-        th, td {{ border: 1px solid #ddd; padding: 10px; text-align: left; }}
-        th {{ background-color: #27ae60; color: white; }}
-        tr:nth-child(even) {{ background-color: #f9f9f9; }}
-        .highlight {{ background-color: #d5f5e3; font-weight: bold; }}
-        .negative {{ color: #c0392b; }}
-        .positive {{ color: #27ae60; }}
-        .summary-box {{ background-color: #eafaf1; border-left: 4px solid #27ae60;
-                       padding: 15px; margin: 20px 0; }}
-        img {{ max-width: 100%; height: auto; margin: 20px 0; }}
-        .methodology {{ background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }}
+{CSS}
+{extra_css}
     </style>
 </head>
 <body>
@@ -735,6 +749,10 @@ def generate_report(daily, daily_by_tariff, projection=None):
         <p><strong>Feed-in rates use HKN bonus:</strong> Base rate + 1.5 Rp (2023-2024) or + 2.5 Rp (2025+)</p>
         <p>Time-varying tariffs (Hochtarif/Niedertarif) are applied at 15-minute resolution.</p>
         <p><strong>Output format:</strong> Daily CSV contains separate rows for high and low tariff periods.</p>
+    </div>
+
+    <div class="footer">
+        <p>ESTAT - Energy System Analysis | Battery Cost Savings Analysis</p>
     </div>
 
 </body>

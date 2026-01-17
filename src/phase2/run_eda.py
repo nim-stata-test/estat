@@ -26,6 +26,10 @@ import numpy as np
 
 # Project root directory
 PROJECT_ROOT = Path(__file__).parent.parent.parent
+
+# Add src to path for shared imports
+sys.path.insert(0, str(PROJECT_ROOT / 'src'))
+from shared.report_style import CSS, COLORS
 PROCESSED_DIR = PROJECT_ROOT / "output" / "phase1"
 OUTPUT_DIR = PROJECT_ROOT / "output" / "phase2"
 SRC_DIR = PROJECT_ROOT / "src" / "phase2"
@@ -541,105 +545,70 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
     mappings_html = "<ul>" + "".join(f"<li>{k} → {v}</li>" for k, v in SENSOR_MAPPINGS.items()) + "</ul>"
     primary_html = "<ul>" + "".join(f"<li>{s}</li>" for s in PRIMARY_ROOM_SENSORS) + "</ul>"
 
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESTAT Phase 2: EDA Report</title>
-    <style>
-        :root {{
-            --primary: #2563eb;
-            --success: #16a34a;
-            --warning: #d97706;
-            --danger: #dc2626;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text: #1e293b;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --code-bg: #1e293b;
-        }}
-        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            padding: 2rem;
-        }}
+    # Phase 2 specific CSS extensions
+    extra_css = f"""
         .container {{ max-width: 1400px; margin: 0 auto; }}
-        h1 {{ color: var(--primary); margin-bottom: 0.5rem; }}
-        h2 {{ color: var(--text); margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); }}
-        h3 {{ color: var(--text-muted); margin: 1.5rem 0 0.75rem; }}
-        h4 {{ margin: 1rem 0 0.5rem; }}
-        .meta {{ color: var(--text-muted); margin-bottom: 2rem; }}
+        .meta {{ color: {COLORS['gray_dark']}; margin-bottom: 2rem; }}
         .card {{
-            background: var(--card-bg);
-            border-radius: 8px;
+            background: white;
+            border-radius: 4px;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }}
         .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }}
         .stat-box {{
-            background: var(--card-bg);
-            border-radius: 8px;
+            background: white;
+            border-radius: 4px;
             padding: 1rem 1.5rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             text-align: center;
         }}
-        .stat-box .value {{ font-size: 1.75rem; font-weight: bold; color: var(--primary); }}
-        .stat-box .label {{ color: var(--text-muted); font-size: 0.875rem; }}
-        .success {{ color: var(--success); }}
-        .warning {{ color: var(--warning); }}
-        .error {{ color: var(--danger); }}
-        ul {{ margin-left: 1.5rem; }}
-        li {{ margin: 0.25rem 0; }}
-        pre {{
-            background: var(--code-bg);
-            color: #e2e8f0;
-            padding: 1rem;
-            border-radius: 8px;
-            overflow-x: auto;
-            font-size: 0.8rem;
-            line-height: 1.4;
-            max-height: 400px;
-            overflow-y: auto;
-        }}
-        .toc {{ background: var(--card-bg); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }}
+        .stat-box .value {{ font-size: 1.75rem; font-weight: bold; color: {COLORS['primary_green']}; }}
+        .stat-box .label {{ color: {COLORS['gray_dark']}; font-size: 0.875rem; }}
+        .success {{ color: {COLORS['primary_green']}; }}
+        .error {{ color: {COLORS['red_alert']}; }}
+        .toc {{ background: white; padding: 1.5rem; border-radius: 4px; margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
         .toc ul {{ list-style: none; margin: 0; }}
         .toc li {{ margin: 0.5rem 0; }}
-        .toc a {{ color: var(--primary); text-decoration: none; }}
-        .toc a:hover {{ text-decoration: underline; }}
+        .toc h2 {{ margin-top: 0; border-bottom: none; color: {COLORS['dark_teal']}; }}
         .figure {{
-            background: var(--card-bg);
-            border-radius: 8px;
+            background: white;
+            border-radius: 4px;
             padding: 1rem;
             margin-bottom: 1.5rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }}
         .figure img {{ width: 100%; height: auto; border-radius: 4px; }}
-        .figure-caption {{ color: var(--text-muted); font-size: 0.875rem; margin-top: 0.5rem; text-align: center; }}
-        .figure.missing {{ border: 2px dashed var(--danger); }}
+        .figure-caption {{ color: {COLORS['gray_dark']}; font-size: 0.875rem; margin-top: 0.5rem; text-align: center; }}
+        .figure.missing {{ border: 2px dashed {COLORS['red_alert']}; }}
         details {{ margin: 1rem 0; }}
         summary {{
             cursor: pointer;
             padding: 0.5rem;
-            background: var(--bg);
+            background: {COLORS['gray_light']};
             border-radius: 4px;
             font-weight: 500;
         }}
-        summary:hover {{ background: var(--border); }}
+        summary:hover {{ background: {COLORS['gray_border']}; }}
         .config-section {{
-            background: #eff6ff;
-            border-left: 4px solid var(--primary);
+            background: {COLORS['light_green']};
+            border-left: 4px solid {COLORS['primary_green']};
             padding: 1rem 1.5rem;
             margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
         }}
-        table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; }}
-        th, td {{ padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }}
-        th {{ background: var(--bg); font-weight: 600; }}
+    """
+
+    html = f"""<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESTAT Phase 2: EDA Report</title>
+    <style>
+{CSS}
+{extra_css}
     </style>
 </head>
 <body>
@@ -874,6 +843,10 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
             <pre>{format_log(hk2_log)}</pre>
         </details>
 
+    </div>
+
+    <div class="footer">
+        <p>ESTAT - Energy System Analysis | Phase 2: Exploratory Data Analysis</p>
     </div>
 </body>
 </html>"""

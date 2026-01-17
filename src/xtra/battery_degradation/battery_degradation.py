@@ -13,6 +13,7 @@ Outputs:
 - battery_degradation_report.html - Detailed HTML report with methods and results
 """
 
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -26,6 +27,10 @@ warnings.filterwarnings('ignore')
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
 PROCESSED_DIR = PROJECT_ROOT / 'output' / 'phase1'
 OUTPUT_DIR = PROJECT_ROOT / 'output' / 'xtra' / 'battery_degradation'
+
+# Add src to path for shared imports
+sys.path.insert(0, str(PROJECT_ROOT / 'src'))
+from shared.report_style import CSS, COLORS
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Event definition
@@ -460,62 +465,45 @@ def generate_html_report(monthly, stats, fig_path):
         time_pval = coef['months_since_start']['pvalue']
         r_squared = stats['r_squared']
 
+    # Extra CSS for degradation report
+    extra_css = f"""
+        .meta {{ color: {COLORS['gray_dark']}; margin-bottom: 1.5rem; }}
+        .card {{
+            background: white;
+            border-radius: 4px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }}
+        .highlight {{
+            background: #fef3c7;
+            padding: 1rem;
+            border-left: 4px solid #f97316;
+            margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
+        }}
+        .result-box {{
+            background: {COLORS['light_green']};
+            border: 1px solid {COLORS['primary_green']};
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }}
+        .sig {{ color: #dc2626; font-weight: bold; }}
+        .summary-table {{ font-family: 'SF Mono', Monaco, monospace; }}
+        .summary-table td:nth-child(2), .summary-table td:nth-child(3) {{ text-align: right; }}
+    """
+
     # Build HTML content
     html = f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Battery Degradation Analysis Report</title>
     <style>
-        :root {{
-            --primary: #2563eb;
-            --danger: #dc2626;
-            --success: #16a34a;
-            --warning: #f97316;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text: #1e293b;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-        }}
-        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            padding: 2rem;
-            max-width: 900px;
-            margin: 0 auto;
-        }}
-        h1 {{ color: var(--primary); margin-bottom: 0.5rem; font-size: 1.8rem; }}
-        h2 {{ color: var(--text); margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); font-size: 1.4rem; }}
-        h3 {{ color: var(--text-muted); margin: 1.5rem 0 0.75rem; font-size: 1.1rem; }}
-        p {{ margin: 0.75rem 0; }}
-        .meta {{ color: var(--text-muted); margin-bottom: 1.5rem; }}
-        .card {{
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }}
-        ul {{ margin: 0.5rem 0 0.5rem 1.5rem; }}
-        li {{ margin: 0.3rem 0; }}
-        table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.9rem; }}
-        th, td {{ padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }}
-        th {{ background: var(--bg); font-weight: 600; }}
-        code {{ background: #f1f5f9; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: 'SF Mono', Monaco, monospace; font-size: 0.85rem; }}
-        pre {{ background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; }}
-        .figure {{ text-align: center; margin: 1.5rem 0; }}
-        .figure img {{ max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
-        .figure-caption {{ color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem; }}
-        .highlight {{ background: #fef3c7; padding: 1rem; border-left: 4px solid var(--warning); margin: 1rem 0; }}
-        .result-box {{ background: #f0fdf4; border: 1px solid #86efac; padding: 1rem; border-radius: 8px; margin: 1rem 0; }}
-        .sig {{ color: var(--danger); font-weight: bold; }}
-        .summary-table {{ font-family: 'SF Mono', Monaco, monospace; }}
-        .summary-table td:nth-child(2), .summary-table td:nth-child(3) {{ text-align: right; }}
+{CSS}
+{extra_css}
     </style>
 </head>
 <body>
@@ -789,6 +777,10 @@ def generate_html_report(monthly, stats, fig_path):
     <div class="figure">
         <img src="data:image/png;base64,{img_b64}" alt="Battery Degradation Analysis">
         <p class="figure-caption"><strong>Figure 1:</strong> Battery Degradation Analysis. Top-left: Monthly efficiency time series with event period highlighted. Top-right: Monthly charge/discharge volumes. Bottom-left: Efficiency trends with regression lines. Bottom-right: Pre/post efficiency distributions.</p>
+    </div>
+
+    <div class="footer">
+        <p>ESTAT - Energy System Analysis | Battery Degradation Analysis</p>
     </div>
 
 </body>

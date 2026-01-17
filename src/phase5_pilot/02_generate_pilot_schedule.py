@@ -17,6 +17,7 @@ Outputs:
 
 import argparse
 import json
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -26,6 +27,10 @@ import pandas as pd
 # Project paths
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase5_pilot'
+
+# Add src to path for shared imports
+sys.path.insert(0, str(PROJECT_ROOT / 'src'))
+from shared.report_style import CSS, COLORS
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Block structure
@@ -155,64 +160,48 @@ def generate_html_protocol(df: pd.DataFrame, seed: int, output_path: Path) -> No
     end_date = df['end_date'].iloc[-1]
     n_blocks = len(df)
 
-    html = f'''<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESTAT Phase 5 Pilot: Experimental Protocol</title>
-    <style>
-        :root {{
-            --primary: #2563eb;
-            --success: #16a34a;
-            --warning: #d97706;
-            --danger: #dc2626;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text: #1e293b;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-        }}
-        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            padding: 2rem;
-        }}
-        .container {{ max-width: 1200px; margin: 0 auto; }}
-        h1 {{ color: var(--primary); margin-bottom: 0.5rem; }}
-        h2 {{ color: var(--text); margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); }}
-        h3 {{ color: var(--text-muted); margin: 1.5rem 0 0.75rem; }}
-        .meta {{ color: var(--text-muted); margin-bottom: 2rem; }}
-        .card {{
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }}
-        .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }}
+    # Phase 5 pilot-specific CSS extensions
+    extra_css = f"""
         .stat-box {{
-            background: var(--card-bg);
-            border-radius: 8px;
+            background: white;
+            border-radius: 4px;
             padding: 1rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             text-align: center;
         }}
-        .stat-box .value {{ font-size: 1.5rem; font-weight: bold; color: var(--primary); }}
-        .stat-box .label {{ color: var(--text-muted); font-size: 0.85rem; }}
-        table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; }}
-        th, td {{ padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }}
-        th {{ background: var(--bg); font-weight: 600; }}
+        .stat-box .value {{
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: {COLORS['primary_green']};
+        }}
+        .stat-box .label {{
+            color: {COLORS['gray_dark']};
+            font-size: 0.85rem;
+        }}
+        .grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }}
+        .card {{
+            background: white;
+            border-radius: 4px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }}
+        .meta {{
+            color: {COLORS['gray_dark']};
+            margin-bottom: 2rem;
+        }}
         .block-card {{
-            background: var(--card-bg);
-            border-radius: 8px;
+            background: white;
+            border-radius: 4px;
             padding: 1rem 1.5rem;
             margin-bottom: 1rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            border-left: 4px solid var(--primary);
+            border-left: 4px solid {COLORS['primary_green']};
         }}
         .block-header {{
             display: flex;
@@ -223,10 +212,10 @@ def generate_html_protocol(df: pd.DataFrame, seed: int, output_path: Path) -> No
         .block-num {{
             font-size: 1.25rem;
             font-weight: bold;
-            color: var(--primary);
+            color: {COLORS['primary_green']};
         }}
         .block-dates {{
-            color: var(--text-muted);
+            color: {COLORS['gray_dark']};
             font-size: 0.9rem;
         }}
         .param-grid {{
@@ -236,31 +225,40 @@ def generate_html_protocol(df: pd.DataFrame, seed: int, output_path: Path) -> No
             margin-top: 0.5rem;
         }}
         .param-item {{
-            background: var(--bg);
+            background: {COLORS['gray_light']};
             padding: 0.5rem;
             border-radius: 4px;
             text-align: center;
         }}
-        .param-label {{ font-size: 0.75rem; color: var(--text-muted); }}
-        .param-value {{ font-weight: 600; }}
-        .warning {{
-            background: #fef3c7;
-            border: 1px solid #fcd34d;
-            border-radius: 8px;
-            padding: 1rem;
-            margin: 1rem 0;
+        .param-label {{
+            font-size: 0.75rem;
+            color: {COLORS['gray_dark']};
+        }}
+        .param-value {{
+            font-weight: 600;
         }}
         .danger {{
             background: #fee2e2;
             border: 1px solid #fca5a5;
-            border-radius: 8px;
+            border-radius: 4px;
             padding: 1rem;
             margin: 1rem 0;
         }}
         @media print {{
             body {{ padding: 0.5rem; }}
-            .card {{ box-shadow: none; border: 1px solid var(--border); }}
+            .card {{ box-shadow: none; border: 1px solid {COLORS['gray_border']}; }}
         }}
+    """
+
+    html = f'''<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESTAT Phase 5 Pilot: Experimental Protocol</title>
+    <style>
+{CSS}
+{extra_css}
     </style>
 </head>
 <body>
@@ -536,6 +534,9 @@ open output/phase5_pilot/dynamical_analysis_report.html
             </table>
         </div>
 
+        <div class="footer">
+            <p>ESTAT - Energy System Analysis | Phase 5 Pilot: Parameter Exploration</p>
+        </div>
     </div>
 </body>
 </html>'''

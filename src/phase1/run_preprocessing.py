@@ -30,6 +30,10 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 PROCESSED_DIR = PROJECT_ROOT / "output" / "phase1"
 SRC_DIR = PROJECT_ROOT / "src" / "phase1"
 
+# Add src to path for shared imports
+sys.path.insert(0, str(PROJECT_ROOT / 'src'))
+from shared.report_style import CSS, COLORS
+
 # Store logs from each step
 step_logs = {}
 
@@ -175,85 +179,42 @@ def generate_html_report(step_logs: dict, stats: dict) -> str:
     def format_log(log: str) -> str:
         return log.replace('<', '&lt;').replace('>', '&gt;')
 
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESTAT Phase 1: Preprocessing Report</title>
-    <style>
-        :root {{
-            --primary: #2563eb;
-            --success: #16a34a;
-            --warning: #d97706;
-            --danger: #dc2626;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text: #1e293b;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --code-bg: #1e293b;
-        }}
-        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            padding: 2rem;
-        }}
-        .container {{ max-width: 1400px; margin: 0 auto; }}
-        h1 {{ color: var(--primary); margin-bottom: 0.5rem; }}
-        h2 {{ color: var(--text); margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); }}
-        h3 {{ color: var(--text-muted); margin: 1.5rem 0 0.75rem; }}
-        h4 {{ margin: 1rem 0 0.5rem; }}
-        .meta {{ color: var(--text-muted); margin-bottom: 2rem; }}
-        .card {{
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }}
-        .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }}
+    # Phase 1-specific CSS extensions
+    extra_css = f"""
         .stat-box {{
-            background: var(--card-bg);
-            border-radius: 8px;
+            background: white;
+            border-radius: 4px;
             padding: 1rem 1.5rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             text-align: center;
         }}
-        .stat-box .value {{ font-size: 1.75rem; font-weight: bold; color: var(--primary); }}
-        .stat-box .label {{ color: var(--text-muted); font-size: 0.875rem; }}
-        .success {{ color: var(--success); }}
-        .warning {{ color: var(--warning); }}
-        .error {{ color: var(--danger); }}
-        .note {{ color: var(--text-muted); font-style: italic; margin-bottom: 0.5rem; }}
-        table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; }}
-        th, td {{ padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.875rem; }}
-        th {{ background: var(--bg); font-weight: 600; }}
-        .data-table {{ font-size: 0.8rem; }}
-        .data-table th, .data-table td {{ padding: 0.35rem 0.5rem; }}
-        pre {{
-            background: var(--code-bg);
-            color: #e2e8f0;
-            padding: 1rem;
-            border-radius: 8px;
-            overflow-x: auto;
-            font-size: 0.8rem;
-            line-height: 1.4;
-            max-height: 400px;
-            overflow-y: auto;
+        .stat-box .value {{
+            font-size: 1.75rem;
+            font-weight: bold;
+            color: {COLORS['primary_green']};
         }}
-        .toc {{ background: var(--card-bg); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }}
-        .toc ul {{ list-style: none; }}
-        .toc li {{ margin: 0.5rem 0; }}
-        .toc a {{ color: var(--primary); text-decoration: none; }}
-        .toc a:hover {{ text-decoration: underline; }}
-        .step-header {{
-            display: flex;
-            align-items: center;
+        .stat-box .label {{
+            color: {COLORS['gray_dark']};
+            font-size: 0.875rem;
+        }}
+        .grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
+            margin: 1rem 0;
+        }}
+        .card {{
+            background: white;
+            border-radius: 4px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }}
+        .data-table {{
+            font-size: 0.8rem;
+        }}
+        .data-table th, .data-table td {{
+            padding: 0.35rem 0.5rem;
         }}
         .step-status {{
             padding: 0.25rem 0.75rem;
@@ -261,26 +222,91 @@ def generate_html_report(step_logs: dict, stats: dict) -> str:
             font-size: 0.875rem;
             font-weight: 500;
         }}
-        .step-status.success {{ background: #dcfce7; color: var(--success); }}
-        .step-status.failed {{ background: #fee2e2; color: var(--danger); }}
-        details {{ margin: 1rem 0; }}
+        .step-status.success {{
+            background: {COLORS['light_green']};
+            color: {COLORS['primary_green']};
+        }}
+        .step-status.failed {{
+            background: #fee2e2;
+            color: #dc2626;
+        }}
+        .toc {{
+            background: white;
+            padding: 1.5rem;
+            border-radius: 4px;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }}
+        .toc ul {{
+            list-style: none;
+            padding-left: 0;
+        }}
+        .toc li {{
+            margin: 0.5rem 0;
+        }}
+        .toc a {{
+            color: {COLORS['primary_green']};
+            text-decoration: none;
+        }}
+        .toc a:hover {{
+            text-decoration: underline;
+        }}
+        .meta {{
+            color: {COLORS['gray_dark']};
+            margin-bottom: 2rem;
+        }}
+        details {{
+            margin: 1rem 0;
+        }}
         summary {{
             cursor: pointer;
             padding: 0.5rem;
-            background: var(--bg);
+            background: {COLORS['gray_light']};
             border-radius: 4px;
             font-weight: 500;
         }}
-        summary:hover {{ background: var(--border); }}
+        summary:hover {{
+            background: {COLORS['gray_border']};
+        }}
         .methodology {{
-            background: #eff6ff;
-            border-left: 4px solid var(--primary);
+            background: {COLORS['light_green']};
+            border-left: 4px solid {COLORS['primary_green']};
             padding: 1rem 1.5rem;
             margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
         }}
-        .methodology h4 {{ margin-top: 0; }}
-        .methodology ul {{ margin-left: 1.5rem; }}
-        .methodology li {{ margin: 0.25rem 0; }}
+        .methodology h4 {{
+            margin-top: 0;
+            color: {COLORS['dark_teal']};
+        }}
+        .methodology ul {{
+            margin-left: 1.5rem;
+        }}
+        .methodology li {{
+            margin: 0.25rem 0;
+        }}
+        .success {{
+            color: {COLORS['primary_green']};
+        }}
+        .error {{
+            color: #dc2626;
+        }}
+        .note {{
+            color: {COLORS['gray_dark']};
+            font-style: italic;
+            margin-bottom: 0.5rem;
+        }}
+    """
+
+    html = f"""<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESTAT Phase 1: Preprocessing Report</title>
+    <style>
+{CSS}
+{extra_css}
     </style>
 </head>
 <body>
@@ -557,6 +583,9 @@ def generate_html_report(step_logs: dict, stats: dict) -> str:
             <pre>{format_log(step_logs.get('tariffs', (False, 'Not executed'))[1])}</pre>
         </details>
 
+        <div class="footer">
+            <p>ESTAT - Energy System Analysis | Phase 1: Preprocessing</p>
+        </div>
     </div>
 </body>
 </html>"""

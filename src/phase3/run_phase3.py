@@ -285,7 +285,6 @@ Potential with optimization: 85.3%
 
     <div class="footer">
         <p>ESTAT - Energy System Analysis | Phase 3: System Modeling</p>
-        <p>Design based on <a href="https://statistik.bs.ch">Statistik Basel-Stadt</a></p>
     </div>
 
 </body>

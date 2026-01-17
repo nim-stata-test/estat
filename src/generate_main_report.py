@@ -385,7 +385,6 @@ def generate_main_report():
 
     <div class="footer">
         <p>ESTAT - Energy Balance Data Repository</p>
-        <p>Design based on <a href="https://statistik.bs.ch">Statistik Basel-Stadt</a></p>
     </div>
 </body>
 </html>

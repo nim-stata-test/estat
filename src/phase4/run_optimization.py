@@ -22,6 +22,10 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase4'
 OUTPUT_DIR.mkdir(exist_ok=True)
 
+# Add src to path for shared imports
+sys.path.insert(0, str(PROJECT_ROOT / 'src'))
+from shared.report_style import CSS, COLORS
+
 
 def run_script(script_name: str) -> bool:
     """Run a Phase 4 script and return success status."""
@@ -67,87 +71,27 @@ def generate_html_report():
     # Build HTML structure
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
 
-    html = f"""<!DOCTYPE html>
-<html>
-<head>
-    <title>Phase 4: Optimization Strategy Development Report</title>
-    <meta charset="UTF-8">
-    <style>
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            line-height: 1.6;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            color: #333;
-        }}
-        h1 {{
-            color: #1a5f7a;
-            border-bottom: 3px solid #1a5f7a;
-            padding-bottom: 10px;
-        }}
-        h2 {{
-            color: #2c3e50;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 5px;
-            margin-top: 40px;
-        }}
-        h3 {{
-            color: #34495e;
-        }}
-        h4 {{
-            color: #1a5f7a;
-            margin-top: 20px;
-        }}
-        table {{
-            border-collapse: collapse;
-            width: 100%;
-            margin: 15px 0;
-        }}
-        th, td {{
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-        }}
-        th {{
-            background-color: #f5f5f5;
-        }}
-        tr:nth-child(even) {{
-            background-color: #fafafa;
-        }}
-        figure {{
-            margin: 20px 0;
-            text-align: center;
-        }}
-        figcaption {{
-            font-style: italic;
-            color: #666;
-            margin-top: 10px;
-        }}
-        img {{
-            max-width: 100%;
-            height: auto;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }}
+    # Additional CSS for Phase 4 specific elements
+    extra_css = f"""
         .summary-box {{
-            background-color: #e8f4f8;
-            border-left: 4px solid #1a5f7a;
+            background-color: {COLORS['light_green']};
+            border-left: 4px solid {COLORS['primary_green']};
             padding: 15px;
             margin: 20px 0;
+            border-radius: 0 4px 4px 0;
         }}
         .toc {{
-            background-color: #f8f9fa;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
+            background-color: white;
+            border: 1px solid {COLORS['gray_border']};
+            border-radius: 4px;
             padding: 20px 25px;
             margin: 25px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }}
         .toc h3 {{
             margin-top: 0;
             margin-bottom: 15px;
-            color: #1a5f7a;
+            color: {COLORS['dark_teal']};
         }}
         .toc ul {{
             list-style: none;
@@ -158,41 +102,33 @@ def generate_html_report():
             margin: 8px 0;
         }}
         .toc a {{
-            color: #2c3e50;
+            color: {COLORS['gray_dark']};
             text-decoration: none;
-            border-bottom: 1px dotted #ccc;
+            border-bottom: 1px dotted {COLORS['gray_border']};
         }}
         .toc a:hover {{
-            color: #1a5f7a;
-            border-bottom-color: #1a5f7a;
+            color: {COLORS['primary_green']};
+            border-bottom-color: {COLORS['primary_green']};
         }}
         .strategy-card, .parameter-card {{
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            background-color: white;
+            border: 1px solid {COLORS['gray_border']};
+            border-radius: 4px;
             padding: 15px;
             margin: 15px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }}
-        pre {{
-            background-color: #f5f5f5;
-            padding: 15px;
-            border-radius: 4px;
-            overflow-x: auto;
-        }}
-        ul, ol {{
-            margin: 10px 0;
-            padding-left: 25px;
-        }}
-        li {{
-            margin: 5px 0;
-        }}
-        em {{
-            color: #666;
-        }}
-        strong {{
-            color: #1a5f7a;
-        }}
+    """
+
+    html = f"""<!DOCTYPE html>
+<html lang="de">
+<head>
+    <title>Phase 4: Optimization Strategy Development Report</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+{CSS}
+{extra_css}
     </style>
 </head>
 <body>
@@ -259,10 +195,9 @@ def generate_html_report():
     </ul>
     </section>
 
-    <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ccc; color: #666;">
-        <p>ESTAT Project - Phase 4 Optimization Report</p>
-        <p>Generated by Phase 4 analysis pipeline</p>
-    </footer>
+    <div class="footer">
+        <p>ESTAT - Energy System Analysis | Phase 4: Optimization</p>
+    </div>
 </body>
 </html>"""
 
