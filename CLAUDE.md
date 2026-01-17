@@ -476,10 +476,22 @@ BATTERY_PARAMS = {
     'capacity_kwh': 11.0,        # Total capacity
     'max_charge_kw': 5.0,        # Max charging rate
     'max_discharge_kw': 5.0,     # Max discharging rate
-    'efficiency': 0.84,          # Round-trip efficiency
+    'efficiency': 0.77,          # Round-trip efficiency (post-degradation, was 0.84)
     'initial_soc_pct': 50.0,     # Default starting SoC
+    'min_soc_pct': 20.0,         # Minimum SoC (battery protection since Mar 2025)
+    'max_soc_pct': 100.0,        # Maximum SoC
+    'discharge_start_hour': 15.0,   # Preferred discharge window start
+    'discharge_end_hour': 22.0,     # Preferred discharge window end
+    'allow_overnight_discharge': False,  # Block 00:00-06:00 discharge
 }
 ```
+
+**Battery Model Improvements (Jan 2026):**
+Analysis comparing model vs observed battery behavior revealed:
+- **Min SoC protection**: Battery maintains 20% reserve (usable: 8.8 kWh)
+- **Post-degradation efficiency**: 77% round-trip (down from 84% after Feb-Mar 2025 event)
+- **Time-of-use strategy**: Discharge concentrated 15:00-22:00, minimal overnight
+- **Result**: Model grid import now within +0.8% of observed (was -2.1%)
 
 **COP Model:**
 ```

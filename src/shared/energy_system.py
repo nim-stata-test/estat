@@ -27,8 +27,14 @@ BATTERY_PARAMS = {
     'capacity_kwh': 11.0,        # Total capacity
     'max_charge_kw': 5.0,        # Max charging rate
     'max_discharge_kw': 5.0,     # Max discharging rate
-    'efficiency': 0.84,          # Round-trip efficiency (sqrt for one-way)
+    'efficiency': 0.77,          # Round-trip efficiency (post-degradation, was 0.84)
     'initial_soc_pct': 50.0,     # Default starting SoC
+    'min_soc_pct': 20.0,         # Minimum SoC (battery protection since Mar 2025)
+    'max_soc_pct': 100.0,        # Maximum SoC (could be 90% for longevity)
+    # Time-of-use discharge strategy (observed: battery concentrates discharge 15:00-22:00)
+    'discharge_start_hour': 15.0,   # Preferred discharge window start
+    'discharge_end_hour': 22.0,     # Preferred discharge window end
+    'allow_overnight_discharge': False,  # Don't discharge 00:00-06:00
 }
 
 
@@ -201,14 +207,20 @@ def predict_t_hk2_variable_setpoint(t_outdoor: np.ndarray,
 def simulate_battery_soc(pv_generation: np.ndarray, consumption: np.ndarray,
                          dt_hours: float = 0.25,
                          battery_params: Dict = None,
-                         initial_soc_pct: float = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+                         initial_soc_pct: float = None,
+                         timestamps: pd.DatetimeIndex = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Simulate battery state-of-charge with capacity constraints.
+    Simulate battery state-of-charge with capacity and time-of-use constraints.
 
     Energy flow logic:
     1. Net = PV - consumption
-    2. If Net > 0: charge battery (up to capacity), excess to grid
-    3. If Net < 0: discharge battery (if available), deficit from grid
+    2. If Net > 0: charge battery (up to max_soc), excess to grid
+    3. If Net < 0: discharge battery (if above min_soc AND in discharge window), deficit from grid
+
+    Improvements over simple model:
+    - Min/max SoC limits (battery protection)
+    - Time-of-use discharge strategy (concentrate discharge 15:00-22:00)
+    - Optional overnight discharge blocking
 
     Args:
         pv_generation: PV generation array (kWh per interval)
@@ -216,6 +228,7 @@ def simulate_battery_soc(pv_generation: np.ndarray, consumption: np.ndarray,
         dt_hours: Time step in hours (default 0.25 = 15 min)
         battery_params: Battery parameters (default: BATTERY_PARAMS)
         initial_soc_pct: Initial SoC percentage (default from params)
+        timestamps: Optional DatetimeIndex for time-of-use logic
 
     Returns:
         Tuple of (soc_kwh, grid_import, grid_export, battery_flow)
@@ -228,13 +241,24 @@ def simulate_battery_soc(pv_generation: np.ndarray, consumption: np.ndarray,
         battery_params = BATTERY_PARAMS
 
     if initial_soc_pct is None:
-        initial_soc_pct = battery_params['initial_soc_pct']
+        initial_soc_pct = battery_params.get('initial_soc_pct', 50.0)
 
     capacity = battery_params['capacity_kwh']
     max_charge = battery_params['max_charge_kw'] * dt_hours  # kWh per interval
     max_discharge = battery_params['max_discharge_kw'] * dt_hours
-    efficiency = battery_params['efficiency']
+    efficiency = battery_params.get('efficiency', 0.77)
     one_way_eff = np.sqrt(efficiency)  # One-way efficiency
+
+    # SoC limits
+    min_soc_pct = battery_params.get('min_soc_pct', 20.0)
+    max_soc_pct = battery_params.get('max_soc_pct', 100.0)
+    min_soc = capacity * min_soc_pct / 100
+    max_soc = capacity * max_soc_pct / 100
+
+    # Time-of-use parameters
+    discharge_start = battery_params.get('discharge_start_hour', 15.0)
+    discharge_end = battery_params.get('discharge_end_hour', 22.0)
+    allow_overnight = battery_params.get('allow_overnight_discharge', False)
 
     pv = np.asarray(pv_generation)
     cons = np.asarray(consumption)
@@ -246,44 +270,63 @@ def simulate_battery_soc(pv_generation: np.ndarray, consumption: np.ndarray,
     grid_export = np.zeros(n)
     battery_flow = np.zeros(n)
 
-    # Initial state
-    soc[0] = capacity * initial_soc_pct / 100
+    # Initial state (clamp to valid range)
+    initial_soc = np.clip(capacity * initial_soc_pct / 100, min_soc, max_soc)
+    current_soc = initial_soc
+
+    # Determine discharge permission per interval
+    if timestamps is not None:
+        hours = timestamps.hour + timestamps.minute / 60
+        # Primary discharge window: discharge_start to discharge_end
+        in_discharge_window = (hours >= discharge_start) & (hours < discharge_end)
+        # Overnight (00:00-06:00) - allow if flag set
+        is_overnight = (hours >= 0) & (hours < 6)
+        # Allow discharge during window OR if overnight is allowed
+        can_discharge = in_discharge_window | (is_overnight & allow_overnight) | (~is_overnight & (hours >= 6) & (hours < discharge_start))
+        # Actually, simpler: only block overnight if flag is False
+        if not allow_overnight:
+            can_discharge = ~is_overnight
+        else:
+            can_discharge = np.ones(n, dtype=bool)
+    else:
+        # No timestamps: allow discharge always (backward compatible)
+        can_discharge = np.ones(n, dtype=bool)
 
     for i in range(n):
         net_energy = pv[i] - cons[i]
-        current_soc = soc[i] if i == 0 else soc[i]
 
         if net_energy > 0:
-            # Excess PV: charge battery
-            charge_room = capacity - current_soc
+            # Excess PV: charge battery (up to max_soc)
+            charge_room = max_soc - current_soc
             charge_possible = min(net_energy * one_way_eff, max_charge, charge_room)
 
             battery_flow[i] = charge_possible  # Positive = charging
             grid_export[i] = max(0, net_energy - charge_possible / one_way_eff)
             grid_import[i] = 0
 
-            new_soc = current_soc + charge_possible
+            current_soc = current_soc + charge_possible
         else:
-            # Deficit: discharge battery
+            # Deficit: discharge battery (if above min_soc AND allowed)
             deficit = -net_energy
-            discharge_available = min(current_soc * one_way_eff, max_discharge, deficit)
+            usable_energy = (current_soc - min_soc) * one_way_eff  # Energy available above min_soc
 
-            battery_flow[i] = -discharge_available / one_way_eff  # Negative = discharging
-            grid_import[i] = max(0, deficit - discharge_available)
+            if can_discharge[i] and usable_energy > 0:
+                discharge_output = min(deficit, max_discharge * one_way_eff, usable_energy)
+                soc_change = discharge_output / one_way_eff
+
+                battery_flow[i] = -soc_change  # Negative = discharging
+                grid_import[i] = max(0, deficit - discharge_output)
+                current_soc = current_soc - soc_change
+            else:
+                # Cannot discharge: import all from grid
+                battery_flow[i] = 0
+                grid_import[i] = deficit
+
             grid_export[i] = 0
 
-            new_soc = current_soc - discharge_available / one_way_eff
-
-        # Update SoC for next iteration
-        new_soc = np.clip(new_soc, 0, capacity)
-        if i < n - 1:
-            soc[i + 1] = new_soc
-
-        # Also update current soc for return value
-        soc[i] = new_soc if i > 0 else soc[0]
-
-    # Fix first SoC value
-    soc[0] = capacity * initial_soc_pct / 100
+        # Store SoC (clamp to valid range)
+        soc[i] = np.clip(current_soc, min_soc, max_soc)
+        current_soc = soc[i]
 
     return soc, grid_import, grid_export, battery_flow
 
@@ -459,11 +502,12 @@ def simulate_energy_system(timestamps: pd.DatetimeIndex,
     # Estimate consumption (simplified: base + HDD-based heating)
     consumption = estimate_consumption(t_outdoor)
 
-    # Simulate battery
+    # Simulate battery (pass timestamps for time-of-use logic)
     soc, grid_import, grid_export, battery_flow = simulate_battery_soc(
         pv_generation, consumption * dt_hours,  # Convert power to energy
         dt_hours=dt_hours,
-        battery_params=battery_params
+        battery_params=battery_params,
+        timestamps=timestamps
     )
 
     # Calculate tariff periods

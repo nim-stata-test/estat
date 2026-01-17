@@ -516,16 +516,19 @@ def simulate_parameters(params: dict, sim_data_obj: 'SimulationData') -> dict:
     total_consumption = BASE_LOAD_TIMESTEP + heating_kwh
 
     # --- Battery-aware grid simulation ---
-    # Simulate battery SoC with capacity constraints (11 kWh, 84% efficiency)
+    # Get timestamps for time-of-use battery logic
+    timestamps = pd.DatetimeIndex(sim_data.index)
+
+    # Simulate battery SoC with capacity and time-of-use constraints
     battery_soc, grid_import, grid_export, battery_flow = simulate_battery_soc(
         pv_generation=pv_gen,
         consumption=total_consumption,
         dt_hours=DT_HOURS,
         battery_params=BATTERY_PARAMS,
+        timestamps=timestamps,
     )
 
     # Calculate tariff periods
-    timestamps = pd.DatetimeIndex(sim_data.index)
     is_high = is_high_tariff(timestamps)
 
     # Calculate costs with tariff awareness
