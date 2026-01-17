@@ -4,10 +4,17 @@ Generate main report (index.html) for the ESTAT project.
 
 This script creates a combined report with table of contents that links to
 all phase reports in their subdirectories.
+
+Uses shared CSS styles based on statistik.bs.ch design system.
 """
 
 from pathlib import Path
 from datetime import datetime
+import sys
+
+# Add src to path for shared imports
+sys.path.insert(0, str(Path(__file__).parent))
+from shared.report_style import CSS, COLORS
 
 # Paths
 OUTPUT_DIR = Path(__file__).parent.parent / 'output'
@@ -67,22 +74,22 @@ PHASES = [
             <p>Physics-based models for thermal dynamics, heat pump, and energy system.</p>
             <ul>
                 <li>Thermal model: R²=0.68, building time constant ~24h</li>
-                <li>Grey-box model: Two-state (buffer + room) with physical parameters</li>
+                <li>Transfer function with causal coefficients (g_eff=0.208)</li>
                 <li>COP model: COP = 5.93 + 0.13×T_outdoor - 0.08×T_HK2 (R²=0.94)</li>
                 <li>Self-sufficiency potential: 57% → 84% with optimization</li>
             </ul>
         ''',
         'key_outputs': [
             ('fig18', 'Transfer function thermal model'),
-            ('fig18b', 'Grey-box thermal model'),
             ('fig19', 'Heat pump COP model'),
             ('fig20', 'Energy system analysis'),
             ('fig21', 'Tariff cost model'),
+            ('causal_coefficients.json', 'Physics-based coefficients for Phase 4'),
         ],
         'figures': [
             ('fig18_thermal_model.png', 'Thermal Model'),
-            ('fig18b_greybox_model.png', 'Grey-Box Model'),
             ('fig19_heat_pump_model.png', 'Heat Pump Model'),
+            ('fig_transfer_function_integration.png', 'Causal Coefficients'),
         ]
     },
     {
@@ -93,9 +100,9 @@ PHASES = [
             <p>Multi-objective optimization using NSGA-II for heating strategies.</p>
             <ul>
                 <li>Three objectives: Maximize comfort, minimize grid, minimize cost</li>
-                <li>Pareto-optimal strategies with 2.9% comfort violation (≤5% target)</li>
-                <li>Key levers: comfort schedule, setpoint, curve rise</li>
-                <li>Grid-minimal strategy: 10% reduction in grid import</li>
+                <li>Uses causal coefficients from Phase 3 (g_eff=0.208)</li>
+                <li>Optimal strategies: 22°C setpoint, 12:00-16:00 schedule, curve_rise 1.0-1.2</li>
+                <li>Grid-minimal: 7% reduction with 0% comfort violations</li>
             </ul>
         ''',
         'key_outputs': [
@@ -144,6 +151,148 @@ PHASES = [
         ]
     },
 ]
+
+# Additional CSS for main report layout
+EXTRA_CSS = f"""
+/* Main report specific styles */
+header {{
+    text-align: center;
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 3px solid {COLORS['primary_green']};
+}}
+
+header h1 {{
+    border-bottom: none;
+    padding-bottom: 0;
+}}
+
+header .subtitle {{
+    color: {COLORS['gray_dark']};
+    font-size: 1.2rem;
+    margin-top: 0.5rem;
+}}
+
+header .timestamp {{
+    color: {COLORS['gray_medium']};
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}}
+
+#toc {{
+    background: white;
+    padding: 1.5rem 2rem;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}}
+
+#toc h2 {{
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    margin-top: 0;
+    color: {COLORS['dark_teal']};
+    border-bottom: none;
+}}
+
+#toc ol {{
+    columns: 2;
+    column-gap: 2rem;
+    padding-left: 1.5rem;
+    margin-bottom: 0;
+}}
+
+#toc li {{
+    margin-bottom: 0.5rem;
+}}
+
+section {{
+    background: white;
+    padding: 2rem;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}}
+
+section h2 {{
+    margin-top: 0;
+}}
+
+.figure-gallery {{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}}
+
+.thumbnail {{
+    flex: 1 1 200px;
+    max-width: 280px;
+    text-align: center;
+}}
+
+.thumbnail img {{
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid {COLORS['gray_border']};
+    transition: transform 0.2s, box-shadow 0.2s;
+}}
+
+.thumbnail img:hover {{
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}}
+
+.thumbnail p {{
+    font-size: 0.85rem;
+    color: {COLORS['gray_dark']};
+    margin-top: 0.5rem;
+}}
+
+.report-link {{
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid {COLORS['gray_border']};
+}}
+
+.button {{
+    display: inline-block;
+    background: {COLORS['primary_dark_blue']};
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.15s;
+}}
+
+.button:hover {{
+    background: {COLORS['dark_teal']};
+    color: white;
+    text-decoration: none;
+}}
+
+.footer {{
+    text-align: center;
+    padding: 2rem;
+    color: {COLORS['gray_dark']};
+    font-size: 0.9rem;
+    border-top: 1px solid {COLORS['gray_border']};
+    margin-top: 2rem;
+}}
+
+@media (max-width: 768px) {{
+    #toc ol {{
+        columns: 1;
+    }}
+
+    .figure-gallery {{
+        justify-content: center;
+    }}
+}}
+"""
 
 
 def generate_toc(phases: list) -> str:
@@ -211,211 +360,21 @@ def generate_main_report():
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
 
     html = f'''<!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESTAT - Energy System Analysis Report</title>
     <style>
-        :root {{
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text: #1e293b;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-        }}
-
-        * {{
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }}
-
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            line-height: 1.6;
-            color: var(--text);
-            background: var(--bg);
-            padding: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }}
-
-        header {{
-            text-align: center;
-            margin-bottom: 3rem;
-            padding-bottom: 2rem;
-            border-bottom: 1px solid var(--border);
-        }}
-
-        h1 {{
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            color: var(--primary);
-        }}
-
-        header p {{
-            color: var(--text-muted);
-            font-size: 1.1rem;
-        }}
-
-        #toc {{
-            background: var(--card-bg);
-            padding: 1.5rem 2rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }}
-
-        #toc h2 {{
-            font-size: 1.2rem;
-            margin-bottom: 1rem;
-            color: var(--text-muted);
-        }}
-
-        #toc ol {{
-            columns: 2;
-            column-gap: 2rem;
-            padding-left: 1.5rem;
-        }}
-
-        #toc li {{
-            margin-bottom: 0.5rem;
-        }}
-
-        #toc a {{
-            color: var(--primary);
-            text-decoration: none;
-        }}
-
-        #toc a:hover {{
-            text-decoration: underline;
-        }}
-
-        section {{
-            background: var(--card-bg);
-            padding: 2rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }}
-
-        section h2 {{
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid var(--primary);
-        }}
-
-        section p {{
-            margin-bottom: 1rem;
-        }}
-
-        section ul {{
-            margin-left: 1.5rem;
-            margin-bottom: 1rem;
-        }}
-
-        section li {{
-            margin-bottom: 0.25rem;
-        }}
-
-        h4 {{
-            font-size: 1rem;
-            color: var(--text-muted);
-            margin: 1.5rem 0 0.75rem 0;
-        }}
-
-        code {{
-            background: #f1f5f9;
-            padding: 0.15rem 0.4rem;
-            border-radius: 4px;
-            font-size: 0.9em;
-        }}
-
-        .figure-gallery {{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            margin: 1.5rem 0;
-        }}
-
-        .thumbnail {{
-            flex: 1 1 200px;
-            max-width: 280px;
-            text-align: center;
-        }}
-
-        .thumbnail img {{
-            width: 100%;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 4px;
-            border: 1px solid var(--border);
-            transition: transform 0.2s;
-        }}
-
-        .thumbnail img:hover {{
-            transform: scale(1.02);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }}
-
-        .thumbnail p {{
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-top: 0.5rem;
-        }}
-
-        .report-link {{
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-            border-top: 1px solid var(--border);
-        }}
-
-        .button {{
-            display: inline-block;
-            background: var(--primary);
-            color: white;
-            padding: 0.6rem 1.2rem;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: 500;
-            transition: background 0.2s;
-        }}
-
-        .button:hover {{
-            background: var(--primary-dark);
-        }}
-
-        footer {{
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }}
-
-        @media (max-width: 768px) {{
-            body {{
-                padding: 1rem;
-            }}
-
-            #toc ol {{
-                columns: 1;
-            }}
-
-            .figure-gallery {{
-                justify-content: center;
-            }}
-        }}
+{CSS}
+{EXTRA_CSS}
     </style>
 </head>
 <body>
     <header>
         <h1>ESTAT Analysis Report</h1>
-        <p>Energy System Optimization for Solar/Heat Pump Integration</p>
-        <p><small>Generated: {timestamp}</small></p>
+        <p class="subtitle">Energy System Optimization for Solar/Heat Pump Integration</p>
+        <p class="timestamp">Generated: {timestamp}</p>
     </header>
 
     {toc}
@@ -424,10 +383,10 @@ def generate_main_report():
         {sections}
     </main>
 
-    <footer>
+    <div class="footer">
         <p>ESTAT - Energy Balance Data Repository</p>
-        <p>Report generated automatically from analysis pipeline</p>
-    </footer>
+        <p>Design based on <a href="https://statistik.bs.ch">Statistik Basel-Stadt</a></p>
+    </div>
 </body>
 </html>
 '''

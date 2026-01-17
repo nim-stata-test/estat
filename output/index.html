@@ -1,209 +1,467 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESTAT - Energy System Analysis Report</title>
     <style>
-        :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text: #1e293b;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-        }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+:root {
+    --primary-green: #2a9749;
+    --primary-dark-blue: #1e4557;
+    --accent-blue: #079bca;
+    --purple: #9156b4;
+    --light-green: #ddecde;
+    --dark-teal: #146c8b;
+    --gray-light: #f8f8f8;
+    --gray-border: #e3e3e3;
+    --gray-medium: #bababa;
+    --gray-dark: #949494;
+    --text: #333;
+    --red-alert: #ff3a1f;
+}
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            line-height: 1.6;
-            color: var(--text);
-            background: var(--bg);
-            padding: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+* {
+    box-sizing: border-box;
+}
 
-        header {
-            text-align: center;
-            margin-bottom: 3rem;
-            padding-bottom: 2rem;
-            border-bottom: 1px solid var(--border);
-        }
+body {
+    font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--text);
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    background-color: #fafafa;
+}
 
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            color: var(--primary);
-        }
+h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-dark-blue);
+    margin-top: 0;
+    margin-bottom: 1rem;
+    border-bottom: 3px solid var(--primary-green);
+    padding-bottom: 0.5rem;
+}
 
-        header p {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-        }
+h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--primary-dark-blue);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--gray-border);
+    padding-bottom: 0.25rem;
+}
 
-        #toc {
-            background: var(--card-bg);
-            padding: 1.5rem 2rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
+h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--dark-teal);
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
 
-        #toc h2 {
-            font-size: 1.2rem;
-            margin-bottom: 1rem;
-            color: var(--text-muted);
-        }
+h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary-dark-blue);
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+}
 
-        #toc ol {
-            columns: 2;
-            column-gap: 2rem;
-            padding-left: 1.5rem;
-        }
+p {
+    margin-bottom: 1rem;
+}
 
-        #toc li {
-            margin-bottom: 0.5rem;
-        }
+a {
+    color: var(--primary-dark-blue);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
 
-        #toc a {
-            color: var(--primary);
-            text-decoration: none;
-        }
+a:hover {
+    color: var(--accent-blue);
+    text-decoration: underline;
+}
 
-        #toc a:hover {
-            text-decoration: underline;
-        }
+a:visited {
+    color: var(--purple);
+}
 
-        section {
-            background: var(--card-bg);
-            padding: 2rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
+/* Tables */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+}
 
-        section h2 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid var(--primary);
-        }
+th {
+    background-color: var(--gray-light);
+    color: var(--primary-green);
+    font-weight: 600;
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 2px solid var(--text);
+}
 
-        section p {
-            margin-bottom: 1rem;
-        }
+td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--gray-border);
+}
 
-        section ul {
-            margin-left: 1.5rem;
-            margin-bottom: 1rem;
-        }
+tr:last-child td {
+    border-bottom: none;
+}
 
-        section li {
-            margin-bottom: 0.25rem;
-        }
+tr:hover {
+    background-color: var(--light-green);
+}
 
-        h4 {
-            font-size: 1rem;
-            color: var(--text-muted);
-            margin: 1.5rem 0 0.75rem 0;
-        }
+/* Code blocks */
+pre, code {
+    font-family: "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.875rem;
+}
 
-        code {
-            background: #f1f5f9;
-            padding: 0.15rem 0.4rem;
-            border-radius: 4px;
-            font-size: 0.9em;
-        }
+code {
+    background-color: var(--gray-light);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--dark-teal);
+}
 
-        .figure-gallery {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            margin: 1.5rem 0;
-        }
+pre {
+    background-color: var(--primary-dark-blue);
+    color: #f0f0f0;
+    padding: 16px 20px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 1rem 0;
+}
 
-        .thumbnail {
-            flex: 1 1 200px;
-            max-width: 280px;
-            text-align: center;
-        }
+pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+}
 
-        .thumbnail img {
-            width: 100%;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 4px;
-            border: 1px solid var(--border);
-            transition: transform 0.2s;
-        }
+/* Alert boxes */
+.info {
+    background-color: var(--light-green);
+    border-left: 4px solid var(--primary-green);
+    padding: 12px 16px;
+    margin: 1rem 0;
+    border-radius: 0 4px 4px 0;
+}
 
-        .thumbnail img:hover {
-            transform: scale(1.02);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
+.warning {
+    background-color: #fff8e6;
+    border-left: 4px solid #f0ad4e;
+    padding: 12px 16px;
+    margin: 1rem 0;
+    border-radius: 0 4px 4px 0;
+}
 
-        .thumbnail p {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-top: 0.5rem;
-        }
+.error {
+    background-color: #fdeaea;
+    border-left: 4px solid var(--red-alert);
+    padding: 12px 16px;
+    margin: 1rem 0;
+    border-radius: 0 4px 4px 0;
+}
 
-        .report-link {
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-            border-top: 1px solid var(--border);
-        }
+.recommendation {
+    background-color: var(--light-green);
+    border-left: 4px solid var(--primary-green);
+    padding: 12px 16px;
+    margin: 1rem 0;
+    border-radius: 0 4px 4px 0;
+}
 
-        .button {
-            display: inline-block;
-            background: var(--primary);
-            color: white;
-            padding: 0.6rem 1.2rem;
-            border-radius: 6px;
-            text-decoration: none;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
+/* Summary boxes */
+.summary {
+    background-color: white;
+    border: 1px solid var(--gray-border);
+    border-radius: 4px;
+    padding: 20px;
+    margin: 1.5rem 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
 
-        .button:hover {
-            background: var(--primary-dark);
-        }
+.summary h3 {
+    margin-top: 0;
+    color: var(--primary-green);
+}
 
-        footer {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
+/* Metric cards */
+.metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 1.5rem 0;
+}
 
-        @media (max-width: 768px) {
-            body {
-                padding: 1rem;
-            }
+.metric {
+    background-color: white;
+    border: 1px solid var(--gray-border);
+    border-radius: 4px;
+    padding: 16px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
 
-            #toc ol {
-                columns: 1;
-            }
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-green);
+    line-height: 1.2;
+}
 
-            .figure-gallery {
-                justify-content: center;
-            }
-        }
+.metric-label {
+    font-size: 0.875rem;
+    color: var(--gray-dark);
+    margin-top: 4px;
+}
+
+/* Figures */
+figure {
+    margin: 1.5rem 0;
+    text-align: center;
+}
+
+figure img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+figcaption {
+    font-size: 0.875rem;
+    color: var(--gray-dark);
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* Lists */
+ul, ol {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+}
+
+li {
+    margin-bottom: 0.5rem;
+}
+
+/* Footer */
+.footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--gray-border);
+    font-size: 0.875rem;
+    color: var(--gray-dark);
+    text-align: center;
+}
+
+/* Print styles */
+@media print {
+    body {
+        background-color: white;
+        max-width: none;
+        padding: 0;
+    }
+
+    .no-print {
+        display: none;
+    }
+
+    table {
+        box-shadow: none;
+    }
+
+    pre {
+        white-space: pre-wrap;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    body {
+        padding: 20px 16px;
+    }
+
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    table {
+        font-size: 0.8rem;
+    }
+
+    th, td {
+        padding: 8px 10px;
+    }
+}
+
+
+/* Main report specific styles */
+header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 3px solid #2a9749;
+}
+
+header h1 {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+header .subtitle {
+    color: #949494;
+    font-size: 1.2rem;
+    margin-top: 0.5rem;
+}
+
+header .timestamp {
+    color: #bababa;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+
+#toc {
+    background: white;
+    padding: 1.5rem 2rem;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+#toc h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    margin-top: 0;
+    color: #146c8b;
+    border-bottom: none;
+}
+
+#toc ol {
+    columns: 2;
+    column-gap: 2rem;
+    padding-left: 1.5rem;
+    margin-bottom: 0;
+}
+
+#toc li {
+    margin-bottom: 0.5rem;
+}
+
+section {
+    background: white;
+    padding: 2rem;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+section h2 {
+    margin-top: 0;
+}
+
+.figure-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.thumbnail {
+    flex: 1 1 200px;
+    max-width: 280px;
+    text-align: center;
+}
+
+.thumbnail img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #e3e3e3;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.thumbnail img:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.thumbnail p {
+    font-size: 0.85rem;
+    color: #949494;
+    margin-top: 0.5rem;
+}
+
+.report-link {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e3e3e3;
+}
+
+.button {
+    display: inline-block;
+    background: #1e4557;
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.15s;
+}
+
+.button:hover {
+    background: #146c8b;
+    color: white;
+    text-decoration: none;
+}
+
+.footer {
+    text-align: center;
+    padding: 2rem;
+    color: #949494;
+    font-size: 0.9rem;
+    border-top: 1px solid #e3e3e3;
+    margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+    #toc ol {
+        columns: 1;
+    }
+
+    .figure-gallery {
+        justify-content: center;
+    }
+}
+
     </style>
 </head>
 <body>
     <header>
         <h1>ESTAT Analysis Report</h1>
-        <p>Energy System Optimization for Solar/Heat Pump Integration</p>
-        <p><small>Generated: 2026-01-16 23:51</small></p>
+        <p class="subtitle">Energy System Optimization for Solar/Heat Pump Integration</p>
+        <p class="timestamp">Generated: 2026-01-17 12:12</p>
     </header>
 
     
@@ -289,12 +547,12 @@
             <p>Physics-based models for thermal dynamics, heat pump, and energy system.</p>
             <ul>
                 <li>Thermal model: R²=0.68, building time constant ~24h</li>
-                <li>Grey-box model: Two-state (buffer + room) with physical parameters</li>
+                <li>Transfer function with causal coefficients (g_eff=0.208)</li>
                 <li>COP model: COP = 5.93 + 0.13×T_outdoor - 0.08×T_HK2 (R²=0.94)</li>
                 <li>Self-sufficiency potential: 57% → 84% with optimization</li>
             </ul>
         
-        <h4>Key Outputs</h4><ul><li><code>fig18</code>: Transfer function thermal model</li><li><code>fig18b</code>: Grey-box thermal model</li><li><code>fig19</code>: Heat pump COP model</li><li><code>fig20</code>: Energy system analysis</li><li><code>fig21</code>: Tariff cost model</li></ul>
+        <h4>Key Outputs</h4><ul><li><code>fig18</code>: Transfer function thermal model</li><li><code>fig19</code>: Heat pump COP model</li><li><code>fig20</code>: Energy system analysis</li><li><code>fig21</code>: Tariff cost model</li><li><code>causal_coefficients.json</code>: Physics-based coefficients for Phase 4</li></ul>
         <div class="figure-gallery">
                 <div class="thumbnail">
                     <a href="phase3/fig18_thermal_model.png">
@@ -304,17 +562,17 @@
                 </div>
             
                 <div class="thumbnail">
-                    <a href="phase3/fig18b_greybox_model.png">
-                        <img src="phase3/fig18b_greybox_model.png" alt="Grey-Box Model">
-                    </a>
-                    <p>Grey-Box Model</p>
-                </div>
-            
-                <div class="thumbnail">
                     <a href="phase3/fig19_heat_pump_model.png">
                         <img src="phase3/fig19_heat_pump_model.png" alt="Heat Pump Model">
                     </a>
                     <p>Heat Pump Model</p>
+                </div>
+            
+                <div class="thumbnail">
+                    <a href="phase3/fig_transfer_function_integration.png">
+                        <img src="phase3/fig_transfer_function_integration.png" alt="Causal Coefficients">
+                    </a>
+                    <p>Causal Coefficients</p>
                 </div>
             </div>
         <p class="report-link">
@@ -329,9 +587,9 @@
             <p>Multi-objective optimization using NSGA-II for heating strategies.</p>
             <ul>
                 <li>Three objectives: Maximize comfort, minimize grid, minimize cost</li>
-                <li>Pareto-optimal strategies with 2.9% comfort violation (≤5% target)</li>
-                <li>Key levers: comfort schedule, setpoint, curve rise</li>
-                <li>Grid-minimal strategy: 10% reduction in grid import</li>
+                <li>Uses causal coefficients from Phase 3 (g_eff=0.208)</li>
+                <li>Optimal strategies: 22°C setpoint, 12:00-16:00 schedule, curve_rise 1.0-1.2</li>
+                <li>Grid-minimal: 7% reduction with 0% comfort violations</li>
             </ul>
         
         <h4>Key Outputs</h4><ul><li><code>fig22-fig24</code>: Strategy comparison and simulation</li><li><code>fig25-fig27</code>: Pareto optimization results</li><li><code>fig28-fig31</code>: Detailed strategy analysis</li><li><code>selected_strategies.json</code>: Pareto-optimal parameters</li></ul>
@@ -394,9 +652,9 @@
     
     </main>
 
-    <footer>
+    <div class="footer">
         <p>ESTAT - Energy Balance Data Repository</p>
-        <p>Report generated automatically from analysis pipeline</p>
-    </footer>
+        <p>Design based on <a href="https://statistik.bs.ch">Statistik Basel-Stadt</a></p>
+    </div>
 </body>
 </html>

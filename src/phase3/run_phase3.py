@@ -22,6 +22,10 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase3'
 OUTPUT_DIR.mkdir(exist_ok=True)
 
+# Add src to path for shared imports
+sys.path.insert(0, str(PROJECT_ROOT / 'src'))
+from shared.report_style import CSS, COLORS
+
 
 def run_script(script_name: str) -> bool:
     """Run a Phase 3 script and return success status."""
@@ -69,87 +73,28 @@ def generate_html_report():
     # Generate full report
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
 
-    html = f"""<!DOCTYPE html>
-<html>
-<head>
-    <title>Phase 3: System Modeling Report</title>
-    <meta charset="UTF-8">
-    <style>
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
-            color: #333;
-        }}
-        h1 {{ color: #1a5f7a; border-bottom: 2px solid #1a5f7a; padding-bottom: 10px; }}
-        h2 {{ color: #2c3e50; margin-top: 40px; }}
-        h3 {{ color: #34495e; }}
-        table {{
-            border-collapse: collapse;
-            width: 100%;
-            margin: 20px 0;
-        }}
-        th, td {{
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
-        }}
-        th {{ background-color: #f8f9fa; font-weight: 600; }}
-        tr:nth-child(even) {{ background-color: #f8f9fa; }}
-        figure {{
-            margin: 30px 0;
-            text-align: center;
-        }}
-        figure img {{
-            max-width: 100%;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }}
-        figcaption {{
-            font-style: italic;
-            color: #666;
-            margin-top: 10px;
-        }}
-        pre {{
-            background-color: #f4f4f4;
-            padding: 15px;
-            border-radius: 4px;
-            overflow-x: auto;
-            font-size: 14px;
-        }}
-        code {{
-            background-color: #f4f4f4;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: "SF Mono", Monaco, "Courier New", monospace;
-        }}
-        ul {{ padding-left: 20px; }}
-        li {{ margin: 8px 0; }}
+    # Additional CSS for Phase 3 specific elements
+    extra_css = f"""
         .summary-box {{
-            background-color: #e8f4f8;
-            border-left: 4px solid #1a5f7a;
+            background-color: {COLORS['light_green']};
+            border-left: 4px solid {COLORS['primary_green']};
             padding: 15px;
             margin: 20px 0;
-        }}
-        .warning {{
-            background-color: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 15px;
-            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
         }}
         .table-of-contents {{
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
+            background-color: white;
+            border: 1px solid {COLORS['gray_border']};
+            border-radius: 4px;
             padding: 20px 30px;
             margin: 30px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }}
         .table-of-contents h2 {{
             margin-top: 0;
-            color: #1a5f7a;
+            color: {COLORS['dark_teal']};
             font-size: 1.3em;
+            border-bottom: none;
         }}
         .table-of-contents ol {{
             margin: 0;
@@ -158,24 +103,27 @@ def generate_html_report():
         .table-of-contents li {{
             margin: 8px 0;
         }}
-        .table-of-contents a {{
-            color: #2c3e50;
-            text-decoration: none;
-        }}
-        .table-of-contents a:hover {{
-            color: #1a5f7a;
-            text-decoration: underline;
-        }}
         /* MathJax equation styling */
         .MathJax {{ font-size: 1.1em !important; }}
         .equation-box {{
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
+            background-color: {COLORS['gray_light']};
+            border: 1px solid {COLORS['gray_border']};
             border-radius: 4px;
             padding: 15px;
             margin: 15px 0;
             overflow-x: auto;
         }}
+    """
+
+    html = f"""<!DOCTYPE html>
+<html lang="de">
+<head>
+    <title>Phase 3: System Modeling Report</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+{CSS}
+{extra_css}
     </style>
     <!-- MathJax for LaTeX rendering - config MUST come before script -->
     <script>
@@ -334,6 +282,11 @@ Potential with optimization: 85.3%
 
     <p><strong>For detailed model documentation, see:</strong> <code>docs/phase3_models.md</code></p>
     </section>
+
+    <div class="footer">
+        <p>ESTAT - Energy System Analysis | Phase 3: System Modeling</p>
+        <p>Design based on <a href="https://statistik.bs.ch">Statistik Basel-Stadt</a></p>
+    </div>
 
 </body>
 </html>
