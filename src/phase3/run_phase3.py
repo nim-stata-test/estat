@@ -129,8 +129,8 @@ def generate_html_report():
     <script>
         window.MathJax = {{
             tex: {{
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+                inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],
+                displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']]
             }},
             startup: {{
                 typeset: true
@@ -311,7 +311,8 @@ def main():
         '02_heat_pump_model.py',
         '03_energy_system_model.py',
         '04_tariff_cost_model.py',
-        '05_weekly_decomposition.py'
+        '05_weekly_decomposition.py',
+        '06_extended_decomposition.py',  # Extended decomposition with energy/COP panels
     ]
 
     for script in scripts:
@@ -332,12 +333,12 @@ def main():
     print("\nKey outputs:")
     print("  - fig18_thermal_model.png")
     print("  - fig18a_lpf_visualization.png")
-    print("  - fig18c_model_decomposition.png")
     print("  - fig19_heat_pump_model.png")
     print("  - fig20_energy_system_model.png")
     print("  - fig21_tariff_cost_model.png")
+    print("  - fig22_extended_decomposition.png (with energy/COP panels)")
     print("  - phase3_report.html")
-    print("  - weekly_decomposition/weekly_decomposition_report.html")
+    print("  - weekly_decomposition/ (extended weekly figures)")
 
 
 if __name__ == '__main__':
