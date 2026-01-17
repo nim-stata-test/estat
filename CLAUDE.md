@@ -125,7 +125,8 @@ src/
 │   ├── 02_heat_pump_model.py         # COP relationships, buffer tank
 │   ├── 03_energy_system_model.py     # PV patterns, battery, self-sufficiency
 │   ├── 04_tariff_cost_model.py       # Electricity cost analysis + forecasting
-│   └── 05_weekly_decomposition.py    # Weekly thermal model decomposition report
+│   ├── 05_weekly_decomposition.py    # Weekly thermal model decomposition report
+│   └── 06_extended_decomposition.py  # Extended decomposition with energy/COP panels
 ├── phase4/              # Optimization Strategy Development
 │   ├── run_optimization.py           # Wrapper: runs all steps + HTML report
 │   ├── run_pareto.py                 # CLI wrapper for Pareto optimization
@@ -148,8 +149,9 @@ src/
 └── xtra/                # Standalone analyses (not part of Phase 5 study)
     ├── battery_degradation/          # Battery efficiency degradation study
     │   └── battery_degradation.py
-    └── battery_savings/              # Battery cost savings analysis
-        └── battery_savings.py
+    ├── battery_savings/              # Battery cost savings analysis
+    │   └── battery_savings.py
+    └── system_diagram.py             # Semi-abstract system diagram for presentations
 ```
 
 ## Output Directory Structure
@@ -160,13 +162,14 @@ output/
 ├── phase1/       # Preprocessing outputs (parquet files, reports)
 ├── phase2/       # EDA outputs (figures, HTML reports)
 ├── phase3/       # System modeling outputs (figures, model results)
-│   └── weekly_decomposition/  # Per-week thermal model analysis
+│   └── weekly_decomposition/  # Per-week thermal model analysis (incl. extended)
 ├── phase4/       # Optimization outputs (strategies, predictions)
 ├── phase5/       # Intervention study outputs (schedules, logs, analysis)
 ├── phase5_pilot/ # Pilot experiment outputs (Jan-Mar 2026)
 └── xtra/         # Standalone analysis outputs
     ├── battery_degradation/  # Battery efficiency study
-    └── battery_savings/      # Battery cost savings analysis
+    ├── battery_savings/      # Battery cost savings analysis
+    └── system_diagram.*      # System diagram (PNG, PDF, SVG)
 ```
 
 ## Processed Data
@@ -300,6 +303,27 @@ Savings = battery_discharge × purchase_rate - battery_charge × feedin_rate × 
 
 **Key finding:** Battery saved CHF 1,143 over ~2.8 years (CHF 1.10/day average)
 
+## System Diagram (xtra)
+
+Semi-abstract diagram of the energy system for PowerPoint presentations.
+
+```bash
+python src/xtra/system_diagram.py
+```
+
+**Outputs** (in `output/xtra/`):
+- `system_diagram.png` - PNG format (300 DPI)
+- `system_diagram.pdf` - PDF format (vector)
+- `system_diagram.svg` - SVG format (vector)
+
+**Components shown:**
+- Sun → PV panels (electricity flow, black)
+- PV → Battery, Grid, House (electricity flows, black)
+- Grid ↔ House (bidirectional electricity, black)
+- Heat pump with outdoor temperature input
+- Buffer tank with heat distribution to house (heat flows, red)
+- Temperature sensors (T_outdoor, T_room, T_HK2)
+
 ## Heating Curve Analysis
 
 Analysis of how target flow temperature depends on controllable parameters.
@@ -401,11 +425,12 @@ with multiple sensors.
 
 After running `python src/phase3/run_phase3.py`, outputs are saved to `output/phase3/`:
 
-**Figures (fig18-fig21):**
+**Figures (fig18-fig22):**
 - fig18: Thermal model (temperature simulation, decay analysis)
 - fig19: Heat pump model (COP vs temperature, capacity, buffer tank)
 - fig20: Energy system (daily profiles, battery patterns, self-sufficiency)
 - fig21: Tariff cost model (cost breakdown, high/low tariff, forecasting)
+- fig22: Extended decomposition (10 panels: thermal model + energy + COP)
 
 **Reports:**
 - `phase3_report.html` - Combined modeling report
