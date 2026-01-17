@@ -24,7 +24,7 @@ import json
 # Battery Parameters (estimated from historical data)
 # ============================================================================
 BATTERY_PARAMS = {
-    'capacity_kwh': 11.0,        # Total capacity
+    'capacity_kwh': 13.8,        # Total capacity (usable: 13.8 × 0.8 = 11.04 kWh)
     'max_charge_kw': 5.0,        # Max charging rate
     'max_discharge_kw': 5.0,     # Max discharging rate
     'efficiency': 0.77,          # Round-trip efficiency (post-degradation, was 0.84)

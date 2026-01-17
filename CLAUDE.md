@@ -473,7 +473,7 @@ with battery constraints. Used by Phase 3 extended decomposition and Phase 4 opt
 **Battery Model:**
 ```python
 BATTERY_PARAMS = {
-    'capacity_kwh': 11.0,        # Total capacity
+    'capacity_kwh': 13.8,        # Total capacity (usable: 13.8 × 0.8 = 11.04 kWh)
     'max_charge_kw': 5.0,        # Max charging rate
     'max_discharge_kw': 5.0,     # Max discharging rate
     'efficiency': 0.77,          # Round-trip efficiency (post-degradation, was 0.84)
@@ -488,7 +488,7 @@ BATTERY_PARAMS = {
 
 **Battery Model Improvements (Jan 2026):**
 Analysis comparing model vs observed battery behavior revealed:
-- **Min SoC protection**: Battery maintains 20% reserve (usable: 8.8 kWh)
+- **Total capacity**: 13.8 kWh with 20% min SoC → usable capacity 11.04 kWh
 - **Post-degradation efficiency**: 77% round-trip (down from 84% after Feb-Mar 2025 event)
 - **Time-of-use strategy**: Discharge concentrated 15:00-22:00, minimal overnight
 - **Result**: Model grid import now within +0.8% of observed (was -2.1%)
