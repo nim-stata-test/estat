@@ -496,11 +496,11 @@ def generate_html_report(all_stats, params, output_dir):
             <li><strong>Panel 4:</strong> Solar/PV contribution (g<sub>pv</sub> × LPF(PV))</li>
         </ul>
 
-        <p><strong>Extended Decomposition (10 panels):</strong> Adds energy system analysis:</p>
+        <p><strong>Energy System Analysis (6 panels):</strong></p>
         <ul>
-            <li><strong>Panels 5-6:</strong> COP model (actual vs predicted, residuals)</li>
-            <li><strong>Panels 7-8:</strong> Energy flows (PV, grid, battery)</li>
-            <li><strong>Panels 9-10:</strong> Battery state and electricity costs</li>
+            <li><strong>Panels 1-2:</strong> Battery SoC, Power consumption</li>
+            <li><strong>Panels 3-4:</strong> Grid feed-in, Grid import</li>
+            <li><strong>Panels 5-6:</strong> Outdoor temperature, Heat pump COP</li>
         </ul>
     </div>
 

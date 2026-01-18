@@ -1,19 +1,16 @@
 #!/usr/bin/env python3
 """
-Phase 3: Extended Model Decomposition
+Phase 3: Energy System Analysis
 
-Creates comprehensive decomposition figures showing:
-1. Room temperature (actual vs predicted)
-2. Outdoor temperature
-3. Heating effort contribution
-4. Solar/PV contribution
-5. Battery state of charge
-6. Power consumption
-7. Grid feed-in
-8. Grid import
-9. Heat pump COP
+Creates energy system figures showing (thermal panels are in weekly decomposition):
+1. Battery state of charge
+2. Power consumption
+3. Grid feed-in
+4. Grid import
+5. Outdoor temperature
+6. Heat pump COP
 
-This replaces fig3.01c and is placed after fig3.04.
+Complements the weekly decomposition which shows thermal model panels.
 """
 
 import sys
@@ -571,26 +568,10 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
         't_pred': terms_full['t_pred'][full_mask],
     }
 
-    # Get actual room temperature
+    # Get actual room temperature (for R² calculation)
     t_actual = df_week['davis_inside_temperature'].values
 
-    # Create figure with 10 panels in single column
-    fig, axes = plt.subplots(10, 1, figsize=(14, 28))
-    fig.suptitle(f'Extended Model Decomposition{title_suffix}', fontsize=14, fontweight='bold', y=0.995)
-
-    time_idx = df_week.index
-
-    # === Panel 1: Room Temperature (actual vs predicted) ===
-    ax = axes[0]
-    ax.plot(time_idx, t_actual, color=COLORS['actual'], label='Observed', linewidth=1.5)
-    ax.plot(time_idx, terms['t_pred'], color=COLORS['predicted'], label='Predicted',
-            linewidth=1.5, linestyle='--')
-    ax.set_ylabel('Temperature (°C)')
-    ax.set_title('1. Room Temperature: Observed vs Predicted')
-    ax.legend(loc='upper right')
-    ax.grid(True, alpha=0.3)
-
-    # Calculate R² for this period
+    # Calculate R² for this period (to return, not display - thermal panels removed)
     r2, rmse = None, None
     t_pred_arr = np.array(terms['t_pred'])
     valid = ~(np.isnan(t_actual) | np.isnan(t_pred_arr))
@@ -599,51 +580,19 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
         ss_tot = np.sum((t_actual[valid] - np.mean(t_actual[valid]))**2)
         r2 = 1 - ss_res / ss_tot if ss_tot > 0 else 0
         rmse = np.sqrt(np.mean((t_actual[valid] - t_pred_arr[valid])**2))
-        ax.text(0.02, 0.95, f'R²={r2:.3f}, RMSE={rmse:.2f}°C',
-                transform=ax.transAxes, va='top', fontsize=9,
-                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
-    # === Panel 2: Outdoor Temperature Contribution ===
-    ax = axes[1]
-    ax2 = ax.twinx()
-    ax.plot(time_idx, terms['t_out'], color=COLORS['outdoor'], alpha=0.6,
-            linewidth=1, label='T_outdoor (raw)')
-    ax2.plot(time_idx, terms['contrib_out'], color=COLORS['outdoor'],
-             linewidth=1.5, label=f'Contribution (g={params["g_out"]:.3f})')
-    ax.set_ylabel('Outdoor Temp (°C)', color=COLORS['outdoor'])
-    ax2.set_ylabel('Contribution to T_room (°C)', color=COLORS['outdoor'])
-    ax.set_title(f'2. Outdoor Temperature → Room Temp (τ={params["tau_out"]:.0f}h, g={params["g_out"]:.3f})')
-    ax.grid(True, alpha=0.3)
+    # Create figure with 6 panels (energy system only - thermal panels in weekly decomposition)
+    fig, axes = plt.subplots(6, 1, figsize=(14, 18))
+    fig.suptitle(f'Energy System Analysis{title_suffix}', fontsize=14, fontweight='bold', y=0.995)
 
-    # === Panel 3: Heating Effort Contribution ===
-    ax = axes[2]
-    ax2 = ax.twinx()
-    ax.plot(time_idx, terms['effort'], color=COLORS['heating'], alpha=0.4,
-            linewidth=0.8, label='Effort (raw)')
-    ax2.plot(time_idx, terms['contrib_eff'], color=COLORS['heating'],
-             linewidth=1.5, label=f'Contribution (g={params["g_eff"]:.3f})')
-    ax.set_ylabel('Heating Effort (°C)', color=COLORS['heating'])
-    ax2.set_ylabel('Contribution to T_room (°C)', color=COLORS['heating'])
-    ax.set_title(f'3. Heating Effort → Room Temp (τ={params["tau_eff"]:.0f}h, g={params["g_eff"]:.3f})')
-    ax.grid(True, alpha=0.3)
-
-    # === Panel 4: Solar/PV Contribution ===
-    ax = axes[3]
-    ax2 = ax.twinx()
-    ax.fill_between(time_idx, 0, terms['pv'], color=COLORS['solar'], alpha=0.3, label='PV (raw)')
-    ax2.plot(time_idx, terms['contrib_pv'], color=COLORS['solar'],
-             linewidth=1.5, label=f'Contribution (g={params["g_pv"]:.3f})')
-    ax.set_ylabel('PV Generation (kW)', color=COLORS['solar'])
-    ax2.set_ylabel('Contribution to T_room (°C)', color=COLORS['solar'])
-    ax.set_title(f'4. Solar Gain → Room Temp (τ={params["tau_pv"]:.0f}h, g={params["g_pv"]:.3f})')
-    ax.grid(True, alpha=0.3)
+    time_idx = df_week.index
 
     # Get intra-day model predictions (with battery constraints and tariff awareness)
     t_out_clean = pd.Series(terms['t_out']).ffill().bfill().values
     intraday_pred = predict_intraday_energy(energy_week, t_out_clean, energy_model)
 
-    # === Panel 5: Battery State of Charge ===
-    ax = axes[4]
+    # === Panel 1: Battery State of Charge ===
+    ax = axes[0]
     if len(energy_week) > 0 and 'battery_charging_kwh' in energy_week.columns:
         # Calculate observed SoC from cumulative charge/discharge
         charge_obs = energy_week['battery_charging_kwh'].fillna(0).values
@@ -669,11 +618,11 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
         ax.legend(loc='upper right')
     else:
         ax.text(0.5, 0.5, 'No battery data', ha='center', va='center', transform=ax.transAxes)
-    ax.set_title(f'5. Battery SoC: Observed vs Model (Cap={BATTERY_PARAMS["capacity_kwh"]:.0f}kWh, η={BATTERY_PARAMS["efficiency"]:.0%})')
+    ax.set_title(f'1. Battery SoC: Observed vs Model (Cap={BATTERY_PARAMS["capacity_kwh"]:.0f}kWh, η={BATTERY_PARAMS["efficiency"]:.0%})')
     ax.grid(True, alpha=0.3)
 
-    # === Panel 6: Power Consumption ===
-    ax = axes[5]
+    # === Panel 2: Power Consumption ===
+    ax = axes[1]
     if len(energy_week) > 0 and 'total_consumption_kwh' in energy_week.columns:
         consumption_obs = energy_week['total_consumption_kwh'].fillna(0).values
 
@@ -690,11 +639,11 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
         ax.legend(loc='upper right')
     else:
         ax.text(0.5, 0.5, 'No consumption data', ha='center', va='center', transform=ax.transAxes)
-    ax.set_title('6. Power Consumption: Observed vs Model')
+    ax.set_title('2. Power Consumption: Observed vs Model')
     ax.grid(True, alpha=0.3)
 
-    # === Panel 7: Grid Feed-in ===
-    ax = axes[6]
+    # === Panel 3: Grid Feed-in ===
+    ax = axes[2]
     if len(energy_week) > 0 and 'grid_feedin_kwh' in energy_week.columns:
         feedin_obs = energy_week['grid_feedin_kwh'].fillna(0).values
 
@@ -711,11 +660,11 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
         ax.legend(loc='upper right')
     else:
         ax.text(0.5, 0.5, 'No feed-in data', ha='center', va='center', transform=ax.transAxes)
-    ax.set_title('7. Grid Feed-in: Observed vs Model')
+    ax.set_title('3. Grid Feed-in: Observed vs Model')
     ax.grid(True, alpha=0.3)
 
-    # === Panel 8: Grid Import ===
-    ax = axes[7]
+    # === Panel 4: Grid Import ===
+    ax = axes[3]
     if len(energy_week) > 0 and 'external_supply_kwh' in energy_week.columns:
         import_obs = energy_week['external_supply_kwh'].fillna(0).values
 
@@ -738,11 +687,11 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
         ax.legend(loc='upper right')
     else:
         ax.text(0.5, 0.5, 'No grid import data', ha='center', va='center', transform=ax.transAxes)
-    ax.set_title('8. Grid Import: Observed vs Model (tariff-aware)')
+    ax.set_title('4. Grid Import: Observed vs Model (tariff-aware)')
     ax.grid(True, alpha=0.3)
 
-    # === Panel 9: Outdoor Temperature ===
-    ax = axes[8]
+    # === Panel 5: Outdoor Temperature ===
+    ax = axes[4]
     ax.plot(time_idx, terms['t_out'], color=COLORS['outdoor'], linewidth=1.2, label='Observed')
     mean_temp = np.nanmean(terms['t_out'])
     ax.axhline(y=mean_temp, color=COLORS['baseline'], linestyle='--',
@@ -755,11 +704,11 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
                     color=COLORS['outdoor'], alpha=0.2, label='Below mean')
     ax.set_ylabel('Temperature (°C)')
     ax.legend(loc='upper right')
-    ax.set_title('9. Outdoor Temperature')
+    ax.set_title('5. Outdoor Temperature')
     ax.grid(True, alpha=0.3)
 
-    # === Panel 10: Heat Pump COP (Intra-day Model) ===
-    ax = axes[9]
+    # === Panel 6: Heat Pump COP (Intra-day Model) ===
+    ax = axes[5]
 
     # Plot intra-day COP model prediction
     if 'cop' in intraday_pred:
@@ -806,7 +755,7 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
         ax.text(0.5, 0.5, 'No COP model prediction', ha='center', va='center',
                 transform=ax.transAxes, fontsize=11)
 
-    ax.set_title(f'10. Heat Pump COP: Model (COP = {COP_MODEL["intercept"]:.1f} + {COP_MODEL["coef_t_outdoor"]:.2f}×T_out - {abs(COP_MODEL["coef_t_hk2"]):.2f}×T_HK2)')
+    ax.set_title(f'6. Heat Pump COP: Model (COP = {COP_MODEL["intercept"]:.1f} + {COP_MODEL["coef_t_outdoor"]:.2f}×T_out - {abs(COP_MODEL["coef_t_hk2"]):.2f}×T_HK2)')
     ax.grid(True, alpha=0.3)
 
     # Format x-axes for all panels
