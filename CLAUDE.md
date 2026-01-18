@@ -45,7 +45,7 @@ python src/generate_main_report.py       # output/index.html
 | 4.1 | `01_rule_based_strategies.py` | Define baseline + optimized strategies |
 | 4.2 | `02_strategy_simulation.py` | Simulate on historical data |
 | 4.3 | `03_parameter_sets.py` | Generate Phase 5 parameters |
-| 4.4a | `04b_grid_search_optimization.py --coarse` | Grid search (~3 min) |
+| 4.4a | `04b_grid_search_optimization.py -j 0` | Grid search, parallel (~6 min) |
 | 4.4b | `04_pareto_optimization.py` | NSGA-II multi-objective |
 | 4.5 | `05_strategy_evaluation.py` | Comfort violation analysis |
 | 4.6 | `06_strategy_detailed_analysis.py` | Detailed visualizations |
@@ -58,8 +58,8 @@ python src/generate_main_report.py       # output/index.html
 | Command | Description |
 |---------|-------------|
 | `python src/phase4/04_pareto_optimization.py --fresh` | Fresh NSGA-II (ignore archive) |
-| `python src/phase4/04b_grid_search_optimization.py` | Full grid search (~38 min) |
-| `python src/phase4/04b_grid_search_optimization.py --coarse` | Coarse grid (~3 min) |
+| `python src/phase4/04b_grid_search_optimization.py -j 0` | Full grid search, parallel (~6 min) |
+| `python src/phase4/04b_grid_search_optimization.py --coarse -j 0` | Coarse grid, parallel (~30 sec) |
 | `python src/phase5_pilot/run_pilot.py` | Generate pilot design + schedule |
 | `python src/phase5_pilot/run_pilot.py --analyze-rsm` | RSM block-averaged analysis |
 
