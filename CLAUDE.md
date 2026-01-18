@@ -86,7 +86,9 @@ python src/phase3/03_energy_system_model.py        # Phase 3, Step 3
 python src/phase4/01_rule_based_strategies.py      # Phase 4, Step 1
 python src/phase4/02_strategy_simulation.py        # Phase 4, Step 2
 python src/phase4/03_parameter_sets.py             # Phase 4, Step 3
-python src/phase4/04_pareto_optimization.py        # Phase 4, Step 4
+python src/phase4/04_pareto_optimization.py        # Phase 4, Step 4 (NSGA-II)
+python src/phase4/04b_grid_search_optimization.py  # Phase 4, Step 4b (Grid search alternative)
+python src/phase4/04b_grid_search_optimization.py --coarse  # Faster with lower resolution
 python src/phase4/05_strategy_evaluation.py        # Phase 4, Step 5
 python src/phase4/06_strategy_detailed_analysis.py # Phase 4, Step 6 (Phase 5 strategy details)
 python src/phase4/07_pareto_animation.py           # Phase 4, Step 7 (GIF + MP4 animation)
@@ -134,6 +136,7 @@ src/
 │   ├── 02_strategy_simulation.py     # Validate strategies on historical data
 │   ├── 03_parameter_sets.py          # Generate Phase 5 parameter sets
 │   ├── 04_pareto_optimization.py     # NSGA-II multi-objective optimization
+│   ├── 04b_grid_search_optimization.py # Grid search alternative (exhaustive)
 │   ├── 05_strategy_evaluation.py     # Comfort violation analysis + winter predictions
 │   ├── 06_strategy_detailed_analysis.py  # Detailed Phase 5 strategy visualizations
 │   └── 07_pareto_animation.py        # Pareto evolution GIF + MP4 for PowerPoint
@@ -770,6 +773,78 @@ The archive includes full optimization history for visualization:
 3. **Evaluate strategies**: `python src/phase4/05_strategy_evaluation.py`
 4. Review violation analysis in `strategy_violation_analysis.csv`
 5. Manually select 3 strategies for Phase 5 intervention study
+
+## Grid Search Optimization (Phase 4, Step 4b)
+
+Exhaustive grid search alternative to NSGA-II for finding Pareto-optimal heating strategies.
+Evaluates all valid parameter combinations on a discrete grid.
+
+**Commands:**
+```bash
+# Run grid search (default resolution, ~38 minutes)
+python src/phase4/04b_grid_search_optimization.py
+
+# Coarser grid for faster results (~8 minutes)
+python src/phase4/04b_grid_search_optimization.py --coarse
+```
+
+**Grid Configuration (default):**
+
+| Variable | Min | Max | Step | Values |
+|----------|-----|-----|------|--------|
+| `setpoint_comfort` | 19.0°C | 22.0°C | 0.5°C | 7 |
+| `setpoint_eco` | 12.0°C | 19.0°C | 1.0°C | 8 |
+| `comfort_start` | 06:00 | 12:00 | 0.5h | 13 |
+| `comfort_end` | 16:00 | 22:00 | 0.5h | 13 |
+| `curve_rise` | 0.80 | 1.20 | 0.05 | 9 |
+
+**Coarse grid** (`--coarse`): Steps doubled for ~4x faster runtime.
+
+**Search Space:**
+- Total combinations: 85,176 (before filtering)
+- Valid combinations: ~85,000 (after min_hours ≥ 4h constraint)
+- Feasible solutions: ~5.6% (pass comfort constraint)
+- Evaluation time: ~38 minutes (85k evals)
+
+**Comparison with NSGA-II:**
+
+| Aspect | NSGA-II | Grid Search |
+|--------|---------|-------------|
+| Evaluations | ~2,100 (50 pop × 42 gen) | 85,176 |
+| Runtime | ~3 minutes | ~38 minutes |
+| Coverage | Stochastic, may miss regions | Exhaustive, complete |
+| Pareto solutions | ~3-5 after ε-dominance | 9 (all convergent) |
+
+**Key Finding (Jan 2026):**
+All 9 Pareto solutions from grid search converge to:
+- **Schedule**: 12:00-16:00 (4-hour comfort window)
+- **Eco setpoint**: 19°C (maximum allowed)
+- **Variation only in**: comfort setpoint (21.5-22.0°C) and curve_rise (1.00-1.20)
+
+This confirms the NSGA-II result: optimal strategies use narrow afternoon comfort windows
+aligned with PV production, with minimal temperature setback during eco periods.
+
+**Outputs:**
+```
+output/phase4/
+├── grid_search_all_results.csv    # All 85,176 evaluations
+├── grid_search_pareto.csv         # 9 Pareto-optimal solutions
+├── grid_search_pareto.json        # Machine-readable Pareto front
+├── fig32_grid_search_results.png  # Feasible region visualization
+└── fig33_objective_landscape.png  # Objective space heatmaps
+```
+
+**Pareto Solutions (Jan 2026, at T_outdoor ref = 5°C):**
+
+| Label | Comf°C | Eco°C | Schedule | Rise | Temp°C | Grid kWh | Cost CHF |
+|-------|--------|-------|----------|------|--------|----------|----------|
+| Comfort-First | 22.0 | 19 | 12-16h | 1.20 | 20.2 | 2287 | 660 |
+| Balanced-1-6 | 21.5-22.0 | 19 | 12-16h | 1.05-1.20 | 19.6-20.1 | 2145-2281 | 618-658 |
+| Grid-Minimal | 22.0 | 19 | 12-16h | 1.00 | 19.6 | 2109 | 608 |
+
+**When to Use:**
+- Use NSGA-II (04_pareto_optimization.py) for rapid exploration and iterative refinement
+- Use grid search (04b_grid_search_optimization.py) for exhaustive validation and complete coverage
 
 ## Strategy Evaluation (Phase 4, Step 5)
 
