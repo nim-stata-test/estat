@@ -154,7 +154,17 @@ def load_thermal_model_params():
 
 
 def load_heating_curve_params():
-    """Load heating curve parameters."""
+    """Load heating curve parameters from Phase 3 output (same as weekly decomposition)."""
+    # Use the same source as 05_weekly_decomposition.py
+    hc_path = OUTPUT_DIR / 'heating_curve.csv'
+    if hc_path.exists():
+        import pandas as pd
+        hc = pd.read_csv(hc_path).iloc[0]
+        return {
+            'intercept': hc['baseline'],
+            'slope': hc['slope'],
+        }
+    # Fallback to Phase 2 JSON
     params_file = OUTPUT_DIR.parent / 'phase2' / 'heating_curve_params.json'
     if params_file.exists():
         with open(params_file) as f:
@@ -534,22 +544,31 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
     heating_mask = (heating_df.index >= start_date) & (heating_df.index < end_date)
     heating_week = heating_df[heating_mask].copy()
 
-    # Compute model terms on FULL dataset for proper LPF initialization, then extract week
-    terms_full = compute_model_terms(df, params, hc_params)
+    # Filter df to overlap period with valid heating data before LPF computation
+    # This ensures LPF doesn't start with NaN values
+    outdoor_col = 'stiebel_eltron_isg_outdoor_temperature'
+    first_valid_idx = df[outdoor_col].first_valid_index()
+    if first_valid_idx is not None:
+        df_valid = df.loc[first_valid_idx:].copy()
+    else:
+        df_valid = df
 
-    # Extract week portion from full terms
-    week_idx = df.index.get_indexer(df_week.index)
+    # Compute model terms on valid data for proper LPF initialization
+    terms_full = compute_model_terms(df_valid, params, hc_params)
+
+    # Extract week portion from full terms using boolean mask
+    full_mask = (df_valid.index >= start_date) & (df_valid.index < end_date)
     terms = {
-        't_out': terms_full['t_out'][week_idx],
-        'effort': terms_full['effort'][week_idx],
-        'pv': terms_full['pv'][week_idx],
-        'lpf_out': terms_full['lpf_out'][week_idx],
-        'lpf_eff': terms_full['lpf_eff'][week_idx],
-        'lpf_pv': terms_full['lpf_pv'][week_idx],
-        'contrib_out': terms_full['contrib_out'][week_idx],
-        'contrib_eff': terms_full['contrib_eff'][week_idx],
-        'contrib_pv': terms_full['contrib_pv'][week_idx],
-        't_pred': terms_full['t_pred'][week_idx],
+        't_out': terms_full['t_out'][full_mask],
+        'effort': terms_full['effort'][full_mask],
+        'pv': terms_full['pv'][full_mask],
+        'lpf_out': terms_full['lpf_out'][full_mask],
+        'lpf_eff': terms_full['lpf_eff'][full_mask],
+        'lpf_pv': terms_full['lpf_pv'][full_mask],
+        'contrib_out': terms_full['contrib_out'][full_mask],
+        'contrib_eff': terms_full['contrib_eff'][full_mask],
+        'contrib_pv': terms_full['contrib_pv'][full_mask],
+        't_pred': terms_full['t_pred'][full_mask],
     }
 
     # Get actual room temperature
@@ -572,12 +591,14 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
     ax.grid(True, alpha=0.3)
 
     # Calculate R² for this period
-    valid = ~(np.isnan(t_actual) | np.isnan(terms['t_pred']))
+    r2, rmse = None, None
+    t_pred_arr = np.array(terms['t_pred'])
+    valid = ~(np.isnan(t_actual) | np.isnan(t_pred_arr))
     if valid.sum() > 10:
-        ss_res = np.sum((t_actual[valid] - terms['t_pred'][valid])**2)
+        ss_res = np.sum((t_actual[valid] - t_pred_arr[valid])**2)
         ss_tot = np.sum((t_actual[valid] - np.mean(t_actual[valid]))**2)
         r2 = 1 - ss_res / ss_tot if ss_tot > 0 else 0
-        rmse = np.sqrt(np.mean((t_actual[valid] - terms['t_pred'][valid])**2))
+        rmse = np.sqrt(np.mean((t_actual[valid] - t_pred_arr[valid])**2))
         ax.text(0.02, 0.95, f'R²={r2:.3f}, RMSE={rmse:.2f}°C',
                 transform=ax.transAxes, va='top', fontsize=9,
                 bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
@@ -798,7 +819,7 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
     fig.savefig(output_path, dpi=150, bbox_inches='tight', facecolor='white')
     plt.close()
 
-    return True
+    return {'success': True, 'r2': r2, 'rmse': rmse}
 
 
 def main():
@@ -892,15 +913,17 @@ def main():
         week_num = i + 1
         output_path = WEEKLY_DIR / f'week_{week_num:02d}_extended.png'
 
-        success = create_extended_decomposition(
+        result = create_extended_decomposition(
             integrated, energy, heating, params, hc_params,
             start, end, output_path,
             title_suffix=f' - Week {week_num}\n{start.strftime("%Y-%m-%d")} to {end.strftime("%Y-%m-%d")}',
             energy_model=energy_model
         )
 
-        if success:
-            print(f"  Week {week_num}: {start.strftime('%Y-%m-%d')} - Saved")
+        if result and result.get('success'):
+            r2_str = f"R²={result['r2']:.3f}" if result.get('r2') is not None else "R²=N/A"
+            rmse_str = f"RMSE={result['rmse']:.2f}°C" if result.get('rmse') is not None else ""
+            print(f"  Week {week_num}: {start.strftime('%Y-%m-%d')} - {r2_str}, {rmse_str}")
         else:
             print(f"  Week {week_num}: {start.strftime('%Y-%m-%d')} - Skipped (insufficient data)")
 
