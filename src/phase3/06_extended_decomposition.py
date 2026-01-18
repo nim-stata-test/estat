@@ -834,14 +834,15 @@ def main():
     # Generate weekly decomposition figures
     print("\nGenerating weekly extended decomposition figures...")
 
-    # Find all weeks with sufficient data
+    # Find all weeks with sufficient data (including partial final week)
     weeks = []
     current = overlap_start
     while current < overlap_end:
-        week_end = current + pd.Timedelta(days=7)
-        if week_end <= overlap_end:
+        week_end = min(current + pd.Timedelta(days=7), overlap_end)
+        # Include week if it has at least 2 days of data
+        if (week_end - current).days >= 2:
             weeks.append((current, week_end))
-        current = week_end
+        current = current + pd.Timedelta(days=7)
 
     print(f"  Found {len(weeks)} weeks")
 
