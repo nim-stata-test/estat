@@ -373,7 +373,7 @@ li {
 <body>
     <div class="container">
         <h1>ESTAT Phase 2: Exploratory Data Analysis Report</h1>
-        <p class="meta">Generated: 2026-01-17 12:31:05</p>
+        <p class="meta">Generated: 2026-01-18 09:49:13</p>
 
         <div class="toc">
             <strong>Contents</strong>
@@ -390,8 +390,9 @@ li {
                 <li><a href="#weighted-temp">9. Weighted Temperature Analysis</a></li>
                 <li><a href="#tariffs">10. Electricity Tariffs</a></li>
                 <li><a href="#hk2-target-actual">11. HK2 Target vs Actual Analysis</a></li>
-                <li><a href="#battery">12. Battery Degradation</a></li>
-                <li><a href="#log">13. Detailed Log</a></li>
+                <li><a href="#sensor-exploration">12. Sensor Exploration</a></li>
+                <li><a href="#battery">13. Battery Degradation</a></li>
+                <li><a href="#log">14. Detailed Log</a></li>
             </ul>
         </div>
 
@@ -670,8 +671,8 @@ li {
         <div class="card">
             <h4>Heating Activity by Time of Day</h4>
             <table>
-                <tr><td>Solar hours (8AM-5PM)</td><td>51.2% heating active</td></tr>
-                <tr><td>Non-solar hours (5PM-8AM)</td><td>48.8% heating active</td></tr>
+                <tr><td>Solar hours (8AM-5PM)</td><td>51.1% heating active</td></tr>
+                <tr><td>Non-solar hours (5PM-8AM)</td><td>49.0% heating active</td></tr>
             </table>
         </div>
 
@@ -711,17 +712,17 @@ li {
                 <tr>
                     <td><strong>T_setpoint</strong></td>
                     <td>Room temperature setpoint (comfort or eco depending on schedule)</td>
-                    <td>Comfort: 20.2°C, Eco: 18.0°C</td>
+                    <td>Comfort: 20.3°C, Eco: 18.0°C</td>
                 </tr>
                 <tr>
                     <td><strong>curve_rise</strong></td>
                     <td>Heating curve slope (controllable parameter)</td>
-                    <td>1.08 (range: 0.97 - 1.14)</td>
+                    <td>1.08 (range: 0.85 - 1.14)</td>
                 </tr>
                 <tr>
                     <td><strong>T_ref</strong></td>
                     <td>Internal reference temperature (derived from data)</td>
-                    <td>Comfort: 21.32°C, Eco: 19.16°C</td>
+                    <td>Comfort: 21.34°C, Eco: 19.16°C</td>
                 </tr>
                 <tr>
                     <td><strong>T_outdoor</strong></td>
@@ -759,10 +760,17 @@ li {
                     <td>1</td>
                 </tr>
                 <tr>
-                    <td>2026-01-09 to 2026-01-09</td>
+                    <td>2026-01-09 to 2026-01-13</td>
                     <td>06:30</td>
                     <td>21:30</td>
                     <td>15.0 hours</td>
+                    <td>3</td>
+                </tr>
+                <tr>
+                    <td>2026-01-16 to 2026-01-16</td>
+                    <td>06:00</td>
+                    <td>21:30</td>
+                    <td>15.5 hours</td>
                     <td>1</td>
                 </tr>
 
@@ -795,14 +803,14 @@ li {
                     <td>2025-10-29 07:39</td>
                     <td>20.5</td>
                     <td>18.5</td>
-                    <td>0.43</td>
+                    <td>0.41</td>
                     <td></td>
                 </tr>
                 <tr>
                     <td>2025-10-29 10:35</td>
                     <td>20.5</td>
                     <td>18.3</td>
-                    <td>0.70</td>
+                    <td>0.69</td>
                     <td></td>
                 </tr>
                 <tr>
@@ -830,7 +838,7 @@ li {
                     <td>2025-11-25 23:55</td>
                     <td>20.2</td>
                     <td>18.0</td>
-                    <td>0.49</td>
+                    <td>0.50</td>
                     <td>Standard</td>
                 </tr>
                 <tr>
@@ -879,22 +887,50 @@ li {
                     <td>2025-12-31 10:27</td>
                     <td>21.0</td>
                     <td>18.0</td>
-                    <td>1.63</td>
+                    <td>1.55</td>
                     <td>Higher comfort</td>
                 </tr>
                 <tr>
                     <td>2026-01-12 10:01</td>
                     <td>23.0</td>
                     <td>18.0</td>
-                    <td>1.66</td>
+                    <td>2.32</td>
                     <td>Higher comfort</td>
                 </tr>
                 <tr>
                     <td>2026-01-12 10:01</td>
                     <td>23.0</td>
                     <td>15.0</td>
-                    <td>1.66</td>
+                    <td>2.32</td>
                     <td>Higher comfort</td>
+                </tr>
+                <tr>
+                    <td>2026-01-13 23:05</td>
+                    <td>23.0</td>
+                    <td>14.0</td>
+                    <td>3.78</td>
+                    <td>Higher comfort</td>
+                </tr>
+                <tr>
+                    <td>2026-01-13 23:21</td>
+                    <td>21.0</td>
+                    <td>14.0</td>
+                    <td>3.78</td>
+                    <td>Higher comfort</td>
+                </tr>
+                <tr>
+                    <td>2026-01-17 12:21</td>
+                    <td>20.5</td>
+                    <td>14.0</td>
+                    <td>2.03</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>2026-01-17 12:21</td>
+                    <td>20.5</td>
+                    <td>17.0</td>
+                    <td>2.03</td>
+                    <td></td>
                 </tr>
 
             </table>
@@ -903,10 +939,10 @@ li {
         <div class="card">
             <h4>Model Performance</h4>
             <table>
-                <tr><td>R-squared</td><td><strong>0.9313</strong> (explains 93.1% of variance)</td></tr>
-                <tr><td>RMSE (overall)</td><td>1.15°C</td></tr>
-                <tr><td>RMSE (comfort mode)</td><td>0.40°C</td></tr>
-                <tr><td>RMSE (eco mode)</td><td>1.15°C</td></tr>
+                <tr><td>R-squared</td><td><strong>0.9207</strong> (explains 92.1% of variance)</td></tr>
+                <tr><td>RMSE (overall)</td><td>1.28°C</td></tr>
+                <tr><td>RMSE (comfort mode)</td><td>0.52°C</td></tr>
+                <tr><td>RMSE (eco mode)</td><td>1.45°C</td></tr>
             </table>
 
             <h4>Parameter Effects</h4>
@@ -919,14 +955,14 @@ li {
 
         <div class="card">
             <h4>Example Calculations</h4>
-            <p>For outdoor temperature = 5°C, comfort_temp = 20.2°C, eco_temp = 18.0°C, curve_rise = 1.08:</p>
+            <p>For outdoor temperature = 5°C, comfort_temp = 20.3°C, eco_temp = 18.0°C, curve_rise = 1.08:</p>
             <table>
                 <tr><th>Outdoor</th><th>Comfort Target</th><th>Eco Target</th></tr>
-                <tr><td>-3°C</td><td>46.5°C</td><td>41.9°C</td></tr>
-                <tr><td>0°C</td><td>43.2°C</td><td>38.7°C</td></tr>
-                <tr><td>5°C</td><td>37.8°C</td><td>33.3°C</td></tr>
-                <tr><td>10°C</td><td>32.4°C</td><td>27.9°C</td></tr>
-                <tr><td>15°C</td><td>27.0°C</td><td>22.5°C</td></tr>
+                <tr><td>-3°C</td><td>46.6°C</td><td>41.9°C</td></tr>
+                <tr><td>0°C</td><td>43.3°C</td><td>38.7°C</td></tr>
+                <tr><td>5°C</td><td>37.9°C</td><td>33.3°C</td></tr>
+                <tr><td>10°C</td><td>32.5°C</td><td>27.9°C</td></tr>
+                <tr><td>15°C</td><td>27.1°C</td><td>22.5°C</td></tr>
             </table>
         </div>
 
@@ -940,7 +976,7 @@ li {
             <img src="fig12a_heating_curve_censored.png" alt="Heating curve analysis excluding anomalous periods">
             <div class="figure-caption">Fig 12a: Heating curve analysis (censored): excluding anomalous periods where eco >= comfort.
             Shows residual distribution (top-left), target vs outdoor (top-right), predicted vs actual (bottom-left), and summary stats (bottom-right).
-            R² = 0.9626, RMSE = 0.81°C for normal operation.</div>
+            R² = 0.9460, RMSE = 1.02°C for normal operation.</div>
         </div>
 
 
@@ -965,17 +1001,17 @@ li {
         <div class="card">
             <h4>Analysis Period Summary</h4>
             <table>
-                <tr><td>Total readings</td><td>4,168</td></tr>
-                <tr><td>Washout periods (48h after parameter changes)</td><td>1,378 (33.1%)</td></tr>
-                <tr><td>Analysis readings (excluding washout)</td><td>2,790 (66.9%)</td></tr>
+                <tr><td>Total readings</td><td>4,578</td></tr>
+                <tr><td>Washout periods (48h after parameter changes)</td><td>1,681 (36.7%)</td></tr>
+                <tr><td>Analysis readings (excluding washout)</td><td>2,897 (63.3%)</td></tr>
             </table>
 
             <h4>Temperature Statistics (Excluding Washout)</h4>
             <table>
-                <tr><td>Mean T_weighted</td><td><strong>19.0°C</strong></td></tr>
-                <tr><td>Std deviation</td><td>0.8°C</td></tr>
-                <tr><td>Range</td><td>16.8°C to 21.1°C</td></tr>
-                <tr><td>Comfort compliance (08:00-22:00, 18.5-22°C)</td><td><strong>82.8%</strong></td></tr>
+                <tr><td>Mean T_weighted</td><td><strong>18.9°C</strong></td></tr>
+                <tr><td>Std deviation</td><td>0.9°C</td></tr>
+                <tr><td>Range</td><td>16.3°C to 21.1°C</td></tr>
+                <tr><td>Comfort compliance (08:00-22:00, 18.5-22°C)</td><td><strong>81.8%</strong></td></tr>
             </table>
         </div>
 
@@ -984,55 +1020,55 @@ li {
             <p>A multivariate model predicts T_weighted (during occupied hours) from all controllable parameters simultaneously,
             using daily aggregates to capture parameter effects while controlling for confounding variables.</p>
 
-            <p><strong>Model Performance:</strong> R² = 0.534, Adjusted R² = 0.490, RMSE = 0.51°C, n = 59 days</p>
+            <p><strong>Model Performance:</strong> R² = 0.567, Adjusted R² = 0.527, RMSE = 0.51°C, n = 61 days</p>
             <table>
                 <tr><th>Parameter</th><th>Coefficient</th><th>Std Error</th><th>t-stat</th><th>p-value</th><th>Interpretation</th></tr>
                 <tr>
                     <td>Intercept</td>
-                    <td><strong>-16.403</strong></td>
-                    <td>8.656</td>
-                    <td>-1.90</td>
-                    <td>0.0635 </td>
-                    <td>Baseline: -16.4°C</td>
+                    <td><strong>-15.789</strong></td>
+                    <td>7.784</td>
+                    <td>-2.03</td>
+                    <td>0.0474 *</td>
+                    <td>Baseline: -15.8°C</td>
                 </tr>
                 <tr>
                     <td>Comfort Setpoint</td>
-                    <td><strong>1.240</strong></td>
-                    <td>0.332</td>
-                    <td>3.74</td>
-                    <td>0.0005 ***</td>
-                    <td>+1°C setpoint → +1.24°C T_weighted</td>
+                    <td><strong>1.225</strong></td>
+                    <td>0.318</td>
+                    <td>3.85</td>
+                    <td>0.0003 ***</td>
+                    <td>+1°C setpoint → +1.22°C T_weighted</td>
                 </tr>
                 <tr>
                     <td>Eco Setpoint</td>
-                    <td><strong>-0.060</strong></td>
-                    <td>0.035</td>
-                    <td>-1.75</td>
-                    <td>0.0865 </td>
+                    <td><strong>-0.061</strong></td>
+                    <td>0.032</td>
+                    <td>-1.89</td>
+                    <td>0.0637 </td>
                     <td>+1°C setpoint → -0.06°C T_weighted</td>
                 </tr>
                 <tr>
                     <td>Curve Rise</td>
-                    <td><strong>9.951</strong></td>
-                    <td>2.349</td>
-                    <td>4.24</td>
-                    <td>0.0001 ***</td>
-                    <td>+0.1 curve → +1.00°C T_weighted</td>
+                    <td><strong>9.627</strong></td>
+                    <td>1.632</td>
+                    <td>5.90</td>
+                    <td>0.0000 ***</td>
+                    <td>+0.1 curve → +0.96°C T_weighted</td>
                 </tr>
                 <tr>
                     <td>Comfort Hours</td>
-                    <td><strong>0.031</strong></td>
-                    <td>0.032</td>
-                    <td>0.96</td>
-                    <td>0.3435 </td>
+                    <td><strong>0.035</strong></td>
+                    <td>0.031</td>
+                    <td>1.12</td>
+                    <td>0.2674 </td>
                     <td>+1h comfort → +0.03°C T_weighted</td>
                 </tr>
                 <tr>
                     <td>Outdoor Temp</td>
-                    <td><strong>0.077</strong></td>
-                    <td>0.025</td>
-                    <td>3.05</td>
-                    <td>0.0035 **</td>
+                    <td><strong>0.079</strong></td>
+                    <td>0.022</td>
+                    <td>3.65</td>
+                    <td>0.0006 ***</td>
                     <td>+1°C outdoor → +0.08°C T_weighted</td>
                 </tr>
             </table>
@@ -1127,6 +1163,14 @@ li {
                     <td>18.4</td>
                     <td>505</td>
                 </tr>
+                <tr>
+                    <td>2026-01-13</td>
+                    <td>21.0</td>
+                    <td>14.0</td>
+                    <td>0.85</td>
+                    <td>17.6</td>
+                    <td>107</td>
+                </tr>
             </table>
         </div>
 
@@ -1136,15 +1180,15 @@ li {
             Night temperatures (22:00-08:00) are excluded from the comfort objective, allowing energy-saving setback without penalty.</p>
             <table>
                 <tr><th>Metric</th><th>Occupied (08:00-22:00)</th><th>Night (22:00-08:00)</th></tr>
-                <tr><td>Mean T_weighted</td><td><strong>19.2°C</strong></td><td>18.5°C</td></tr>
-                <tr><td>Minimum T_weighted</td><td>17.4°C</td><td>16.8°C</td></tr>
-                <tr><td>Below 18.5°C</td><td>17.2%</td><td>—</td></tr>
-                <tr><td>Below 18.0°C</td><td>—</td><td>28.0%</td></tr>
-                <tr><td>Comfort compliance (18.5-22°C)</td><td><strong>82.8%</strong></td><td>Not evaluated</td></tr>
-                <tr><td>N readings</td><td>1,718</td><td>1,072</td></tr>
+                <tr><td>Mean T_weighted</td><td><strong>19.2°C</strong></td><td>18.4°C</td></tr>
+                <tr><td>Minimum T_weighted</td><td>17.3°C</td><td>16.3°C</td></tr>
+                <tr><td>Below 18.5°C</td><td>18.2%</td><td>—</td></tr>
+                <tr><td>Below 18.0°C</td><td>—</td><td>31.5%</td></tr>
+                <tr><td>Comfort compliance (18.5-22°C)</td><td><strong>81.8%</strong></td><td>Not evaluated</td></tr>
+                <tr><td>N readings</td><td>1,762</td><td>1,135</td></tr>
             </table>
             <p><em>This explains why the overall mean (18.7°C) appears low - night temperatures bring down the average,
-            but comfort compliance during occupied hours (82.8%) is what matters for the intervention study.</em></p>
+            but comfort compliance during occupied hours (81.8%) is what matters for the intervention study.</em></p>
         </div>
 
         <div class="figure">
@@ -1420,15 +1464,15 @@ li {
     <p>Analysis of the difference: $\Delta T = T_{actual} - T_{target}$</p>
     <table>
         <tr><th>Statistic</th><th>Value</th></tr>
-        <tr><td>Number of observations</td><td>6,097</td></tr>
-        <tr><td>Mean deviation ($\bar{\Delta T}$)</td><td><strong>-1.45°C</strong></td></tr>
-        <tr><td>Std deviation ($\sigma_{\Delta T}$)</td><td>1.79°C</td></tr>
-        <tr><td>Min deviation</td><td>-9.8°C</td></tr>
+        <tr><td>Number of observations</td><td>6,542</td></tr>
+        <tr><td>Mean deviation ($\bar{\Delta T}$)</td><td><strong>-1.42°C</strong></td></tr>
+        <tr><td>Std deviation ($\sigma_{\Delta T}$)</td><td>1.85°C</td></tr>
+        <tr><td>Min deviation</td><td>-14.2°C</td></tr>
         <tr><td>Max deviation</td><td>29.1°C</td></tr>
-        <tr><td>Actual above target</td><td>14.8%</td></tr>
-        <tr><td>Within ±1°C</td><td>52.6%</td></tr>
-        <tr><td>Within ±2°C</td><td>69.7%</td></tr>
-        <tr><td>Correlation ($r$)</td><td>0.910</td></tr>
+        <tr><td>Actual above target</td><td>15.2%</td></tr>
+        <tr><td>Within ±1°C</td><td>52.2%</td></tr>
+        <tr><td>Within ±2°C</td><td>69.8%</td></tr>
+        <tr><td>Correlation ($r$)</td><td>0.913</td></tr>
     </table>
 
     <h3>First-Order Lag Model</h3>
@@ -1440,28 +1484,28 @@ li {
 
     <table>
         <tr><th>Model Parameter</th><th>Value</th></tr>
-        <tr><td>Time constant ($\tau$)</td><td><strong>0.35 hours</strong></td></tr>
-        <tr><td>Forward simulation $R^2$</td><td>0.722</td></tr>
-        <tr><td>Forward simulation RMSE</td><td>2.25°C</td></tr>
-        <tr><td>One-step prediction $R^2$</td><td>0.813</td></tr>
-        <tr><td>One-step prediction RMSE</td><td>1.84°C</td></tr>
+        <tr><td>Time constant ($\tau$)</td><td><strong>0.37 hours</strong></td></tr>
+        <tr><td>Forward simulation $R^2$</td><td>0.748</td></tr>
+        <tr><td>Forward simulation RMSE</td><td>2.24°C</td></tr>
+        <tr><td>One-step prediction $R^2$</td><td>0.842</td></tr>
+        <tr><td>One-step prediction RMSE</td><td>1.77°C</td></tr>
     </table>
 
-    <p><strong>Interpretation:</strong> A time constant of τ = 0.3 hours means the actual
-    temperature reaches ~63% of a step change in target within 0.3 hours, and ~95% within
-    1.0 hours (3τ).</p>
+    <p><strong>Interpretation:</strong> A time constant of τ = 0.4 hours means the actual
+    temperature reaches ~63% of a step change in target within 0.4 hours, and ~95% within
+    1.1 hours (3τ).</p>
 
     <h3>Cross-Correlation Analysis</h3>
     <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Peak correlation</td><td>0.914</td></tr>
+        <tr><td>Peak correlation</td><td>0.920</td></tr>
         <tr><td>Peak lag</td><td>-0.25 hours</td></tr>
-        <tr><td>Zero-lag correlation</td><td>0.910</td></tr>
+        <tr><td>Zero-lag correlation</td><td>0.913</td></tr>
     </table>
 
     
         <div class="warning">
-        <strong>Recommendation:</strong> The lag model achieves moderate fit (R² = 0.722).
+        <strong>Recommendation:</strong> The lag model achieves moderate fit (R² = 0.748).
         Consider using actual HK2 temperature directly in thermal models rather than predicting
         from target. The dynamics may involve factors beyond simple first-order lag.
         </div>
@@ -1486,7 +1530,424 @@ li {
     </section>
     
 
-        <h2 id="battery">12. Battery Degradation</h2>
+        
+    <h2 id="sensor-exploration">12. Sensor Exploration Analysis</h2>
+
+    <div class="card">
+        <h4>Purpose</h4>
+        <p>This analysis systematically evaluates all ~190 sensors in the integrated dataset to identify
+        candidates that could improve thermal and COP models. The goal is to find sensors that:</p>
+        <ul>
+            <li><strong>Correlate with model residuals:</strong> Capture dynamics the current models miss</li>
+            <li><strong>Correlate with COP:</strong> Help explain heat pump efficiency variations</li>
+            <li><strong>Have good data coverage:</strong> Available during the heating analysis period</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h4>Summary Statistics</h4>
+        <table>
+            <tr><td><strong>Total sensors analyzed</strong></td><td>198</td></tr>
+            <tr><td><strong>High coverage (>80%)</strong></td><td>8 sensors</td></tr>
+            <tr><td><strong>Medium coverage (50-80%)</strong></td><td>0 sensors</td></tr>
+            <tr><td><strong>Low coverage (<50%)</strong></td><td>190 sensors</td></tr>
+            <tr><td><strong>Focus sensors with data</strong></td><td>13 of 13</td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h4>Coverage by Sensor Category</h4>
+        <p>Different sensor categories have varying data availability based on when they were added to the monitoring system:</p>
+        <table>
+            <tr><th>Category</th><th>Sensors</th><th>Mean Coverage</th><th>Notes</th></tr>
+            <tr><td>energy</td><td>43</td><td>2.4%</td><td>Partial period</td></tr><tr><td>heating</td><td>96</td><td>2.3%</td><td>Heat pump sensors (Oct 2025+)</td></tr><tr><td>other</td><td>8</td><td>99.9%</td><td>Full period available</td></tr><tr><td>rooms</td><td>26</td><td>2.9%</td><td>Partial period</td></tr><tr><td>weather</td><td>25</td><td>3.4%</td><td>Partial period</td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h4>Focus Sensors Analysis</h4>
+        <p>These sensors were pre-identified as high-potential for model improvement based on physical understanding:</p>
+        <ul>
+            <li><strong>Pressure sensors</strong> (high_pressure_wp1, low_pressure_wp1): Enable thermodynamic COP calculation via Carnot efficiency</li>
+            <li><strong>Hot gas temperature</strong>: Indicates superheat and compressor efficiency</li>
+            <li><strong>Wind sensors</strong>: Could capture infiltration losses affecting thermal model</li>
+            <li><strong>Defrost indicator</strong>: Allows filtering periods when COP is artificially low due to defrost cycles</li>
+        </ul>
+        <table border="1" class="dataframe compact">
+  <thead>
+    <tr style="text-align: right;">
+      <th>sensor</th>
+      <th>coverage_pct</th>
+      <th>room_corr</th>
+      <th>residual_corr</th>
+      <th>cop_corr</th>
+      <th>combined_score</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>low_pressure_wp1</td>
+      <td>7.744</td>
+      <td>0.383</td>
+      <td>0.022</td>
+      <td>0.961</td>
+      <td>0.585</td>
+    </tr>
+    <tr>
+      <td>hot_gas_temperature_wp1</td>
+      <td>7.745</td>
+      <td>-0.120</td>
+      <td>-0.026</td>
+      <td>-0.927</td>
+      <td>0.567</td>
+    </tr>
+    <tr>
+      <td>flow_temperature_wp1</td>
+      <td>7.725</td>
+      <td>-0.034</td>
+      <td>-0.020</td>
+      <td>-0.847</td>
+      <td>0.514</td>
+    </tr>
+    <tr>
+      <td>return_temperature_wp1</td>
+      <td>7.696</td>
+      <td>0.012</td>
+      <td>-0.002</td>
+      <td>-0.793</td>
+      <td>0.470</td>
+    </tr>
+    <tr>
+      <td>high_pressure_wp1</td>
+      <td>7.745</td>
+      <td>0.024</td>
+      <td>-0.022</td>
+      <td>-0.766</td>
+      <td>0.468</td>
+    </tr>
+    <tr>
+      <td>volume_stream_wp1</td>
+      <td>4.097</td>
+      <td>-0.085</td>
+      <td>-0.040</td>
+      <td>-0.516</td>
+      <td>0.175</td>
+    </tr>
+    <tr>
+      <td>barometer</td>
+      <td>7.744</td>
+      <td>-0.032</td>
+      <td>-0.040</td>
+      <td>-0.214</td>
+      <td>0.151</td>
+    </tr>
+    <tr>
+      <td>2_min_avg_wind_speed</td>
+      <td>6.873</td>
+      <td>-0.067</td>
+      <td>-0.090</td>
+      <td>-0.119</td>
+      <td>0.110</td>
+    </tr>
+    <tr>
+      <td>outside_humidity</td>
+      <td>4.521</td>
+      <td>-0.344</td>
+      <td>-0.262</td>
+      <td>0.049</td>
+      <td>0.108</td>
+    </tr>
+    <tr>
+      <td>wind_speed</td>
+      <td>6.907</td>
+      <td>-0.060</td>
+      <td>-0.088</td>
+      <td>-0.114</td>
+      <td>0.107</td>
+    </tr>
+    <tr>
+      <td>evaporator_defrost</td>
+      <td>0.356</td>
+      <td>-0.121</td>
+      <td>-0.037</td>
+      <td>-0.575</td>
+      <td>0.037</td>
+    </tr>
+    <tr>
+      <td>is_heating</td>
+      <td>1.348</td>
+      <td>-0.082</td>
+      <td>-0.040</td>
+      <td>-0.154</td>
+      <td>0.020</td>
+    </tr>
+    <tr>
+      <td>compressor</td>
+      <td>1.363</td>
+      <td>-0.080</td>
+      <td>-0.029</td>
+      <td>-0.157</td>
+      <td>0.020</td>
+    </tr>
+  </tbody>
+</table>
+        <p><em>Coverage = percentage of 15-minute intervals with valid data. Correlations are Pearson r values.</em></p>
+    </div>
+
+    <div class="card">
+        <h4>Top Sensors for Thermal Model Improvement</h4>
+        <p>Sensors with highest absolute correlation to thermal model residuals. High correlation means the sensor
+        captures dynamics that the current transfer-function model misses:</p>
+        <table border="1" class="dataframe compact">
+  <thead>
+    <tr style="text-align: right;">
+      <th>sensor</th>
+      <th>category</th>
+      <th>coverage_pct</th>
+      <th>residual_corr</th>
+      <th>thermal_score</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>stiebel_eltron_isg_low_pressure_wp1</td>
+      <td>heating</td>
+      <td>7.744</td>
+      <td>0.022</td>
+      <td>0.022</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_hot_gas_temperature_wp1</td>
+      <td>heating</td>
+      <td>7.745</td>
+      <td>-0.026</td>
+      <td>0.026</td>
+    </tr>
+    <tr>
+      <td>total_consumption_kwh</td>
+      <td>other</td>
+      <td>99.643</td>
+      <td>0.160</td>
+      <td>0.159</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_flow_temperature_wp1</td>
+      <td>heating</td>
+      <td>7.725</td>
+      <td>-0.020</td>
+      <td>0.019</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_actual_temperature_hk_2</td>
+      <td>heating</td>
+      <td>7.694</td>
+      <td>0.031</td>
+      <td>0.031</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_return_temperature_wp1</td>
+      <td>heating</td>
+      <td>7.696</td>
+      <td>-0.002</td>
+      <td>0.002</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_high_pressure_wp1</td>
+      <td>heating</td>
+      <td>7.745</td>
+      <td>-0.022</td>
+      <td>0.022</td>
+    </tr>
+    <tr>
+      <td>wp_anlage_hk2_ist</td>
+      <td>heating</td>
+      <td>7.571</td>
+      <td>0.036</td>
+      <td>0.034</td>
+    </tr>
+    <tr>
+      <td>external_supply_kwh</td>
+      <td>other</td>
+      <td>99.969</td>
+      <td>0.085</td>
+      <td>0.085</td>
+    </tr>
+    <tr>
+      <td>wp_wp_vorlauf</td>
+      <td>heating</td>
+      <td>7.708</td>
+      <td>-0.017</td>
+      <td>0.016</td>
+    </tr>
+  </tbody>
+</table>
+        <p><em>Thermal score = |residual_corr| × coverage_weight. Higher is better.</em></p>
+    </div>
+
+    <div class="card">
+        <h4>Top Sensors for COP Model Improvement</h4>
+        <p>Sensors with highest absolute correlation to daily COP. These could improve heat pump efficiency predictions:</p>
+        <table border="1" class="dataframe compact">
+  <thead>
+    <tr style="text-align: right;">
+      <th>sensor</th>
+      <th>category</th>
+      <th>coverage_pct</th>
+      <th>cop_corr</th>
+      <th>cop_score</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>stiebel_eltron_isg_low_pressure_wp1</td>
+      <td>heating</td>
+      <td>7.744</td>
+      <td>0.961</td>
+      <td>0.953</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_hot_gas_temperature_wp1</td>
+      <td>heating</td>
+      <td>7.745</td>
+      <td>-0.927</td>
+      <td>0.919</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_actual_temperature_hk_2</td>
+      <td>heating</td>
+      <td>7.694</td>
+      <td>-0.928</td>
+      <td>0.914</td>
+    </tr>
+    <tr>
+      <td>wp_anlage_hk2_ist</td>
+      <td>heating</td>
+      <td>7.571</td>
+      <td>-0.930</td>
+      <td>0.902</td>
+    </tr>
+    <tr>
+      <td>total_consumption_kwh</td>
+      <td>other</td>
+      <td>99.643</td>
+      <td>-0.881</td>
+      <td>0.878</td>
+    </tr>
+    <tr>
+      <td>wp_wp_vorlauf</td>
+      <td>heating</td>
+      <td>7.708</td>
+      <td>-0.849</td>
+      <td>0.838</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_flow_temperature_wp1</td>
+      <td>heating</td>
+      <td>7.725</td>
+      <td>-0.847</td>
+      <td>0.838</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_outdoor_temperature</td>
+      <td>heating</td>
+      <td>6.740</td>
+      <td>0.965</td>
+      <td>0.833</td>
+    </tr>
+    <tr>
+      <td>wp_wp_fortluft</td>
+      <td>heating</td>
+      <td>6.723</td>
+      <td>0.962</td>
+      <td>0.828</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_actual_temperature_hk_1</td>
+      <td>heating</td>
+      <td>7.691</td>
+      <td>-0.840</td>
+      <td>0.827</td>
+    </tr>
+  </tbody>
+</table>
+        <p><em>COP score = |cop_corr| × coverage_weight. Higher is better.</em></p>
+    </div>
+
+    <div class="card">
+        <h4>Key Findings</h4>
+        <table>
+            <tr>
+                <th>Sensor Type</th>
+                <th>Coverage</th>
+                <th>Potential Use</th>
+                <th>Recommendation</th>
+            </tr>
+            <tr>
+                <td><strong>Pressure sensors</strong></td>
+                <td>7.7%</td>
+                <td>Thermodynamic COP model via Carnot efficiency</td>
+                <td>Need more data</td>
+            </tr>
+            <tr>
+                <td><strong>Wind sensors</strong></td>
+                <td>5.1%</td>
+                <td>Infiltration losses in thermal model</td>
+                <td>Need more data</td>
+            </tr>
+            <tr>
+                <td><strong>Defrost indicator</strong></td>
+                <td>0.4%</td>
+                <td>Filter low-COP defrost periods</td>
+                <td>Need more data</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h4>Methodology</h4>
+        <p><strong>Correlation Analysis:</strong></p>
+        <ul>
+            <li><strong>Room temperature correlation:</strong> Pearson correlation between each sensor and davis_inside_temperature</li>
+            <li><strong>Residual correlation:</strong> Correlation with thermal model residuals (actual - predicted). High values indicate the sensor captures dynamics the model misses.</li>
+            <li><strong>COP correlation:</strong> Daily-averaged sensor values correlated with daily COP. Identifies sensors that explain efficiency variations.</li>
+        </ul>
+        <p><strong>Scoring:</strong></p>
+        <ul>
+            <li><code>coverage_weight = clip(coverage_pct / 100, 0.1, 1.0)</code></li>
+            <li><code>thermal_score = |residual_corr| × coverage_weight</code></li>
+            <li><code>cop_score = |cop_corr| × coverage_weight</code></li>
+            <li><code>combined_score = 0.5 × thermal_score + 0.5 × cop_score</code></li>
+            <li>Focus sensors receive a 20% score boost</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h4>Recommendations for Future Modeling</h4>
+        <ol>
+            <li><strong>Thermodynamic COP model:</strong> Use high/low pressure sensors to compute theoretical Carnot COP:
+                <pre style="background: #f5f5f5; padding: 0.5rem; margin: 0.5rem 0;">COP_carnot = T_hot / (T_hot - T_cold)</pre>
+                where T_hot and T_cold are derived from pressure via refrigerant tables.</li>
+            <li><strong>Defrost filtering:</strong> Exclude periods with evaporator_defrost=1 to reduce noise in COP analysis.
+                Defrost cycles temporarily reduce COP but are not representative of normal operation.</li>
+            <li><strong>Wind infiltration:</strong> Add wind speed as a thermal model input. High wind increases
+                infiltration losses, reducing indoor temperature even when heating output is constant.</li>
+            <li><strong>Compressor status:</strong> Use is_heating and compressor status for filtering heat-pump-only
+                periods, excluding backup heater operation.</li>
+        </ol>
+    </div>
+
+    <div class="figure">
+        <img src="fig_sensor_coverage.png" alt="Sensor Coverage Analysis">
+        <div class="figure-caption">Sensor coverage analysis: data availability by category, top sensors, focus sensors, and overall distribution.</div>
+    </div>
+
+    <div class="figure">
+        <img src="fig_sensor_correlations.png" alt="Sensor Correlation Analysis">
+        <div class="figure-caption">Correlation analysis: top correlations with room temperature (left), model residuals (center), and COP (right). Bottom row shows combined scores, pressure sensor dynamics, and focus sensor summary.</div>
+    </div>
+    
+
+        <h2 id="battery">13. Battery Degradation</h2>
         <div class="card">
             <p>Analysis of whether the Feb-Mar 2025 deep-discharge event affected battery efficiency.</p>
             <details>
@@ -1495,7 +1956,7 @@ li {
             </details>
         </div>
 
-        <h2 id="log">13. Detailed Log</h2>
+        <h2 id="log">14. Detailed Log</h2>
 
         <details>
             <summary>Full EDA Output Log</summary>
@@ -1504,13 +1965,13 @@ PHASE 2: EXPLORATORY DATA ANALYSIS
 ============================================================
 Loading processed data...
   Using prepared room data (filtered/mapped by wrapper)
-  energy_15min: 100,608 rows, 2023-03-01 00:15:00 to 2026-01-12 00:00:00
+  energy_15min: 101,184 rows, 2023-03-01 00:15:00 to 2026-01-18 00:00:00
   energy_daily: 1,037 rows, 2023-03-01 00:00:00 to 2025-12-31 00:00:00
   energy_monthly: 36 rows, 2023-01-01 00:00:00 to 2025-12-01 00:00:00
-  heating: 2,003,575 rows, 2025-10-28 16:25:39.040786+00:00 to 2026-01-12 09:41:02.942578+00:00
-  weather: 1,179,064 rows, 2025-10-28 16:25:41.367035+00:00 to 2026-01-12 09:40:55.993478+00:00
-  rooms: 70,332 rows, 2025-10-28 16:25:41.367413+00:00 to 2026-01-12 09:39:06.025531+00:00
-  integrated: 7,231 rows, 2025-10-28 16:30:00+00:00 to 2026-01-12 00:00:00+00:00
+  heating: 2,155,442 rows, 2025-10-28 16:25:39.040786+00:00 to 2026-01-18 07:53:30.406130+00:00
+  weather: 1,261,116 rows, 2025-10-28 16:25:41.367035+00:00 to 2026-01-18 07:53:55.193825+00:00
+  rooms: 76,104 rows, 2025-10-28 16:25:41.367413+00:00 to 2026-01-18 07:52:19.172731+00:00
+  integrated: 7,807 rows, 2025-10-28 16:30:00+00:00 to 2026-01-18 00:00:00+00:00
 
 ============================================================
 2.1 ENERGY PATTERNS ANALYSIS
@@ -1576,14 +2037,14 @@ Loading processed data...
 
   Solar-Heating Overlap Analysis:
     Solar hours (8AM-5PM):
-      Heating active: 51.2% of time
+      Heating active: 51.1% of time
       Avg grid import: 0.89 kWh/h
     Non-solar hours (5PM-8AM):
-      Heating active: 48.8% of time
-      Avg grid import: 1.48 kWh/h
+      Heating active: 49.0% of time
+      Avg grid import: 1.45 kWh/h
 
   Forced Grid Consumption:
-    % of heating time with forced grid: 5.0%
+    % of heating time with forced grid: 4.8%
 
 ============================================================
 2.4 SUMMARY STATISTICS
@@ -1608,11 +2069,11 @@ Phase 2 EDA complete. Output saved to: /Users/stata/workspace/estat/output/phase
 HEATING CURVE ANALYSIS
 ============================================================
 Loading heating sensor data...
-  Loaded 2,003,575 rows, 96 sensors
-  Date range: 2025-10-28 16:25:39.040786+00:00 to 2026-01-12 09:41:02.942578+00:00
+  Loaded 2,155,442 rows, 96 sensors
+  Date range: 2025-10-28 16:25:39.040786+00:00 to 2026-01-18 07:53:30.406130+00:00
 
 Detecting setpoint regimes...
-  Found 17 setpoint regimes:
+  Found 21 setpoint regimes:
     2025-10-28 17:25: comfort=20.5°C, eco=nan°C
     2025-10-28 17:25: comfort=20.5°C, eco=18.7°C
     2025-10-29 07:39: comfort=20.5°C, eco=18.5°C
@@ -1630,60 +2091,68 @@ Detecting setpoint regimes...
     2025-12-31 10:27: comfort=21.0°C, eco=18.0°C
     2026-01-12 10:01: comfort=23.0°C, eco=18.0°C
     2026-01-12 10:01: comfort=23.0°C, eco=15.0°C
+    2026-01-13 23:05: comfort=23.0°C, eco=14.0°C
+    2026-01-13 23:21: comfort=21.0°C, eco=14.0°C
+    2026-01-17 12:21: comfort=20.5°C, eco=14.0°C
+    2026-01-17 12:21: comfort=20.5°C, eco=17.0°C
 
 Pivoting data for transition detection...
 
 Detecting schedule transitions...
-  Found 141 transitions
-    Morning (ECO→COMFORT): 73
-    Evening (COMFORT→ECO): 68
+  Found 150 transitions
+    Morning (ECO→COMFORT): 77
+    Evening (COMFORT→ECO): 73
 
 Estimating schedule regimes...
-  Found 4 schedule regimes:
+  Found 5 schedule regimes:
     2025-10-30 to 2025-12-26: Comfort 06:30 - 20:00 (46 days)
     2025-12-27 to 2026-01-07: Comfort 06:30 - 21:30 (10 days)
     2026-01-08 to 2026-01-08: Comfort 06:30 - 09:00 (1 days)
-    2026-01-09 to 2026-01-09: Comfort 06:30 - 21:30 (1 days)
+    2026-01-09 to 2026-01-13: Comfort 06:30 - 21:30 (3 days)
+    2026-01-16 to 2026-01-16: Comfort 06:00 - 21:30 (1 days)
 
   Saved: heating_curve_schedules.csv
   Saved: heating_curve_setpoints.csv
 
 Building heating curve model...
-  Note: 657 rows (2.6%) have eco &gt;= comfort (anomalous)
-  Analysis dataset: 24,985 rows
-  Comfort mode: 14,439 (57.8%)
-  Eco mode: 10,546 (42.2%)
-  Estimated T_ref (comfort): 21.32°C
+  Note: 657 rows (2.5%) have eco &gt;= comfort (anomalous)
+  Analysis dataset: 26,729 rows
+  Comfort mode: 15,591 (58.3%)
+  Eco mode: 11,138 (41.7%)
+  Estimated T_ref (comfort): 21.34°C
   Estimated T_ref (eco): 19.16°C
 
-  Model Performance (normal periods, n=24,328):
-    R-squared: 0.9626
-    RMSE: 0.81°C
-    RMSE (comfort): 0.40°C
-    RMSE (eco): 1.15°C
+  Model Performance (normal periods, n=26,072):
+    R-squared: 0.9460
+    RMSE: 1.02°C
+    RMSE (comfort): 0.52°C
+    RMSE (eco): 1.45°C
 
   Anomalous periods (eco &gt;= comfort, n=657):
-    RMSE: 5.08°C (expected - using actual setpoint)
+    RMSE: 5.09°C (expected - using actual setpoint)
 
   Overall (all data):
-    R-squared: 0.9313
-    RMSE: 1.15°C
+    R-squared: 0.9207
+    RMSE: 1.28°C
 
   Performance by setpoint regime:
     2025-10-28: comfort=20.5°C, eco=18.7°C, RMSE=1.04°C (n=245)
-    2025-10-29: comfort=20.5°C, eco=18.5°C, RMSE=0.43°C (n=36)
-    2025-10-29: comfort=20.5°C, eco=18.3°C, RMSE=0.70°C (n=1,639)
+    2025-10-29: comfort=20.5°C, eco=18.5°C, RMSE=0.41°C (n=36)
+    2025-10-29: comfort=20.5°C, eco=18.3°C, RMSE=0.69°C (n=1,639)
     2025-11-03: comfort=20.3°C, eco=18.3°C, RMSE=0.55°C (n=597)
     2025-11-04: comfort=20.2°C, eco=18.2°C, RMSE=0.50°C (n=7,380)
-    2025-11-25: comfort=20.2°C, eco=18.0°C, RMSE=0.49°C (n=2,930)
+    2025-11-25: comfort=20.2°C, eco=18.0°C, RMSE=0.50°C (n=2,930)
     2025-12-04: comfort=20.2°C, eco=30.0°C, RMSE=5.09°C (n=656)
     2025-12-07: comfort=20.2°C, eco=18.0°C, RMSE=0.36°C (n=2,392)
     2025-12-14: comfort=20.5°C, eco=18.0°C, RMSE=0.60°C (n=3,714)
     2025-12-25: comfort=20.7°C, eco=18.0°C, RMSE=0.78°C (n=540)
     2025-12-27: comfort=21.0°C, eco=18.0°C, RMSE=0.66°C (n=1,156)
     2025-12-30: comfort=20.7°C, eco=18.0°C, RMSE=1.10°C (n=140)
-    2025-12-31: comfort=21.0°C, eco=18.0°C, RMSE=1.63°C (n=3,549)
-    2026-01-12: comfort=23.0°C, eco=15.0°C, RMSE=1.66°C (n=9)
+    2025-12-31: comfort=21.0°C, eco=18.0°C, RMSE=1.55°C (n=3,549)
+    2026-01-12: comfort=23.0°C, eco=15.0°C, RMSE=2.32°C (n=538)
+    2026-01-13: comfort=23.0°C, eco=14.0°C, RMSE=3.78°C (n=5)
+    2026-01-13: comfort=21.0°C, eco=14.0°C, RMSE=2.88°C (n=977)
+    2026-01-17: comfort=20.5°C, eco=17.0°C, RMSE=2.03°C (n=233)
   Saved: heating_curve_params.json
 
 Creating visualization...
@@ -1703,19 +2172,19 @@ Heating curve analysis complete.
 WEIGHTED TEMPERATURE ANALYSIS
 ============================================================
 Loading heating sensor data...
-  Loaded 2,003,575 rows, 96 sensors
-  Date range: 2025-10-28 16:25:39.040786+00:00 to 2026-01-12 09:41:02.942578+00:00
+  Loaded 2,155,442 rows, 96 sensors
+  Date range: 2025-10-28 16:25:39.040786+00:00 to 2026-01-18 07:53:30.406130+00:00
 Loading room sensor data...
-  Loaded 87,062 rows, 25 sensors
+  Loaded 94,537 rows, 25 sensors
 
 Computing weighted indoor temperature...
-  davis_inside_temperature: 4,168 valid readings (weight=100%)
-  Weighted temperature: 4,168 valid readings
-  Range: 16.8°C to 21.8°C
+  davis_inside_temperature: 4,578 valid readings (weight=100%)
+  Weighted temperature: 4,578 valid readings
+  Range: 16.3°C to 21.8°C
   Mean: 19.0°C
 
 Detecting parameter regimes...
-  Found 32 parameter regimes:
+  Found 38 parameter regimes:
     2025-10-28 17:25: comfort=20.5°C, eco=nan°C, curve=nan
     2025-10-28 17:25: comfort=20.5°C, eco=18.7°C, curve=nan
     2025-10-28 17:25: comfort=20.5°C, eco=18.7°C, curve=1.14
@@ -1726,38 +2195,38 @@ Detecting parameter regimes...
     2025-11-03 00:09: comfort=20.3°C, eco=18.3°C, curve=1.11
     2025-11-04 15:09: comfort=20.2°C, eco=18.3°C, curve=1.11
     2025-11-04 15:09: comfort=20.2°C, eco=18.2°C, curve=1.11
-    ... and 22 more
+    ... and 28 more
 
 Creating washout mask (48h after each regime change)...
-  Washout periods: 2,305 readings (31.7%)
-  Analysis periods: 4,965 readings (68.3%)
+  Washout periods: 2,726 readings (34.8%)
+  Analysis periods: 5,113 readings (65.2%)
 
 Building analysis dataset...
-  Dataset: 4,168 rows
-  Date range: 2025-10-28 16:15:00+00:00 to 2026-01-12 09:30:00+00:00
-  Washout periods: 1,378 rows
-  Analysis data: 2,790 rows
+  Dataset: 4,578 rows
+  Date range: 2025-10-28 16:15:00+00:00 to 2026-01-18 07:00:00+00:00
+  Washout periods: 1,681 rows
+  Analysis data: 2,897 rows
 
 Computing regime statistics...
-  Computed statistics for 9 regimes
+  Computed statistics for 10 regimes
 
 Building multivariate regression model...
-  Daily aggregates: 59 days
+  Daily aggregates: 61 days
 
-  Model Results (R² = 0.534, Adj R² = 0.490, RMSE = 0.51°C):
+  Model Results (R² = 0.567, Adj R² = 0.527, RMSE = 0.51°C):
   Parameter                Coef       SE        t        p
   ----------------------------------------------------
-  intercept             -16.403    8.656    -1.90  0.0635 
-  comfort_setpoint        1.240    0.332     3.74  0.0005 ***
-  eco_setpoint           -0.060    0.035    -1.75  0.0865 
-  curve_rise              9.951    2.349     4.24  0.0001 ***
-  comfort_hours           0.031    0.032     0.96  0.3435 
-  outdoor_mean            0.077    0.025     3.05  0.0035 **
+  intercept             -15.789    7.784    -2.03  0.0474 *
+  comfort_setpoint        1.225    0.318     3.85  0.0003 ***
+  eco_setpoint           -0.061    0.032    -1.89  0.0637 
+  curve_rise              9.627    1.632     5.90  0.0000 ***
+  comfort_hours           0.035    0.031     1.12  0.2674 
+  outdoor_mean            0.079    0.022     3.65  0.0006 ***
 
   Interpretation (controlling for other variables):
-    +1°C comfort setpoint → +1.24°C T_weighted
+    +1°C comfort setpoint → +1.22°C T_weighted
     +1°C eco setpoint → -0.06°C T_weighted
-    +0.1 curve rise → +1.00°C T_weighted
+    +0.1 curve rise → +0.96°C T_weighted
     +1h comfort duration → +0.03°C T_weighted
     +1°C outdoor temp → +0.08°C T_weighted
 
@@ -1819,9 +2288,9 @@ Outputs saved to: /Users/stata/workspace/estat/output/phase2
 Phase 2, Step 6: HK2 Target vs Actual Temperature Analysis
 ============================================================
 Loading heating sensor data...
-  Loaded 2,003,575 rows, 96 sensors
-  Wide format: 7,270 rows, 96 columns
-  Date range: 2025-10-28 16:15:00+00:00 to 2026-01-12 09:30:00+00:00
+  Loaded 2,155,442 rows, 96 sensors
+  Wide format: 7,839 rows, 96 columns
+  Date range: 2025-10-28 16:15:00+00:00 to 2026-01-18 07:45:00+00:00
 
 Preparing HK2 data...
   Target column (stiebel_eltron_isg_target_temperature_hk_2): found
@@ -1829,25 +2298,25 @@ Preparing HK2 data...
   Actual alt column (wp_anlage_hk2_ist): found
   Outdoor column (stiebel_eltron_isg_outdoor_temperature): found
   Using actual column: stiebel_eltron_isg_actual_temperature_hk_2
-  Valid observations: 6,097
-  Period: 2025-10-28 to 2026-01-12
+  Valid observations: 6,542
+  Period: 2025-10-28 to 2026-01-18
 
 Analyzing deviation statistics...
-  Mean deviation: -1.45°C
-  Std deviation: 1.79°C
-  Actual above target: 14.8%
-  Within ±1°C: 52.6%
-  Within ±2°C: 69.7%
-  Correlation: 0.910
+  Mean deviation: -1.42°C
+  Std deviation: 1.85°C
+  Actual above target: 15.2%
+  Within ±1°C: 52.2%
+  Within ±2°C: 69.8%
+  Correlation: 0.913
 
 Fitting first-order lag model...
-  Optimal time constant τ: 0.35 hours
-  Forward simulation: R² = 0.722, RMSE = 2.25°C
-  One-step prediction: R² = 0.813, RMSE = 1.84°C
+  Optimal time constant τ: 0.37 hours
+  Forward simulation: R² = 0.748, RMSE = 2.24°C
+  One-step prediction: R² = 0.842, RMSE = 1.77°C
 
 Analyzing cross-correlation...
-  Peak correlation: 0.914 at lag -0.25 hours
-  Zero-lag correlation: 0.910
+  Peak correlation: 0.920 at lag -0.25 hours
+  Zero-lag correlation: 0.913
 
 Creating visualization...
   Saved: fig17_hk2_target_actual.png
@@ -1860,16 +2329,91 @@ HK2 TARGET VS ACTUAL ANALYSIS SUMMARY
 ============================================================
 
 Deviation Statistics:
-  Mean (actual - target): -1.45°C
-  Std deviation: 1.79°C
-  Correlation: 0.910
+  Mean (actual - target): -1.42°C
+  Std deviation: 1.85°C
+  Correlation: 0.913
 
 Lag Model:
-  Time constant τ: 0.35 hours
-  Forward R²: 0.722
-  Forward RMSE: 2.25°C
+  Time constant τ: 0.37 hours
+  Forward R²: 0.748
+  Forward RMSE: 2.24°C
 
 ⚠ Lag model has moderate fit - consider additional factors
+</pre>
+        </details>
+
+        <details>
+            <summary>Sensor Exploration Log</summary>
+            <pre>============================================================
+Phase 2, Step 6: Sensor Exploration
+============================================================
+Loading sensor summary...
+  190 sensors across 4 categories
+Loading integrated dataset...
+  101,215 rows, 198 columns
+  Period: 2023-03-01 to 2026-01-18
+Loading thermal model residuals...
+  Loaded 6,807 residual values
+Loading COP data...
+  Loaded 83 daily COP values
+
+Computing coverage statistics...
+  Analyzed 198 sensors in integrated dataset
+  High coverage (&gt;80%): 8 sensors
+  High overlap coverage (&gt;80%): 37 sensors
+  Focus sensors with data: 13
+
+Computing correlations with room temperature...
+  Computed 154 correlations
+  Strongest: davis_inside_temperature (r=1.000)
+
+Computing correlations with model residuals...
+  Computed 157 correlations
+  Strongest: temphum_woz_temperature (r=0.585)
+
+Computing COP correlations (daily resolution)...
+
+Computing correlations with daily COP...
+  Computed 142 correlations
+  Strongest: stiebel_eltron_isg_outdoor_temperature (r=0.965)
+
+Ranking sensors by improvement potential...
+  Top 5 sensors for thermal improvement:
+    stiebel_eltron_isg_low_pressure_wp1: score=0.022, resid_corr=0.022
+    stiebel_eltron_isg_hot_gas_temperature_wp1: score=0.026, resid_corr=-0.026
+    total_consumption_kwh: score=0.159, resid_corr=0.160
+    stiebel_eltron_isg_flow_temperature_wp1: score=0.019, resid_corr=-0.020
+    stiebel_eltron_isg_actual_temperature_hk_2: score=0.031, resid_corr=0.031
+
+Creating coverage visualization...
+  Saved: fig_sensor_coverage.png
+
+Creating correlation visualization...
+  Saved: fig_sensor_correlations.png
+
+Saved: sensor_exploration_rankings.csv
+
+Generating HTML report section...
+Saved: sensor_exploration_report_section.html
+
+============================================================
+SUMMARY
+============================================================
+
+Sensors analyzed: 198
+High coverage (&gt;80%): 8
+
+Top 5 sensors for improvement:
+  64. stiebel_eltron_isg_low_pressure_wp1
+     Coverage: 7.7%, Score: 0.585
+  59. stiebel_eltron_isg_hot_gas_temperature_w
+     Coverage: 7.7%, Score: 0.567
+  4. total_consumption_kwh
+     Coverage: 99.6%, Score: 0.519
+  51. stiebel_eltron_isg_flow_temperature_wp1
+     Coverage: 7.7%, Score: 0.514
+  30. stiebel_eltron_isg_actual_temperature_hk
+     Coverage: 7.7%, Score: 0.472
 </pre>
         </details>
 

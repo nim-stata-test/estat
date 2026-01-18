@@ -17,12 +17,12 @@
         </tr>
         <tr>
             <td>∂COP/∂T<sub>out</sub></td>
-            <td>0.2034 COP/°C</td>
+            <td>0.2039 COP/°C</td>
             <td>Increases with warmer outdoor</td>
         </tr>
         <tr>
             <td>∂COP/∂T<sub>HK2</sub></td>
-            <td>-0.2199 COP/°C</td>
+            <td>-0.2042 COP/°C</td>
             <td>Decreases with higher flow temp</td>
         </tr>
     </table>
@@ -30,16 +30,16 @@
     <h3>COP Model</h3>
     <p>Multi-variable regression model:</p>
     <div class="equation-box">
-    COP = 5.93 + 0.1280 × T<sub>out</sub> + -0.0832 × T<sub>HK2</sub>
+    COP = 4.12 + 0.1689 × T<sub>out</sub> + -0.0384 × T<sub>HK2</sub>
     </div>
-    <p>R² = 0.941, RMSE = 0.196</p>
+    <p>R² = 0.935, RMSE = 0.199</p>
 
     <h3>Capacity Analysis</h3>
     <table>
         <tr><th>Metric</th><th>Mean</th><th>Max</th><th>Min</th></tr>
         <tr>
             <td>Daily electricity consumed (E<sub>elec</sub>)</td>
-            <td>23.5 kWh</td>
+            <td>23.4 kWh</td>
             <td>59.0 kWh</td>
             <td>5.0 kWh</td>
         </tr>
@@ -61,17 +61,17 @@
     <h3>Buffer Tank Dynamics</h3>
     <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Mean T<sub>buf</sub></td><td>36.0°C</td></tr>
-        <tr><td>Range</td><td>22.3 – 55.5°C</td></tr>
-        <tr><td>Variability (σ)</td><td>5.95°C</td></tr>
+        <tr><td>Mean T<sub>buf</sub></td><td>35.9°C</td></tr>
+        <tr><td>Range</td><td>20.2 – 55.5°C</td></tr>
+        <tr><td>Variability (σ)</td><td>5.97°C</td></tr>
     </table>
 
     <h3>Implications for Optimization</h3>
     <ul>
         <li><strong>COP optimization</strong>: Lower T<sub>HK2</sub> improves COP.
-            With ∂COP/∂T<sub>HK2</sub> = -0.2199, reducing T<sub>HK2</sub> by 5°C improves COP by ~1.10.</li>
+            With ∂COP/∂T<sub>HK2</sub> = -0.2042, reducing T<sub>HK2</sub> by 5°C improves COP by ~1.02.</li>
         <li><strong>Timing strategy</strong>: Run heat pump during warmest T<sub>out</sub> (daytime/solar hours)
-            for better COP. Each +1°C outdoor improves COP by ~0.203.</li>
+            for better COP. Each +1°C outdoor improves COP by ~0.204.</li>
         <li><strong>Capacity headroom</strong>: Max observed 59 kWh/day
             suggests capacity is sufficient for current heating demand.</li>
         <li><strong>Buffer utilization</strong>: Buffer tank (mean 36°C)

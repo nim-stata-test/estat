@@ -18,20 +18,20 @@
         <tr>
             <td>Grid purchase cost</td>
             <td>C<sub>grid</sub></td>
-            <td>CHF 3.27</td>
-            <td>CHF 1,194</td>
+            <td>CHF 3.29</td>
+            <td>CHF 1,201</td>
         </tr>
         <tr>
             <td>Feed-in revenue</td>
             <td>R<sub>feedin</sub></td>
-            <td>CHF 5.95</td>
-            <td>CHF 2,173</td>
+            <td>CHF 5.92</td>
+            <td>CHF 2,161</td>
         </tr>
         <tr>
             <td><strong>Net cost</strong></td>
             <td>C<sub>net</sub></td>
-            <td><strong>CHF -2.68</strong></td>
-            <td><strong>CHF -979</strong></td>
+            <td><strong>CHF -2.63</strong></td>
+            <td><strong>CHF -960</strong></td>
         </tr>
     </table>
 
@@ -40,15 +40,15 @@
         <tr><th>Tariff Period</th><th>Grid Import (kWh)</th><th>Cost (CHF)</th><th>Share</th></tr>
         <tr>
             <td>High Tariff (HT)</td>
-            <td>4,747.6</td>
-            <td>1,669.59</td>
-            <td>48.7%</td>
+            <td>4,847.4</td>
+            <td>1,697.24</td>
+            <td>48.9%</td>
         </tr>
         <tr>
             <td>Low Tariff (NT)</td>
-            <td>6,394.3</td>
-            <td>1,761.93</td>
-            <td>51.3%</td>
+            <td>6,433.3</td>
+            <td>1,772.71</td>
+            <td>51.1%</td>
         </tr>
     </table>
 
@@ -60,7 +60,7 @@
         <tr><th>Season</th><th>Daily Net Cost</th><th>Notes</th></tr>
         <tr>
             <td>Winter (Oct-Mar)</td>
-            <td>CHF 2.40</td>
+            <td>CHF 2.43</td>
             <td>Higher heating demand, less PV</td>
         </tr>
         <tr>
@@ -80,11 +80,11 @@
         <tr><th>Model</th><th>R²</th><th>RMSE</th><th>Key Coefficient</th></tr>
         <tr>
             <td>Seasonal model</td>
-            <td>0.708</td>
-            <td>CHF 5.38</td>
-            <td>β<sub>we</sub> = CHF -0.10</td>
+            <td>0.709</td>
+            <td>CHF 5.37</td>
+            <td>β<sub>we</sub> = CHF -0.14</td>
         </tr>
-        <tr><td>HDD model</td><td>0.694</td><td>CHF 2.92</td><td>β<sub>HDD</sub> = CHF 1.00/HDD</td></tr>
+        <tr><td>HDD model</td><td>0.708</td><td>CHF 2.81</td><td>β<sub>HDD</sub> = CHF 1.14/HDD</td></tr>
     </table>
 
     <h3>Cost Optimization Scenarios</h3>
@@ -96,31 +96,31 @@
         <tr><th>Scenario</th><th>C<sub>net</sub></th><th>Annual</th><th>ΔC</th><th>Reduction</th></tr>
         <tr>
             <td>Baseline (current)</td>
-            <td>CHF -2,813.68</td>
-            <td>CHF -979</td>
+            <td>CHF -2,775.80</td>
+            <td>CHF -960</td>
             <td>—</td>
             <td>—</td>
         </tr>
         <tr>
             <td>Shift 20% to low tariff</td>
-            <td>CHF -2,889.57</td>
-            <td>CHF -1,005</td>
-            <td>CHF 26/yr</td>
-            <td>2.7%</td>
+            <td>CHF -2,852.76</td>
+            <td>CHF -987</td>
+            <td>CHF 27/yr</td>
+            <td>2.8%</td>
         </tr>
         <tr>
             <td>Shift 30% to low tariff</td>
-            <td>CHF -2,927.52</td>
-            <td>CHF -1,019</td>
+            <td>CHF -2,891.24</td>
+            <td>CHF -1,000</td>
             <td>CHF 40/yr</td>
-            <td>4.0%</td>
+            <td>4.2%</td>
         </tr>
         <tr>
             <td><strong>Combined (load + battery)</strong></td>
-            <td><strong>CHF -2,921.83</strong></td>
-            <td><strong>CHF -1,017</strong></td>
+            <td><strong>CHF -2,885.47</strong></td>
+            <td><strong>CHF -998</strong></td>
             <td><strong>CHF 38/yr</strong></td>
-            <td><strong>3.8%</strong></td>
+            <td><strong>4.0%</strong></td>
         </tr>
     </table>
 
@@ -132,7 +132,7 @@
             by pre-heating with PV or using stored heat/battery.</li>
         <li><strong>Potential savings</strong>: 4% reduction (~CHF 38/year)
             achievable through combined load shifting and battery optimization.</li>
-        <li><strong>Rate differential</strong>: (p<sub>HT</sub> − p<sub>NT</sub>) ≈ 8.0 Rp/kWh
+        <li><strong>Rate differential</strong>: (p<sub>HT</sub> − p<sub>NT</sub>) ≈ 7.9 Rp/kWh
             provides economic incentive for time-shifting.</li>
     </ul>
 

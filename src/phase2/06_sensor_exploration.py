@@ -478,15 +478,27 @@ def create_correlation_figure(rankings: pd.DataFrame,
         high_p = df['stiebel_eltron_isg_high_pressure_wp1']
         low_p = df.get('stiebel_eltron_isg_low_pressure_wp1', pd.Series(dtype=float))
 
-        valid = high_p.notna()
+        # Need both sensors to have valid data at same times
+        if 'stiebel_eltron_isg_low_pressure_wp1' in df.columns:
+            valid = high_p.notna() & low_p.notna()
+        else:
+            valid = high_p.notna()
+
         if valid.sum() > 100:
+            # Subsample for plotting
+            high_vals = high_p[valid].values[::10]
+            low_vals = low_p[valid].values[::10] if 'stiebel_eltron_isg_low_pressure_wp1' in df.columns else np.zeros(len(high_vals))
+            n_points = len(high_vals)
             # Color by time
-            ax5.scatter(high_p[valid].values[::10],
-                       low_p[valid].values[::10] if len(low_p) > 0 else np.zeros(valid.sum()//10),
-                       c=np.arange(valid.sum()//10), cmap='viridis', alpha=0.5, s=10)
+            ax5.scatter(high_vals, low_vals,
+                       c=np.arange(n_points), cmap='viridis', alpha=0.5, s=10)
             ax5.set_xlabel('High Pressure (bar)')
             ax5.set_ylabel('Low Pressure (bar)')
             ax5.set_title('Refrigerant Pressures (color = time)')
+        else:
+            ax5.text(0.5, 0.5, 'Insufficient pressure data',
+                    ha='center', va='center', transform=ax5.transAxes)
+            ax5.set_title('Refrigerant Pressures')
     else:
         ax5.text(0.5, 0.5, 'Pressure data not available\nin integrated dataset',
                 ha='center', va='center', transform=ax5.transAxes)
@@ -523,18 +535,8 @@ def generate_report(coverage_df: pd.DataFrame,
                     room_corr: pd.DataFrame,
                     residual_corr: pd.DataFrame,
                     cop_corr: pd.DataFrame) -> str:
-    """Generate HTML report for sensor exploration."""
-    print("\nGenerating HTML report...")
-
-    # Top sensors tables
-    def df_to_html_table(df, columns, max_rows=15):
-        rows = ""
-        for _, row in df.head(max_rows).iterrows():
-            cells = "".join(f"<td>{row[c]:.3f if isinstance(row[c], float) else row[c]}</td>"
-                           for c in columns)
-            rows += f"<tr>{cells}</tr>"
-        headers = "".join(f"<th>{c}</th>" for c in columns)
-        return f"<table><tr>{headers}</tr>{rows}</table>"
+    """Generate HTML report section for sensor exploration."""
+    print("\nGenerating HTML report section...")
 
     # Focus sensors detail
     focus_detail = rankings[rankings['is_focus']][
@@ -544,60 +546,147 @@ def generate_report(coverage_df: pd.DataFrame,
         lambda x: x.replace('stiebel_eltron_isg_', '').replace('davis_', '')
     )
 
+    # Calculate statistics for findings
+    pressure_coverage = coverage_df[coverage_df['sensor'].str.contains('pressure', case=False)]['coverage_pct'].mean()
+    wind_coverage = coverage_df[coverage_df['sensor'].str.contains('wind', case=False)]['coverage_pct'].mean()
+    defrost_sensors = coverage_df[coverage_df['sensor'].str.contains('defrost', case=False)]
+    defrost_coverage = defrost_sensors['coverage_pct'].values[0] if len(defrost_sensors) > 0 else 0
+
     html = f"""
-    <section id="sensor-exploration">
-    <h2>Sensor Exploration Analysis</h2>
+    <h2 id="sensor-exploration">12. Sensor Exploration Analysis</h2>
 
-    <h3>Summary</h3>
-    <ul>
-        <li><strong>Total sensors analyzed:</strong> {len(coverage_df)}</li>
-        <li><strong>High coverage (>80%):</strong> {(coverage_df['coverage_pct'] > 80).sum()}</li>
-        <li><strong>Focus sensors with data:</strong> {coverage_df['is_focus'].sum()}</li>
-    </ul>
+    <div class="card">
+        <h4>Purpose</h4>
+        <p>This analysis systematically evaluates all ~190 sensors in the integrated dataset to identify
+        candidates that could improve thermal and COP models. The goal is to find sensors that:</p>
+        <ul>
+            <li><strong>Correlate with model residuals:</strong> Capture dynamics the current models miss</li>
+            <li><strong>Correlate with COP:</strong> Help explain heat pump efficiency variations</li>
+            <li><strong>Have good data coverage:</strong> Available during the heating analysis period</li>
+        </ul>
+    </div>
 
-    <h3>Coverage by Category</h3>
-    <table>
-        <tr><th>Category</th><th>Sensors</th><th>Mean Coverage</th></tr>
-        {''.join(f"<tr><td>{cat}</td><td>{len(g)}</td><td>{g['coverage_pct'].mean():.1f}%</td></tr>"
-                for cat, g in coverage_df.groupby('category'))}
-    </table>
+    <div class="card">
+        <h4>Summary Statistics</h4>
+        <table>
+            <tr><td><strong>Total sensors analyzed</strong></td><td>{len(coverage_df)}</td></tr>
+            <tr><td><strong>High coverage (>80%)</strong></td><td>{(coverage_df['coverage_pct'] > 80).sum()} sensors</td></tr>
+            <tr><td><strong>Medium coverage (50-80%)</strong></td><td>{((coverage_df['coverage_pct'] > 50) & (coverage_df['coverage_pct'] <= 80)).sum()} sensors</td></tr>
+            <tr><td><strong>Low coverage (<50%)</strong></td><td>{(coverage_df['coverage_pct'] <= 50).sum()} sensors</td></tr>
+            <tr><td><strong>Focus sensors with data</strong></td><td>{coverage_df['is_focus'].sum()} of {len(FOCUS_SENSORS)}</td></tr>
+        </table>
+    </div>
 
-    <h3>Focus Sensors Analysis</h3>
-    <p>These sensors were identified as high-potential for model improvement:</p>
-    {focus_detail.to_html(index=False, float_format='%.3f')}
+    <div class="card">
+        <h4>Coverage by Sensor Category</h4>
+        <p>Different sensor categories have varying data availability based on when they were added to the monitoring system:</p>
+        <table>
+            <tr><th>Category</th><th>Sensors</th><th>Mean Coverage</th><th>Notes</th></tr>
+            {''.join(f"<tr><td>{cat}</td><td>{len(g)}</td><td>{g['coverage_pct'].mean():.1f}%</td><td>{'Heat pump sensors (Oct 2025+)' if cat == 'heating' else 'Full period available' if g['coverage_pct'].mean() > 70 else 'Partial period'}</td></tr>"
+                    for cat, g in coverage_df.groupby('category'))}
+        </table>
+    </div>
 
-    <h3>Top 10 for Thermal Model Improvement</h3>
-    <p>Sensors with highest correlation to model residuals (captures dynamics the model misses):</p>
-    {rankings.head(10)[['sensor', 'coverage_pct', 'residual_corr', 'thermal_score']].to_html(index=False, float_format='%.3f')}
+    <div class="card">
+        <h4>Focus Sensors Analysis</h4>
+        <p>These sensors were pre-identified as high-potential for model improvement based on physical understanding:</p>
+        <ul>
+            <li><strong>Pressure sensors</strong> (high_pressure_wp1, low_pressure_wp1): Enable thermodynamic COP calculation via Carnot efficiency</li>
+            <li><strong>Hot gas temperature</strong>: Indicates superheat and compressor efficiency</li>
+            <li><strong>Wind sensors</strong>: Could capture infiltration losses affecting thermal model</li>
+            <li><strong>Defrost indicator</strong>: Allows filtering periods when COP is artificially low due to defrost cycles</li>
+        </ul>
+        {focus_detail.to_html(index=False, float_format='%.3f', classes='compact')}
+        <p><em>Coverage = percentage of 15-minute intervals with valid data. Correlations are Pearson r values.</em></p>
+    </div>
 
-    <h3>Top 10 for COP Model Improvement</h3>
-    <p>Sensors with highest correlation to daily COP:</p>
-    {rankings.nlargest(10, 'cop_score')[['sensor', 'coverage_pct', 'cop_corr', 'cop_score']].to_html(index=False, float_format='%.3f')}
+    <div class="card">
+        <h4>Top Sensors for Thermal Model Improvement</h4>
+        <p>Sensors with highest absolute correlation to thermal model residuals. High correlation means the sensor
+        captures dynamics that the current transfer-function model misses:</p>
+        {rankings.head(10)[['sensor', 'category', 'coverage_pct', 'residual_corr', 'thermal_score']].to_html(index=False, float_format='%.3f', classes='compact')}
+        <p><em>Thermal score = |residual_corr| × coverage_weight. Higher is better.</em></p>
+    </div>
 
-    <h3>Key Findings</h3>
-    <ul>
-        <li><strong>Pressure sensors:</strong> {coverage_df[coverage_df['sensor'].str.contains('pressure', case=False)]['coverage_pct'].mean():.1f}% avg coverage - excellent for thermodynamic COP model</li>
-        <li><strong>Wind sensors:</strong> {coverage_df[coverage_df['sensor'].str.contains('wind', case=False)]['coverage_pct'].mean():.1f}% avg coverage - potential for infiltration modeling</li>
-        <li><strong>Defrost sensor:</strong> {coverage_df[coverage_df['sensor'].str.contains('defrost', case=False)]['coverage_pct'].values[0] if len(coverage_df[coverage_df['sensor'].str.contains('defrost', case=False)]) > 0 else 0:.1f}% coverage - useful for filtering</li>
-    </ul>
+    <div class="card">
+        <h4>Top Sensors for COP Model Improvement</h4>
+        <p>Sensors with highest absolute correlation to daily COP. These could improve heat pump efficiency predictions:</p>
+        {rankings.nlargest(10, 'cop_score')[['sensor', 'category', 'coverage_pct', 'cop_corr', 'cop_score']].to_html(index=False, float_format='%.3f', classes='compact')}
+        <p><em>COP score = |cop_corr| × coverage_weight. Higher is better.</em></p>
+    </div>
 
-    <h3>Recommendations</h3>
-    <ol>
-        <li><strong>Thermodynamic COP model:</strong> Use high/low pressure sensors (excellent coverage) to compute Carnot efficiency</li>
-        <li><strong>Defrost filtering:</strong> Exclude periods with evaporator_defrost=1 to reduce noise</li>
-        <li><strong>Wind infiltration:</strong> Add wind speed as thermal model input for infiltration losses</li>
-    </ol>
+    <div class="card">
+        <h4>Key Findings</h4>
+        <table>
+            <tr>
+                <th>Sensor Type</th>
+                <th>Coverage</th>
+                <th>Potential Use</th>
+                <th>Recommendation</th>
+            </tr>
+            <tr>
+                <td><strong>Pressure sensors</strong></td>
+                <td>{pressure_coverage:.1f}%</td>
+                <td>Thermodynamic COP model via Carnot efficiency</td>
+                <td>{'Include in COP model' if pressure_coverage > 50 else 'Need more data'}</td>
+            </tr>
+            <tr>
+                <td><strong>Wind sensors</strong></td>
+                <td>{wind_coverage:.1f}%</td>
+                <td>Infiltration losses in thermal model</td>
+                <td>{'Add as thermal model input' if wind_coverage > 50 else 'Need more data'}</td>
+            </tr>
+            <tr>
+                <td><strong>Defrost indicator</strong></td>
+                <td>{defrost_coverage:.1f}%</td>
+                <td>Filter low-COP defrost periods</td>
+                <td>{'Use for data filtering' if defrost_coverage > 50 else 'Need more data'}</td>
+            </tr>
+        </table>
+    </div>
 
-    <figure>
+    <div class="card">
+        <h4>Methodology</h4>
+        <p><strong>Correlation Analysis:</strong></p>
+        <ul>
+            <li><strong>Room temperature correlation:</strong> Pearson correlation between each sensor and davis_inside_temperature</li>
+            <li><strong>Residual correlation:</strong> Correlation with thermal model residuals (actual - predicted). High values indicate the sensor captures dynamics the model misses.</li>
+            <li><strong>COP correlation:</strong> Daily-averaged sensor values correlated with daily COP. Identifies sensors that explain efficiency variations.</li>
+        </ul>
+        <p><strong>Scoring:</strong></p>
+        <ul>
+            <li><code>coverage_weight = clip(coverage_pct / 100, 0.1, 1.0)</code></li>
+            <li><code>thermal_score = |residual_corr| × coverage_weight</code></li>
+            <li><code>cop_score = |cop_corr| × coverage_weight</code></li>
+            <li><code>combined_score = 0.5 × thermal_score + 0.5 × cop_score</code></li>
+            <li>Focus sensors receive a 20% score boost</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h4>Recommendations for Future Modeling</h4>
+        <ol>
+            <li><strong>Thermodynamic COP model:</strong> Use high/low pressure sensors to compute theoretical Carnot COP:
+                <pre style="background: #f5f5f5; padding: 0.5rem; margin: 0.5rem 0;">COP_carnot = T_hot / (T_hot - T_cold)</pre>
+                where T_hot and T_cold are derived from pressure via refrigerant tables.</li>
+            <li><strong>Defrost filtering:</strong> Exclude periods with evaporator_defrost=1 to reduce noise in COP analysis.
+                Defrost cycles temporarily reduce COP but are not representative of normal operation.</li>
+            <li><strong>Wind infiltration:</strong> Add wind speed as a thermal model input. High wind increases
+                infiltration losses, reducing indoor temperature even when heating output is constant.</li>
+            <li><strong>Compressor status:</strong> Use is_heating and compressor status for filtering heat-pump-only
+                periods, excluding backup heater operation.</li>
+        </ol>
+    </div>
+
+    <div class="figure">
         <img src="fig_sensor_coverage.png" alt="Sensor Coverage Analysis">
-        <figcaption>Sensor coverage analysis by category and individual sensors.</figcaption>
-    </figure>
+        <div class="figure-caption">Sensor coverage analysis: data availability by category, top sensors, focus sensors, and overall distribution.</div>
+    </div>
 
-    <figure>
+    <div class="figure">
         <img src="fig_sensor_correlations.png" alt="Sensor Correlation Analysis">
-        <figcaption>Correlation analysis: sensors vs room temperature, model residuals, and COP.</figcaption>
-    </figure>
-    </section>
+        <div class="figure-caption">Correlation analysis: top correlations with room temperature (left), model residuals (center), and COP (right). Bottom row shows combined scores, pressure sensor dynamics, and focus sensor summary.</div>
+    </div>
     """
 
     return html
@@ -642,11 +731,11 @@ def main():
     rankings.to_csv(OUTPUT_DIR / 'sensor_exploration_rankings.csv', index=False)
     print(f"\nSaved: sensor_exploration_rankings.csv")
 
-    # Generate report
+    # Generate report section (for integration into phase2_report.html)
     report_html = generate_report(coverage_df, rankings, room_corr, residual_corr, cop_corr)
-    with open(OUTPUT_DIR / 'sensor_exploration_report.html', 'w') as f:
+    with open(OUTPUT_DIR / 'sensor_exploration_report_section.html', 'w') as f:
         f.write(report_html)
-    print("Saved: sensor_exploration_report.html")
+    print("Saved: sensor_exploration_report_section.html")
 
     # Summary
     print("\n" + "=" * 60)

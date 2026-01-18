@@ -19,17 +19,17 @@
         <div class="card">
             <h4>Analysis Period Summary</h4>
             <table>
-                <tr><td>Total readings</td><td>4,168</td></tr>
-                <tr><td>Washout periods (48h after parameter changes)</td><td>1,378 (33.1%)</td></tr>
-                <tr><td>Analysis readings (excluding washout)</td><td>2,790 (66.9%)</td></tr>
+                <tr><td>Total readings</td><td>4,578</td></tr>
+                <tr><td>Washout periods (48h after parameter changes)</td><td>1,681 (36.7%)</td></tr>
+                <tr><td>Analysis readings (excluding washout)</td><td>2,897 (63.3%)</td></tr>
             </table>
 
             <h4>Temperature Statistics (Excluding Washout)</h4>
             <table>
-                <tr><td>Mean T_weighted</td><td><strong>19.0°C</strong></td></tr>
-                <tr><td>Std deviation</td><td>0.8°C</td></tr>
-                <tr><td>Range</td><td>16.8°C to 21.1°C</td></tr>
-                <tr><td>Comfort compliance (08:00-22:00, 18.5-22°C)</td><td><strong>82.8%</strong></td></tr>
+                <tr><td>Mean T_weighted</td><td><strong>18.9°C</strong></td></tr>
+                <tr><td>Std deviation</td><td>0.9°C</td></tr>
+                <tr><td>Range</td><td>16.3°C to 21.1°C</td></tr>
+                <tr><td>Comfort compliance (08:00-22:00, 18.5-22°C)</td><td><strong>81.8%</strong></td></tr>
             </table>
         </div>
 
@@ -38,55 +38,55 @@
             <p>A multivariate model predicts T_weighted (during occupied hours) from all controllable parameters simultaneously,
             using daily aggregates to capture parameter effects while controlling for confounding variables.</p>
 
-            <p><strong>Model Performance:</strong> R² = 0.534, Adjusted R² = 0.490, RMSE = 0.51°C, n = 59 days</p>
+            <p><strong>Model Performance:</strong> R² = 0.567, Adjusted R² = 0.527, RMSE = 0.51°C, n = 61 days</p>
             <table>
                 <tr><th>Parameter</th><th>Coefficient</th><th>Std Error</th><th>t-stat</th><th>p-value</th><th>Interpretation</th></tr>
                 <tr>
                     <td>Intercept</td>
-                    <td><strong>-16.403</strong></td>
-                    <td>8.656</td>
-                    <td>-1.90</td>
-                    <td>0.0635 </td>
-                    <td>Baseline: -16.4°C</td>
+                    <td><strong>-15.789</strong></td>
+                    <td>7.784</td>
+                    <td>-2.03</td>
+                    <td>0.0474 *</td>
+                    <td>Baseline: -15.8°C</td>
                 </tr>
                 <tr>
                     <td>Comfort Setpoint</td>
-                    <td><strong>1.240</strong></td>
-                    <td>0.332</td>
-                    <td>3.74</td>
-                    <td>0.0005 ***</td>
-                    <td>+1°C setpoint → +1.24°C T_weighted</td>
+                    <td><strong>1.225</strong></td>
+                    <td>0.318</td>
+                    <td>3.85</td>
+                    <td>0.0003 ***</td>
+                    <td>+1°C setpoint → +1.22°C T_weighted</td>
                 </tr>
                 <tr>
                     <td>Eco Setpoint</td>
-                    <td><strong>-0.060</strong></td>
-                    <td>0.035</td>
-                    <td>-1.75</td>
-                    <td>0.0865 </td>
+                    <td><strong>-0.061</strong></td>
+                    <td>0.032</td>
+                    <td>-1.89</td>
+                    <td>0.0637 </td>
                     <td>+1°C setpoint → -0.06°C T_weighted</td>
                 </tr>
                 <tr>
                     <td>Curve Rise</td>
-                    <td><strong>9.951</strong></td>
-                    <td>2.349</td>
-                    <td>4.24</td>
-                    <td>0.0001 ***</td>
-                    <td>+0.1 curve → +1.00°C T_weighted</td>
+                    <td><strong>9.627</strong></td>
+                    <td>1.632</td>
+                    <td>5.90</td>
+                    <td>0.0000 ***</td>
+                    <td>+0.1 curve → +0.96°C T_weighted</td>
                 </tr>
                 <tr>
                     <td>Comfort Hours</td>
-                    <td><strong>0.031</strong></td>
-                    <td>0.032</td>
-                    <td>0.96</td>
-                    <td>0.3435 </td>
+                    <td><strong>0.035</strong></td>
+                    <td>0.031</td>
+                    <td>1.12</td>
+                    <td>0.2674 </td>
                     <td>+1h comfort → +0.03°C T_weighted</td>
                 </tr>
                 <tr>
                     <td>Outdoor Temp</td>
-                    <td><strong>0.077</strong></td>
-                    <td>0.025</td>
-                    <td>3.05</td>
-                    <td>0.0035 **</td>
+                    <td><strong>0.079</strong></td>
+                    <td>0.022</td>
+                    <td>3.65</td>
+                    <td>0.0006 ***</td>
                     <td>+1°C outdoor → +0.08°C T_weighted</td>
                 </tr>
             </table>
@@ -181,6 +181,14 @@
                     <td>18.4</td>
                     <td>505</td>
                 </tr>
+                <tr>
+                    <td>2026-01-13</td>
+                    <td>21.0</td>
+                    <td>14.0</td>
+                    <td>0.85</td>
+                    <td>17.6</td>
+                    <td>107</td>
+                </tr>
             </table>
         </div>
 
@@ -190,15 +198,15 @@
             Night temperatures (22:00-08:00) are excluded from the comfort objective, allowing energy-saving setback without penalty.</p>
             <table>
                 <tr><th>Metric</th><th>Occupied (08:00-22:00)</th><th>Night (22:00-08:00)</th></tr>
-                <tr><td>Mean T_weighted</td><td><strong>19.2°C</strong></td><td>18.5°C</td></tr>
-                <tr><td>Minimum T_weighted</td><td>17.4°C</td><td>16.8°C</td></tr>
-                <tr><td>Below 18.5°C</td><td>17.2%</td><td>—</td></tr>
-                <tr><td>Below 18.0°C</td><td>—</td><td>28.0%</td></tr>
-                <tr><td>Comfort compliance (18.5-22°C)</td><td><strong>82.8%</strong></td><td>Not evaluated</td></tr>
-                <tr><td>N readings</td><td>1,718</td><td>1,072</td></tr>
+                <tr><td>Mean T_weighted</td><td><strong>19.2°C</strong></td><td>18.4°C</td></tr>
+                <tr><td>Minimum T_weighted</td><td>17.3°C</td><td>16.3°C</td></tr>
+                <tr><td>Below 18.5°C</td><td>18.2%</td><td>—</td></tr>
+                <tr><td>Below 18.0°C</td><td>—</td><td>31.5%</td></tr>
+                <tr><td>Comfort compliance (18.5-22°C)</td><td><strong>81.8%</strong></td><td>Not evaluated</td></tr>
+                <tr><td>N readings</td><td>1,762</td><td>1,135</td></tr>
             </table>
             <p><em>This explains why the overall mean (18.7°C) appears low - night temperatures bring down the average,
-            but comfort compliance during occupied hours (82.8%) is what matters for the intervention study.</em></p>
+            but comfort compliance during occupied hours (81.8%) is what matters for the intervention study.</em></p>
         </div>
 
         <div class="figure">

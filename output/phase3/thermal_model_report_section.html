@@ -21,18 +21,18 @@
     <div class="equation-box">
     $$T_{flow} = T_{setpoint} + k_{curve} \times (T_{ref} - T_{out})$$
     </div>
-    <p>Where R² = 0.963 and:</p>
+    <p>Where R² = 0.946 and:</p>
     <ul>
-        <li>T<sub>ref,comfort</sub> = 21.32°C</li>
+        <li>T<sub>ref,comfort</sub> = 21.34°C</li>
         <li>T<sub>ref,eco</sub> = 19.16°C</li>
-        <li>RMSE = 0.81°C</li>
+        <li>RMSE = 1.02°C</li>
     </ul>
     <p><strong>This is the model used in Phase 4 optimization.</strong> It accounts for controllable
     parameters (<em>T<sub>setpoint</sub></em>, <em>k<sub>curve</sub></em>) that affect T<sub>flow</sub> → COP → energy consumption.</p>
 
     <h4>Simple Reference Model (diagnostic only)</h4>
     <div class="equation-box">
-    $$T_{HK2} = 39.9 -0.869 \times T_{out} \quad (R^2 = 0.686)$$
+    $$T_{HK2} = 39.7 -0.861 \times T_{out} \quad (R^2 = 0.575)$$
     </div>
     <p>This simplified model ignores controllable parameters and is used only for computing
     "heating effort" as a diagnostic signal for thermal response analysis.</p>
@@ -99,15 +99,15 @@
         <tr>
             <td>davis_inside</td>
             <td>100%</td>
-            <td>3,350</td>
-            <td>24h</td>
+            <td>3,665</td>
+            <td>72h</td>
             <td>2h</td>
             <td>12h</td>
-            <td>+0.078</td>
-            <td>+0.208</td>
-            <td>+4.170</td>
-            <td>0.679</td>
-            <td>0.50°C</td>
+            <td>+0.089</td>
+            <td>+0.200</td>
+            <td>+3.821</td>
+            <td>0.698</td>
+            <td>0.51°C</td>
         </tr>
         
     </table>
@@ -118,7 +118,7 @@
     <p>The g<sub>eff</sub> coefficient shows how much each room responds to additional
     heating beyond the baseline heating curve:</p>
     <ul>
-    <li><strong>davis_inside</strong>: g<sub>eff</sub> = +0.208 °C per °C effort (weak response)</li>
+    <li><strong>davis_inside</strong>: g<sub>eff</sub> = +0.200 °C per °C effort (weak response)</li>
 
     </ul>
 
@@ -126,7 +126,7 @@
     <p>The g<sub>pv</sub> coefficient shows how much each room heats up from solar radiation
     (using PV generation as a proxy for irradiance):</p>
     <ul>
-    <li><strong>davis_inside</strong>: g<sub>pv</sub> = +4.170 °C per kWh PV</li>
+    <li><strong>davis_inside</strong>: g<sub>pv</sub> = +3.821 °C per kWh PV</li>
 
     </ul>
 
@@ -138,7 +138,7 @@
     </ul>
 
     <h3>Weighted Average Model Performance</h3>
-    <p>Overall weighted R² = <strong>0.679</strong></p>
+    <p>Overall weighted R² = <strong>0.698</strong></p>
 
     <h3>Implications for Optimization</h3>
     <ul>

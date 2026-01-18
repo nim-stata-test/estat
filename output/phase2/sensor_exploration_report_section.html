@@ -1,0 +1,416 @@
+
+    <h2 id="sensor-exploration">12. Sensor Exploration Analysis</h2>
+
+    <div class="card">
+        <h4>Purpose</h4>
+        <p>This analysis systematically evaluates all ~190 sensors in the integrated dataset to identify
+        candidates that could improve thermal and COP models. The goal is to find sensors that:</p>
+        <ul>
+            <li><strong>Correlate with model residuals:</strong> Capture dynamics the current models miss</li>
+            <li><strong>Correlate with COP:</strong> Help explain heat pump efficiency variations</li>
+            <li><strong>Have good data coverage:</strong> Available during the heating analysis period</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h4>Summary Statistics</h4>
+        <table>
+            <tr><td><strong>Total sensors analyzed</strong></td><td>198</td></tr>
+            <tr><td><strong>High coverage (>80%)</strong></td><td>8 sensors</td></tr>
+            <tr><td><strong>Medium coverage (50-80%)</strong></td><td>0 sensors</td></tr>
+            <tr><td><strong>Low coverage (<50%)</strong></td><td>190 sensors</td></tr>
+            <tr><td><strong>Focus sensors with data</strong></td><td>13 of 13</td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h4>Coverage by Sensor Category</h4>
+        <p>Different sensor categories have varying data availability based on when they were added to the monitoring system:</p>
+        <table>
+            <tr><th>Category</th><th>Sensors</th><th>Mean Coverage</th><th>Notes</th></tr>
+            <tr><td>energy</td><td>43</td><td>2.4%</td><td>Partial period</td></tr><tr><td>heating</td><td>96</td><td>2.3%</td><td>Heat pump sensors (Oct 2025+)</td></tr><tr><td>other</td><td>8</td><td>99.9%</td><td>Full period available</td></tr><tr><td>rooms</td><td>26</td><td>2.9%</td><td>Partial period</td></tr><tr><td>weather</td><td>25</td><td>3.4%</td><td>Partial period</td></tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h4>Focus Sensors Analysis</h4>
+        <p>These sensors were pre-identified as high-potential for model improvement based on physical understanding:</p>
+        <ul>
+            <li><strong>Pressure sensors</strong> (high_pressure_wp1, low_pressure_wp1): Enable thermodynamic COP calculation via Carnot efficiency</li>
+            <li><strong>Hot gas temperature</strong>: Indicates superheat and compressor efficiency</li>
+            <li><strong>Wind sensors</strong>: Could capture infiltration losses affecting thermal model</li>
+            <li><strong>Defrost indicator</strong>: Allows filtering periods when COP is artificially low due to defrost cycles</li>
+        </ul>
+        <table border="1" class="dataframe compact">
+  <thead>
+    <tr style="text-align: right;">
+      <th>sensor</th>
+      <th>coverage_pct</th>
+      <th>room_corr</th>
+      <th>residual_corr</th>
+      <th>cop_corr</th>
+      <th>combined_score</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>low_pressure_wp1</td>
+      <td>7.744</td>
+      <td>0.383</td>
+      <td>0.022</td>
+      <td>0.961</td>
+      <td>0.585</td>
+    </tr>
+    <tr>
+      <td>hot_gas_temperature_wp1</td>
+      <td>7.745</td>
+      <td>-0.120</td>
+      <td>-0.026</td>
+      <td>-0.927</td>
+      <td>0.567</td>
+    </tr>
+    <tr>
+      <td>flow_temperature_wp1</td>
+      <td>7.725</td>
+      <td>-0.034</td>
+      <td>-0.020</td>
+      <td>-0.847</td>
+      <td>0.514</td>
+    </tr>
+    <tr>
+      <td>return_temperature_wp1</td>
+      <td>7.696</td>
+      <td>0.012</td>
+      <td>-0.002</td>
+      <td>-0.793</td>
+      <td>0.470</td>
+    </tr>
+    <tr>
+      <td>high_pressure_wp1</td>
+      <td>7.745</td>
+      <td>0.024</td>
+      <td>-0.022</td>
+      <td>-0.766</td>
+      <td>0.468</td>
+    </tr>
+    <tr>
+      <td>volume_stream_wp1</td>
+      <td>4.097</td>
+      <td>-0.085</td>
+      <td>-0.040</td>
+      <td>-0.516</td>
+      <td>0.175</td>
+    </tr>
+    <tr>
+      <td>barometer</td>
+      <td>7.744</td>
+      <td>-0.032</td>
+      <td>-0.040</td>
+      <td>-0.214</td>
+      <td>0.151</td>
+    </tr>
+    <tr>
+      <td>2_min_avg_wind_speed</td>
+      <td>6.873</td>
+      <td>-0.067</td>
+      <td>-0.090</td>
+      <td>-0.119</td>
+      <td>0.110</td>
+    </tr>
+    <tr>
+      <td>outside_humidity</td>
+      <td>4.521</td>
+      <td>-0.344</td>
+      <td>-0.262</td>
+      <td>0.049</td>
+      <td>0.108</td>
+    </tr>
+    <tr>
+      <td>wind_speed</td>
+      <td>6.907</td>
+      <td>-0.060</td>
+      <td>-0.088</td>
+      <td>-0.114</td>
+      <td>0.107</td>
+    </tr>
+    <tr>
+      <td>evaporator_defrost</td>
+      <td>0.356</td>
+      <td>-0.121</td>
+      <td>-0.037</td>
+      <td>-0.575</td>
+      <td>0.037</td>
+    </tr>
+    <tr>
+      <td>is_heating</td>
+      <td>1.348</td>
+      <td>-0.082</td>
+      <td>-0.040</td>
+      <td>-0.154</td>
+      <td>0.020</td>
+    </tr>
+    <tr>
+      <td>compressor</td>
+      <td>1.363</td>
+      <td>-0.080</td>
+      <td>-0.029</td>
+      <td>-0.157</td>
+      <td>0.020</td>
+    </tr>
+  </tbody>
+</table>
+        <p><em>Coverage = percentage of 15-minute intervals with valid data. Correlations are Pearson r values.</em></p>
+    </div>
+
+    <div class="card">
+        <h4>Top Sensors for Thermal Model Improvement</h4>
+        <p>Sensors with highest absolute correlation to thermal model residuals. High correlation means the sensor
+        captures dynamics that the current transfer-function model misses:</p>
+        <table border="1" class="dataframe compact">
+  <thead>
+    <tr style="text-align: right;">
+      <th>sensor</th>
+      <th>category</th>
+      <th>coverage_pct</th>
+      <th>residual_corr</th>
+      <th>thermal_score</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>stiebel_eltron_isg_low_pressure_wp1</td>
+      <td>heating</td>
+      <td>7.744</td>
+      <td>0.022</td>
+      <td>0.022</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_hot_gas_temperature_wp1</td>
+      <td>heating</td>
+      <td>7.745</td>
+      <td>-0.026</td>
+      <td>0.026</td>
+    </tr>
+    <tr>
+      <td>total_consumption_kwh</td>
+      <td>other</td>
+      <td>99.643</td>
+      <td>0.160</td>
+      <td>0.159</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_flow_temperature_wp1</td>
+      <td>heating</td>
+      <td>7.725</td>
+      <td>-0.020</td>
+      <td>0.019</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_actual_temperature_hk_2</td>
+      <td>heating</td>
+      <td>7.694</td>
+      <td>0.031</td>
+      <td>0.031</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_return_temperature_wp1</td>
+      <td>heating</td>
+      <td>7.696</td>
+      <td>-0.002</td>
+      <td>0.002</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_high_pressure_wp1</td>
+      <td>heating</td>
+      <td>7.745</td>
+      <td>-0.022</td>
+      <td>0.022</td>
+    </tr>
+    <tr>
+      <td>wp_anlage_hk2_ist</td>
+      <td>heating</td>
+      <td>7.571</td>
+      <td>0.036</td>
+      <td>0.034</td>
+    </tr>
+    <tr>
+      <td>external_supply_kwh</td>
+      <td>other</td>
+      <td>99.969</td>
+      <td>0.085</td>
+      <td>0.085</td>
+    </tr>
+    <tr>
+      <td>wp_wp_vorlauf</td>
+      <td>heating</td>
+      <td>7.708</td>
+      <td>-0.017</td>
+      <td>0.016</td>
+    </tr>
+  </tbody>
+</table>
+        <p><em>Thermal score = |residual_corr| × coverage_weight. Higher is better.</em></p>
+    </div>
+
+    <div class="card">
+        <h4>Top Sensors for COP Model Improvement</h4>
+        <p>Sensors with highest absolute correlation to daily COP. These could improve heat pump efficiency predictions:</p>
+        <table border="1" class="dataframe compact">
+  <thead>
+    <tr style="text-align: right;">
+      <th>sensor</th>
+      <th>category</th>
+      <th>coverage_pct</th>
+      <th>cop_corr</th>
+      <th>cop_score</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>stiebel_eltron_isg_low_pressure_wp1</td>
+      <td>heating</td>
+      <td>7.744</td>
+      <td>0.961</td>
+      <td>0.953</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_hot_gas_temperature_wp1</td>
+      <td>heating</td>
+      <td>7.745</td>
+      <td>-0.927</td>
+      <td>0.919</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_actual_temperature_hk_2</td>
+      <td>heating</td>
+      <td>7.694</td>
+      <td>-0.928</td>
+      <td>0.914</td>
+    </tr>
+    <tr>
+      <td>wp_anlage_hk2_ist</td>
+      <td>heating</td>
+      <td>7.571</td>
+      <td>-0.930</td>
+      <td>0.902</td>
+    </tr>
+    <tr>
+      <td>total_consumption_kwh</td>
+      <td>other</td>
+      <td>99.643</td>
+      <td>-0.881</td>
+      <td>0.878</td>
+    </tr>
+    <tr>
+      <td>wp_wp_vorlauf</td>
+      <td>heating</td>
+      <td>7.708</td>
+      <td>-0.849</td>
+      <td>0.838</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_flow_temperature_wp1</td>
+      <td>heating</td>
+      <td>7.725</td>
+      <td>-0.847</td>
+      <td>0.838</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_outdoor_temperature</td>
+      <td>heating</td>
+      <td>6.740</td>
+      <td>0.965</td>
+      <td>0.833</td>
+    </tr>
+    <tr>
+      <td>wp_wp_fortluft</td>
+      <td>heating</td>
+      <td>6.723</td>
+      <td>0.962</td>
+      <td>0.828</td>
+    </tr>
+    <tr>
+      <td>stiebel_eltron_isg_actual_temperature_hk_1</td>
+      <td>heating</td>
+      <td>7.691</td>
+      <td>-0.840</td>
+      <td>0.827</td>
+    </tr>
+  </tbody>
+</table>
+        <p><em>COP score = |cop_corr| × coverage_weight. Higher is better.</em></p>
+    </div>
+
+    <div class="card">
+        <h4>Key Findings</h4>
+        <table>
+            <tr>
+                <th>Sensor Type</th>
+                <th>Coverage</th>
+                <th>Potential Use</th>
+                <th>Recommendation</th>
+            </tr>
+            <tr>
+                <td><strong>Pressure sensors</strong></td>
+                <td>7.7%</td>
+                <td>Thermodynamic COP model via Carnot efficiency</td>
+                <td>Need more data</td>
+            </tr>
+            <tr>
+                <td><strong>Wind sensors</strong></td>
+                <td>5.1%</td>
+                <td>Infiltration losses in thermal model</td>
+                <td>Need more data</td>
+            </tr>
+            <tr>
+                <td><strong>Defrost indicator</strong></td>
+                <td>0.4%</td>
+                <td>Filter low-COP defrost periods</td>
+                <td>Need more data</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h4>Methodology</h4>
+        <p><strong>Correlation Analysis:</strong></p>
+        <ul>
+            <li><strong>Room temperature correlation:</strong> Pearson correlation between each sensor and davis_inside_temperature</li>
+            <li><strong>Residual correlation:</strong> Correlation with thermal model residuals (actual - predicted). High values indicate the sensor captures dynamics the model misses.</li>
+            <li><strong>COP correlation:</strong> Daily-averaged sensor values correlated with daily COP. Identifies sensors that explain efficiency variations.</li>
+        </ul>
+        <p><strong>Scoring:</strong></p>
+        <ul>
+            <li><code>coverage_weight = clip(coverage_pct / 100, 0.1, 1.0)</code></li>
+            <li><code>thermal_score = |residual_corr| × coverage_weight</code></li>
+            <li><code>cop_score = |cop_corr| × coverage_weight</code></li>
+            <li><code>combined_score = 0.5 × thermal_score + 0.5 × cop_score</code></li>
+            <li>Focus sensors receive a 20% score boost</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h4>Recommendations for Future Modeling</h4>
+        <ol>
+            <li><strong>Thermodynamic COP model:</strong> Use high/low pressure sensors to compute theoretical Carnot COP:
+                <pre style="background: #f5f5f5; padding: 0.5rem; margin: 0.5rem 0;">COP_carnot = T_hot / (T_hot - T_cold)</pre>
+                where T_hot and T_cold are derived from pressure via refrigerant tables.</li>
+            <li><strong>Defrost filtering:</strong> Exclude periods with evaporator_defrost=1 to reduce noise in COP analysis.
+                Defrost cycles temporarily reduce COP but are not representative of normal operation.</li>
+            <li><strong>Wind infiltration:</strong> Add wind speed as a thermal model input. High wind increases
+                infiltration losses, reducing indoor temperature even when heating output is constant.</li>
+            <li><strong>Compressor status:</strong> Use is_heating and compressor status for filtering heat-pump-only
+                periods, excluding backup heater operation.</li>
+        </ol>
+    </div>
+
+    <div class="figure">
+        <img src="fig_sensor_coverage.png" alt="Sensor Coverage Analysis">
+        <div class="figure-caption">Sensor coverage analysis: data availability by category, top sensors, focus sensors, and overall distribution.</div>
+    </div>
+
+    <div class="figure">
+        <img src="fig_sensor_correlations.png" alt="Sensor Correlation Analysis">
+        <div class="figure-caption">Correlation analysis: top correlations with room temperature (left), model residuals (center), and COP (right). Bottom row shows combined scores, pressure sensor dynamics, and focus sensor summary.</div>
+    </div>
+    

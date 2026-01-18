@@ -372,7 +372,7 @@ li {
 </head>
 <body>
     <h1>Phase 3: System Modeling Report</h1>
-    <p><em>Generated: 2026-01-17 12:48</em></p>
+    <p><em>Generated: 2026-01-18 09:34</em></p>
 
     <div class="summary-box">
         <h3>Executive Summary</h3>
@@ -425,18 +425,18 @@ li {
     <div class="equation-box">
     $$T_{flow} = T_{setpoint} + k_{curve} \times (T_{ref} - T_{out})$$
     </div>
-    <p>Where R² = 0.963 and:</p>
+    <p>Where R² = 0.946 and:</p>
     <ul>
-        <li>T<sub>ref,comfort</sub> = 21.32°C</li>
+        <li>T<sub>ref,comfort</sub> = 21.34°C</li>
         <li>T<sub>ref,eco</sub> = 19.16°C</li>
-        <li>RMSE = 0.81°C</li>
+        <li>RMSE = 1.02°C</li>
     </ul>
     <p><strong>This is the model used in Phase 4 optimization.</strong> It accounts for controllable
     parameters (<em>T<sub>setpoint</sub></em>, <em>k<sub>curve</sub></em>) that affect T<sub>flow</sub> → COP → energy consumption.</p>
 
     <h4>Simple Reference Model (diagnostic only)</h4>
     <div class="equation-box">
-    $$T_{HK2} = 39.9 -0.869 \times T_{out} \quad (R^2 = 0.686)$$
+    $$T_{HK2} = 39.7 -0.861 \times T_{out} \quad (R^2 = 0.575)$$
     </div>
     <p>This simplified model ignores controllable parameters and is used only for computing
     "heating effort" as a diagnostic signal for thermal response analysis.</p>
@@ -503,15 +503,15 @@ li {
         <tr>
             <td>davis_inside</td>
             <td>100%</td>
-            <td>3,350</td>
-            <td>24h</td>
+            <td>3,665</td>
+            <td>72h</td>
             <td>2h</td>
             <td>12h</td>
-            <td>+0.078</td>
-            <td>+0.208</td>
-            <td>+4.170</td>
-            <td>0.679</td>
-            <td>0.50°C</td>
+            <td>+0.089</td>
+            <td>+0.200</td>
+            <td>+3.821</td>
+            <td>0.698</td>
+            <td>0.51°C</td>
         </tr>
         
     </table>
@@ -522,7 +522,7 @@ li {
     <p>The g<sub>eff</sub> coefficient shows how much each room responds to additional
     heating beyond the baseline heating curve:</p>
     <ul>
-    <li><strong>davis_inside</strong>: g<sub>eff</sub> = +0.208 °C per °C effort (weak response)</li>
+    <li><strong>davis_inside</strong>: g<sub>eff</sub> = +0.200 °C per °C effort (weak response)</li>
 
     </ul>
 
@@ -530,7 +530,7 @@ li {
     <p>The g<sub>pv</sub> coefficient shows how much each room heats up from solar radiation
     (using PV generation as a proxy for irradiance):</p>
     <ul>
-    <li><strong>davis_inside</strong>: g<sub>pv</sub> = +4.170 °C per kWh PV</li>
+    <li><strong>davis_inside</strong>: g<sub>pv</sub> = +3.821 °C per kWh PV</li>
 
     </ul>
 
@@ -542,7 +542,7 @@ li {
     </ul>
 
     <h3>Weighted Average Model Performance</h3>
-    <p>Overall weighted R² = <strong>0.679</strong></p>
+    <p>Overall weighted R² = <strong>0.698</strong></p>
 
     <h3>Implications for Optimization</h3>
     <ul>
@@ -590,12 +590,12 @@ li {
         </tr>
         <tr>
             <td>∂COP/∂T<sub>out</sub></td>
-            <td>0.2034 COP/°C</td>
+            <td>0.2039 COP/°C</td>
             <td>Increases with warmer outdoor</td>
         </tr>
         <tr>
             <td>∂COP/∂T<sub>HK2</sub></td>
-            <td>-0.2199 COP/°C</td>
+            <td>-0.2042 COP/°C</td>
             <td>Decreases with higher flow temp</td>
         </tr>
     </table>
@@ -603,16 +603,16 @@ li {
     <h3>COP Model</h3>
     <p>Multi-variable regression model:</p>
     <div class="equation-box">
-    COP = 5.93 + 0.1280 × T<sub>out</sub> + -0.0832 × T<sub>HK2</sub>
+    COP = 4.12 + 0.1689 × T<sub>out</sub> + -0.0384 × T<sub>HK2</sub>
     </div>
-    <p>R² = 0.941, RMSE = 0.196</p>
+    <p>R² = 0.935, RMSE = 0.199</p>
 
     <h3>Capacity Analysis</h3>
     <table>
         <tr><th>Metric</th><th>Mean</th><th>Max</th><th>Min</th></tr>
         <tr>
             <td>Daily electricity consumed (E<sub>elec</sub>)</td>
-            <td>23.5 kWh</td>
+            <td>23.4 kWh</td>
             <td>59.0 kWh</td>
             <td>5.0 kWh</td>
         </tr>
@@ -634,17 +634,17 @@ li {
     <h3>Buffer Tank Dynamics</h3>
     <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Mean T<sub>buf</sub></td><td>36.0°C</td></tr>
-        <tr><td>Range</td><td>22.3 – 55.5°C</td></tr>
-        <tr><td>Variability (σ)</td><td>5.95°C</td></tr>
+        <tr><td>Mean T<sub>buf</sub></td><td>35.9°C</td></tr>
+        <tr><td>Range</td><td>20.2 – 55.5°C</td></tr>
+        <tr><td>Variability (σ)</td><td>5.97°C</td></tr>
     </table>
 
     <h3>Implications for Optimization</h3>
     <ul>
         <li><strong>COP optimization</strong>: Lower T<sub>HK2</sub> improves COP.
-            With ∂COP/∂T<sub>HK2</sub> = -0.2199, reducing T<sub>HK2</sub> by 5°C improves COP by ~1.10.</li>
+            With ∂COP/∂T<sub>HK2</sub> = -0.2042, reducing T<sub>HK2</sub> by 5°C improves COP by ~1.02.</li>
         <li><strong>Timing strategy</strong>: Run heat pump during warmest T<sub>out</sub> (daytime/solar hours)
-            for better COP. Each +1°C outdoor improves COP by ~0.203.</li>
+            for better COP. Each +1°C outdoor improves COP by ~0.204.</li>
         <li><strong>Capacity headroom</strong>: Max observed 59 kWh/day
             suggests capacity is sufficient for current heating demand.</li>
         <li><strong>Buffer utilization</strong>: Buffer tank (mean 36°C)
@@ -665,7 +665,7 @@ li {
     <h3>PV Generation Patterns</h3>
     <table>
         <tr><th>Metric</th><th>Symbol</th><th>Value</th></tr>
-        <tr><td>Mean daily generation</td><td>P̄<sub>pv</sub></td><td><strong>55.7 kWh</strong></td></tr>
+        <tr><td>Mean daily generation</td><td>P̄<sub>pv</sub></td><td><strong>55.5 kWh</strong></td></tr>
         <tr><td>Peak daily generation</td><td>P<sub>pv,max</sub></td><td>145.7 kWh</td></tr>
         <tr><td>Peak generation hours</td><td>—</td><td>10:00 - 16:00</td></tr>
     </table>
@@ -688,10 +688,10 @@ li {
     <h3>Grid Interaction</h3>
     <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Mean daily import (E<sub>import</sub>)</td><td>10.6 kWh</td></tr>
-        <tr><td>Mean daily export (E<sub>export</sub>)</td><td>40.5 kWh</td></tr>
-        <tr><td>Net export</td><td>29.9 kWh/day</td></tr>
-        <tr><td>Current self-sufficiency (η<sub>ss</sub>)</td><td><strong>75.3%</strong></td></tr>
+        <tr><td>Mean daily import (E<sub>import</sub>)</td><td>10.7 kWh</td></tr>
+        <tr><td>Mean daily export (E<sub>export</sub>)</td><td>40.3 kWh</td></tr>
+        <tr><td>Net export</td><td>29.6 kWh/day</td></tr>
+        <tr><td>Current self-sufficiency (η<sub>ss</sub>)</td><td><strong>75.1%</strong></td></tr>
     </table>
     <p>Self-sufficiency definition:</p>
     <div class="equation-box">
@@ -703,25 +703,25 @@ li {
         <tr><th>Scenario</th><th>Self-Sufficiency</th><th>Improvement</th><th>Description</th></tr>
         <tr>
             <td>Baseline (current)</td>
-            <td>57.0%</td>
+            <td>56.9%</td>
             <td>—</td>
             <td>Current system operation</td>
         </tr>
         <tr>
             <td>Load Shifting</td>
-            <td>62.4%</td>
+            <td>62.3%</td>
             <td>+5.4pp</td>
             <td>Shift 20% of evening load to solar hours</td>
         </tr>
         <tr>
             <td>2× Battery Capacity</td>
-            <td>78.3%</td>
-            <td>+21.3pp</td>
+            <td>78.1%</td>
+            <td>+21.2pp</td>
             <td>Double battery storage capacity</td>
         </tr>
         <tr>
             <td>Combined</td>
-            <td>83.7%</td>
+            <td>83.5%</td>
             <td>+26.7pp</td>
             <td>Load shifting + larger battery</td>
         </tr>
@@ -768,20 +768,20 @@ li {
         <tr>
             <td>Grid purchase cost</td>
             <td>C<sub>grid</sub></td>
-            <td>CHF 3.27</td>
-            <td>CHF 1,194</td>
+            <td>CHF 3.29</td>
+            <td>CHF 1,201</td>
         </tr>
         <tr>
             <td>Feed-in revenue</td>
             <td>R<sub>feedin</sub></td>
-            <td>CHF 5.95</td>
-            <td>CHF 2,173</td>
+            <td>CHF 5.92</td>
+            <td>CHF 2,161</td>
         </tr>
         <tr>
             <td><strong>Net cost</strong></td>
             <td>C<sub>net</sub></td>
-            <td><strong>CHF -2.68</strong></td>
-            <td><strong>CHF -979</strong></td>
+            <td><strong>CHF -2.63</strong></td>
+            <td><strong>CHF -960</strong></td>
         </tr>
     </table>
 
@@ -790,15 +790,15 @@ li {
         <tr><th>Tariff Period</th><th>Grid Import (kWh)</th><th>Cost (CHF)</th><th>Share</th></tr>
         <tr>
             <td>High Tariff (HT)</td>
-            <td>4,747.6</td>
-            <td>1,669.59</td>
-            <td>48.7%</td>
+            <td>4,847.4</td>
+            <td>1,697.24</td>
+            <td>48.9%</td>
         </tr>
         <tr>
             <td>Low Tariff (NT)</td>
-            <td>6,394.3</td>
-            <td>1,761.93</td>
-            <td>51.3%</td>
+            <td>6,433.3</td>
+            <td>1,772.71</td>
+            <td>51.1%</td>
         </tr>
     </table>
 
@@ -810,7 +810,7 @@ li {
         <tr><th>Season</th><th>Daily Net Cost</th><th>Notes</th></tr>
         <tr>
             <td>Winter (Oct-Mar)</td>
-            <td>CHF 2.40</td>
+            <td>CHF 2.43</td>
             <td>Higher heating demand, less PV</td>
         </tr>
         <tr>
@@ -830,11 +830,11 @@ li {
         <tr><th>Model</th><th>R²</th><th>RMSE</th><th>Key Coefficient</th></tr>
         <tr>
             <td>Seasonal model</td>
-            <td>0.708</td>
-            <td>CHF 5.38</td>
-            <td>β<sub>we</sub> = CHF -0.10</td>
+            <td>0.709</td>
+            <td>CHF 5.37</td>
+            <td>β<sub>we</sub> = CHF -0.14</td>
         </tr>
-        <tr><td>HDD model</td><td>0.694</td><td>CHF 2.92</td><td>β<sub>HDD</sub> = CHF 1.00/HDD</td></tr>
+        <tr><td>HDD model</td><td>0.708</td><td>CHF 2.81</td><td>β<sub>HDD</sub> = CHF 1.14/HDD</td></tr>
     </table>
 
     <h3>Cost Optimization Scenarios</h3>
@@ -846,31 +846,31 @@ li {
         <tr><th>Scenario</th><th>C<sub>net</sub></th><th>Annual</th><th>ΔC</th><th>Reduction</th></tr>
         <tr>
             <td>Baseline (current)</td>
-            <td>CHF -2,813.68</td>
-            <td>CHF -979</td>
+            <td>CHF -2,775.80</td>
+            <td>CHF -960</td>
             <td>—</td>
             <td>—</td>
         </tr>
         <tr>
             <td>Shift 20% to low tariff</td>
-            <td>CHF -2,889.57</td>
-            <td>CHF -1,005</td>
-            <td>CHF 26/yr</td>
-            <td>2.7%</td>
+            <td>CHF -2,852.76</td>
+            <td>CHF -987</td>
+            <td>CHF 27/yr</td>
+            <td>2.8%</td>
         </tr>
         <tr>
             <td>Shift 30% to low tariff</td>
-            <td>CHF -2,927.52</td>
-            <td>CHF -1,019</td>
+            <td>CHF -2,891.24</td>
+            <td>CHF -1,000</td>
             <td>CHF 40/yr</td>
-            <td>4.0%</td>
+            <td>4.2%</td>
         </tr>
         <tr>
             <td><strong>Combined (load + battery)</strong></td>
-            <td><strong>CHF -2,921.83</strong></td>
-            <td><strong>CHF -1,017</strong></td>
+            <td><strong>CHF -2,885.47</strong></td>
+            <td><strong>CHF -998</strong></td>
             <td><strong>CHF 38/yr</strong></td>
-            <td><strong>3.8%</strong></td>
+            <td><strong>4.0%</strong></td>
         </tr>
     </table>
 
@@ -882,7 +882,7 @@ li {
             by pre-heating with PV or using stored heat/battery.</li>
         <li><strong>Potential savings</strong>: 4% reduction (~CHF 38/year)
             achievable through combined load shifting and battery optimization.</li>
-        <li><strong>Rate differential</strong>: (p<sub>HT</sub> − p<sub>NT</sub>) ≈ 8.0 Rp/kWh
+        <li><strong>Rate differential</strong>: (p<sub>HT</sub> − p<sub>NT</sub>) ≈ 7.9 Rp/kWh
             provides economic incentive for time-shifting.</li>
     </ul>
 
