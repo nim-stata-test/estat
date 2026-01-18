@@ -8,7 +8,7 @@ ESTAT is an energy balance data repository for solar/battery system monitoring w
 
 ## Development Environment
 
-- **Language**: Python 3.14
+- **Language**: Python 3.13 (with numba JIT for 10x faster optimization)
 - **IDE**: PyCharm configured
 - **Virtual env**: `.venv/`
 
