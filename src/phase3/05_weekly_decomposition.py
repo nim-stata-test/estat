@@ -290,7 +290,7 @@ def generate_html_report(all_stats, params, output_dir):
             """
 
         figure_sections += f"""
-        <div class="week-section">
+        <div class="week-section" id="week-{stats['week_num']}">
             <h3>Week {stats['week_num']}: {stats['week_start'].strftime('%b %d')} - {(stats['week_end'] - pd.Timedelta(days=1)).strftime('%b %d, %Y')}</h3>
             <table class="stats-table">
                 <tr>
@@ -312,6 +312,18 @@ def generate_html_report(all_stats, params, output_dir):
     # Summary statistics
     r2_values = [s['r2'] for s in all_stats]
     rmse_values = [s['rmse'] for s in all_stats]
+
+    # Build table of contents
+    toc_items = ""
+    for stats in all_stats:
+        week_dates = f"{stats['week_start'].strftime('%b %d')} - {(stats['week_end'] - pd.Timedelta(days=1)).strftime('%b %d')}"
+        toc_items += f"""
+            <a href="#week-{stats['week_num']}" class="toc-item">
+                <span class="week-num">Week {stats['week_num']}</span>
+                <span class="week-dates">{week_dates}</span>
+                <span class="week-r2">R²={stats['r2']:.3f}</span>
+            </a>
+        """
 
     html = f"""<!DOCTYPE html>
 <html>
@@ -391,6 +403,49 @@ def generate_html_report(all_stats, params, output_dir):
             margin: 20px 0;
             border-radius: 5px;
         }}
+        .toc {{
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }}
+        .toc h3 {{
+            margin-top: 0;
+            color: #1a5f7a;
+            border: none;
+            padding-left: 0;
+        }}
+        .toc-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }}
+        .toc-item {{
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #333;
+            display: block;
+            transition: background-color 0.2s;
+        }}
+        .toc-item:hover {{
+            background-color: #e8f4f8;
+        }}
+        .toc-item .week-num {{
+            font-weight: bold;
+            color: #1a5f7a;
+        }}
+        .toc-item .week-dates {{
+            font-size: 0.85em;
+            color: #666;
+        }}
+        .toc-item .week-r2 {{
+            font-size: 0.85em;
+            color: #28a745;
+        }}
     </style>
 </head>
 <body>
@@ -415,6 +470,13 @@ def generate_html_report(all_stats, params, output_dir):
             <li><strong>Panels 7-8:</strong> Energy flows (PV, grid, battery)</li>
             <li><strong>Panels 9-10:</strong> Battery state and electricity costs</li>
         </ul>
+    </div>
+
+    <div class="toc">
+        <h3>Table of Contents</h3>
+        <div class="toc-grid">
+            {toc_items}
+        </div>
     </div>
 
     <div class="model-info">

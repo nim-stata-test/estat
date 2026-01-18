@@ -76,11 +76,54 @@
             margin: 20px 0;
             border-radius: 5px;
         }
+        .toc {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .toc h3 {
+            margin-top: 0;
+            color: #1a5f7a;
+            border: none;
+            padding-left: 0;
+        }
+        .toc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .toc-item {
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #333;
+            display: block;
+            transition: background-color 0.2s;
+        }
+        .toc-item:hover {
+            background-color: #e8f4f8;
+        }
+        .toc-item .week-num {
+            font-weight: bold;
+            color: #1a5f7a;
+        }
+        .toc-item .week-dates {
+            font-size: 0.85em;
+            color: #666;
+        }
+        .toc-item .week-r2 {
+            font-size: 0.85em;
+            color: #28a745;
+        }
     </style>
 </head>
 <body>
     <h1>Weekly Model Decomposition Report</h1>
-    <p><em>Generated: 2026-01-18 10:55</em></p>
+    <p><em>Generated: 2026-01-18 10:59</em></p>
 
     <div class="summary-box">
         <h3 style="margin-top: 0; border: none; padding-left: 0;">Summary</h3>
@@ -100,6 +143,85 @@
             <li><strong>Panels 7-8:</strong> Energy flows (PV, grid, battery)</li>
             <li><strong>Panels 9-10:</strong> Battery state and electricity costs</li>
         </ul>
+    </div>
+
+    <div class="toc">
+        <h3>Table of Contents</h3>
+        <div class="toc-grid">
+            
+            <a href="#week-1" class="toc-item">
+                <span class="week-num">Week 1</span>
+                <span class="week-dates">Oct 27 - Nov 02</span>
+                <span class="week-r2">R²=-1.663</span>
+            </a>
+        
+            <a href="#week-2" class="toc-item">
+                <span class="week-num">Week 2</span>
+                <span class="week-dates">Nov 03 - Nov 09</span>
+                <span class="week-r2">R²=-0.009</span>
+            </a>
+        
+            <a href="#week-3" class="toc-item">
+                <span class="week-num">Week 3</span>
+                <span class="week-dates">Nov 10 - Nov 16</span>
+                <span class="week-r2">R²=-0.165</span>
+            </a>
+        
+            <a href="#week-4" class="toc-item">
+                <span class="week-num">Week 4</span>
+                <span class="week-dates">Nov 17 - Nov 23</span>
+                <span class="week-r2">R²=0.389</span>
+            </a>
+        
+            <a href="#week-5" class="toc-item">
+                <span class="week-num">Week 5</span>
+                <span class="week-dates">Nov 24 - Nov 30</span>
+                <span class="week-r2">R²=0.192</span>
+            </a>
+        
+            <a href="#week-6" class="toc-item">
+                <span class="week-num">Week 6</span>
+                <span class="week-dates">Dec 01 - Dec 07</span>
+                <span class="week-r2">R²=-1.051</span>
+            </a>
+        
+            <a href="#week-7" class="toc-item">
+                <span class="week-num">Week 7</span>
+                <span class="week-dates">Dec 08 - Dec 14</span>
+                <span class="week-r2">R²=0.511</span>
+            </a>
+        
+            <a href="#week-8" class="toc-item">
+                <span class="week-num">Week 8</span>
+                <span class="week-dates">Dec 15 - Dec 21</span>
+                <span class="week-r2">R²=0.676</span>
+            </a>
+        
+            <a href="#week-9" class="toc-item">
+                <span class="week-num">Week 9</span>
+                <span class="week-dates">Dec 22 - Dec 28</span>
+                <span class="week-r2">R²=0.406</span>
+            </a>
+        
+            <a href="#week-10" class="toc-item">
+                <span class="week-num">Week 10</span>
+                <span class="week-dates">Dec 29 - Jan 04</span>
+                <span class="week-r2">R²=-0.539</span>
+            </a>
+        
+            <a href="#week-11" class="toc-item">
+                <span class="week-num">Week 11</span>
+                <span class="week-dates">Jan 05 - Jan 11</span>
+                <span class="week-r2">R²=0.646</span>
+            </a>
+        
+            <a href="#week-12" class="toc-item">
+                <span class="week-num">Week 12</span>
+                <span class="week-dates">Jan 12 - Jan 18</span>
+                <span class="week-r2">R²=0.640</span>
+            </a>
+        
+        </div>
     </div>
 
     <div class="model-info">
@@ -137,7 +259,7 @@
     <h2>Weekly Decomposition (12 weeks)</h2>
 
     
-        <div class="week-section">
+        <div class="week-section" id="week-1">
             <h3>Week 1: Oct 27 - Nov 02, 2025</h3>
             <table class="stats-table">
                 <tr>
@@ -160,7 +282,7 @@
             
         </div>
         
-        <div class="week-section">
+        <div class="week-section" id="week-2">
             <h3>Week 2: Nov 03 - Nov 09, 2025</h3>
             <table class="stats-table">
                 <tr>
@@ -183,7 +305,7 @@
             
         </div>
         
-        <div class="week-section">
+        <div class="week-section" id="week-3">
             <h3>Week 3: Nov 10 - Nov 16, 2025</h3>
             <table class="stats-table">
                 <tr>
@@ -206,7 +328,7 @@
             
         </div>
         
-        <div class="week-section">
+        <div class="week-section" id="week-4">
             <h3>Week 4: Nov 17 - Nov 23, 2025</h3>
             <table class="stats-table">
                 <tr>
@@ -229,7 +351,7 @@
             
         </div>
         
-        <div class="week-section">
+        <div class="week-section" id="week-5">
             <h3>Week 5: Nov 24 - Nov 30, 2025</h3>
             <table class="stats-table">
                 <tr>
@@ -252,7 +374,7 @@
             
         </div>
         
-        <div class="week-section">
+        <div class="week-section" id="week-6">
             <h3>Week 6: Dec 01 - Dec 07, 2025</h3>
             <table class="stats-table">
                 <tr>
@@ -275,7 +397,7 @@
             
         </div>
         
-        <div class="week-section">
+        <div class="week-section" id="week-7">
             <h3>Week 7: Dec 08 - Dec 14, 2025</h3>
             <table class="stats-table">
                 <tr>
@@ -298,7 +420,7 @@
             
         </div>
         
-        <div class="week-section">
+        <div class="week-section" id="week-8">
             <h3>Week 8: Dec 15 - Dec 21, 2025</h3>
             <table class="stats-table">
                 <tr>
@@ -321,7 +443,7 @@
             
         </div>
         
-        <div class="week-section">
+        <div class="week-section" id="week-9">
             <h3>Week 9: Dec 22 - Dec 28, 2025</h3>
             <table class="stats-table">
                 <tr>
@@ -344,7 +466,7 @@
             
         </div>
         
-        <div class="week-section">
+        <div class="week-section" id="week-10">
             <h3>Week 10: Dec 29 - Jan 04, 2026</h3>
             <table class="stats-table">
                 <tr>
@@ -367,7 +489,7 @@
             
         </div>
         
-        <div class="week-section">
+        <div class="week-section" id="week-11">
             <h3>Week 11: Jan 05 - Jan 11, 2026</h3>
             <table class="stats-table">
                 <tr>
@@ -390,7 +512,7 @@
             
         </div>
         
-        <div class="week-section">
+        <div class="week-section" id="week-12">
             <h3>Week 12: Jan 12 - Jan 18, 2026</h3>
             <table class="stats-table">
                 <tr>
