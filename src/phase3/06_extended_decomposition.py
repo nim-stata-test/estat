@@ -369,8 +369,14 @@ def predict_intraday_energy(energy_week, t_outdoor, consumption_model):
     Returns:
         Dict with all predicted values at 15-minute resolution
     """
-    n = len(t_outdoor)
+    # Use energy_week length as reference (may differ from t_outdoor for partial weeks)
+    n = len(energy_week)
     dt = 0.25  # 15-minute intervals
+
+    # Align t_outdoor to energy_week length
+    if len(t_outdoor) != n:
+        # Interpolate or truncate t_outdoor to match energy_week
+        t_outdoor = t_outdoor[:n] if len(t_outdoor) > n else np.pad(t_outdoor, (0, n - len(t_outdoor)), mode='edge')
 
     # 1. Predict consumption from temperature (HDD model)
     if consumption_model:
@@ -834,17 +840,29 @@ def main():
     # Generate weekly decomposition figures
     print("\nGenerating weekly extended decomposition figures...")
 
-    # Find all weeks with sufficient data (including partial final week)
-    weeks = []
-    current = overlap_start
-    while current < overlap_end:
-        week_end = min(current + pd.Timedelta(days=7), overlap_end)
-        # Include week if it has at least 2 days of data
-        if (week_end - current).days >= 2:
-            weeks.append((current, week_end))
-        current = current + pd.Timedelta(days=7)
+    # Use same week boundaries as 05_weekly_decomposition.py (ISO weeks, Monday start)
+    # Filter to valid data range
+    mask = (integrated.index >= overlap_start) & (integrated.index <= overlap_end)
+    valid_data = integrated.loc[mask, ['davis_inside_temperature', 'stiebel_eltron_isg_outdoor_temperature']].dropna()
 
-    print(f"  Found {len(weeks)} weeks")
+    # Group by ISO week and count points
+    valid_data = valid_data.copy()
+    valid_data['week'] = valid_data.index.to_period('W').start_time
+    week_counts = valid_data.groupby('week').size()
+
+    # Require at least 2 days of data (2 × 96 = 192 points per day)
+    min_points = 2 * 96
+    valid_weeks = week_counts[week_counts >= min_points].index.tolist()
+
+    # Build week list with start/end dates (matching weekly_decomposition.py)
+    weeks = []
+    for week_start in sorted(valid_weeks):
+        week_end = week_start + pd.Timedelta(days=7)
+        # Clip to overlap_end for partial final week
+        week_end = min(week_end, overlap_end + pd.Timedelta(days=1))
+        weeks.append((week_start, week_end))
+
+    print(f"  Found {len(weeks)} weeks (ISO week boundaries)")
 
     for i, (start, end) in enumerate(weeks):
         week_num = i + 1
