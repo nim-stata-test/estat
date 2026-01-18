@@ -578,7 +578,7 @@ def generate_report(parameter_sets: dict, predictions: dict) -> str:
 
     <figure>
         <img src="fig4.03_parameter_space.png" alt="Parameter Space">
-        <figcaption><strong>Figure 24:</strong> Parameter space visualization: curve rise vs COP (top-left), schedule duration
+        <figcaption><strong>Figure 4.3:</strong> Parameter space visualization: curve rise vs COP (top-left), schedule duration
         vs self-sufficiency (top-right), comfort-efficiency trade-off (bottom-left),
         parameter summary table (bottom-right).</figcaption>
     </figure>

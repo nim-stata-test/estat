@@ -373,7 +373,7 @@ li {
 <body>
     <div class="container">
         <h1>ESTAT Phase 2: Exploratory Data Analysis Report</h1>
-        <p class="meta">Generated: 2026-01-18 10:05:58</p>
+        <p class="meta">Generated: 2026-01-18 14:57:19</p>
 
         <div class="toc">
             <strong>Contents</strong>
@@ -1419,14 +1419,14 @@ li {
     <h3>Tariff Timeline</h3>
     <div class="figure">
         <img src="fig2.14_tariff_timeline.png" alt="Tariff Timeline" style="max-width: 100%;">
-        <p class="caption"><strong>Figure 14:</strong> Purchase and feed-in tariff rates over time (2023-2025).
+        <p class="caption"><strong>Figure 2.14:</strong> Purchase and feed-in tariff rates over time (2023-2025).
         Solid lines show grid import rates (high/low), dashed lines show feed-in rates with HKN (excluding base-only rates).</p>
     </div>
 
     <h3>Tariff Time Windows Distribution</h3>
     <div class="figure">
         <img src="fig2.15_tariff_windows.png" alt="Tariff Windows" style="max-width: 100%;">
-        <p class="caption"><strong>Figure 15:</strong> Distribution of high/low tariff periods.
+        <p class="caption"><strong>Figure 2.15:</strong> Distribution of high/low tariff periods.
         Shows weekly heatmap, hourly probability, monthly distribution, and summary statistics.</p>
     </div>
     <div class="card">
@@ -1441,7 +1441,7 @@ li {
     <h3>Cost Comparison</h3>
     <div class="figure">
         <img src="fig2.16_tariff_costs.png" alt="Tariff Costs" style="max-width: 100%;">
-        <p class="caption"><strong>Figure 16:</strong> Tariff rate comparison showing feed-in trend (left)
+        <p class="caption"><strong>Figure 2.16:</strong> Tariff rate comparison showing feed-in trend (left)
         and rate comparison across different scenarios (right). Self-consumption value = import rate - feed-in rate.</p>
     </div>
     
@@ -1523,7 +1523,7 @@ li {
 
     <figure>
         <img src="fig2.17_hk2_target_actual.png" alt="HK2 Target vs Actual Analysis">
-        <figcaption><strong>Figure 17:</strong> HK2 target vs actual temperature analysis:
+        <figcaption><strong>Figure 2.17:</strong> HK2 target vs actual temperature analysis:
         time series (top-left), scatter correlation (top-right), deviation distribution (bottom-left),
         lag model fit (bottom-right).</figcaption>
     </figure>
@@ -2353,67 +2353,23 @@ Loading integrated dataset...
   101,215 rows, 198 columns
   Period: 2023-03-01 to 2026-01-18
 Loading thermal model residuals...
-  Loaded 6,807 residual values
+  NOTE: No thermal model residuals available (run Phase 3 first)
 Loading COP data...
   Loaded 83 daily COP values
 
 Computing coverage statistics...
-  Analyzed 198 sensors in integrated dataset
-  High coverage (&gt;80%): 8 sensors
-  High overlap coverage (&gt;80%): 37 sensors
-  Focus sensors with data: 13
 
-Computing correlations with room temperature...
-  Computed 154 correlations
-  Strongest: davis_inside_temperature (r=1.000)
 
-Computing correlations with model residuals...
-  Computed 157 correlations
-  Strongest: temphum_woz_temperature (r=0.585)
-
-Computing COP correlations (daily resolution)...
-
-Computing correlations with daily COP...
-  Computed 142 correlations
-  Strongest: stiebel_eltron_isg_outdoor_temperature (r=0.965)
-
-Ranking sensors by improvement potential...
-  Top 5 sensors for thermal improvement:
-    stiebel_eltron_isg_low_pressure_wp1: score=0.022, resid_corr=0.022
-    stiebel_eltron_isg_hot_gas_temperature_wp1: score=0.026, resid_corr=-0.026
-    total_consumption_kwh: score=0.159, resid_corr=0.160
-    stiebel_eltron_isg_flow_temperature_wp1: score=0.019, resid_corr=-0.020
-    stiebel_eltron_isg_actual_temperature_hk_2: score=0.031, resid_corr=0.031
-
-Creating coverage visualization...
-  Saved: fig2.18_sensor_coverage.png
-
-Creating correlation visualization...
-  Saved: fig2.19_sensor_correlations.png
-
-Saved: sensor_exploration_rankings.csv
-
-Generating HTML report section...
-Saved: sensor_exploration_report_section.html
-
-============================================================
-SUMMARY
-============================================================
-
-Sensors analyzed: 198
-High coverage (&gt;80%): 8
-
-Top 5 sensors for improvement:
-  64. stiebel_eltron_isg_low_pressure_wp1
-     Coverage: 7.7%, Score: 0.585
-  59. stiebel_eltron_isg_hot_gas_temperature_w
-     Coverage: 7.7%, Score: 0.567
-  4. total_consumption_kwh
-     Coverage: 99.6%, Score: 0.519
-  51. stiebel_eltron_isg_flow_temperature_wp1
-     Coverage: 7.7%, Score: 0.514
-  30. stiebel_eltron_isg_actual_temperature_hk
-     Coverage: 7.7%, Score: 0.472
+STDERR:
+Traceback (most recent call last):
+  File "/Users/stata/workspace/estat/src/phase2/06_sensor_exploration.py", line 759, in &lt;module&gt;
+    main()
+    ~~~~^^
+  File "/Users/stata/workspace/estat/src/phase2/06_sensor_exploration.py", line 715, in main
+    coverage_df = compute_coverage_stats(df, summary)
+  File "/Users/stata/workspace/estat/src/phase2/06_sensor_exploration.py", line 138, in compute_coverage_stats
+    from shared import ANALYSIS_START_DATE
+ModuleNotFoundError: No module named 'shared'
 </pre>
         </details>
 

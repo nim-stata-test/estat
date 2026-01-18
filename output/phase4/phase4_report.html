@@ -366,7 +366,7 @@ li {
 </head>
 <body>
     <h1>Phase 4: Optimization Strategy Development Report</h1>
-    <p><em>Generated: 2026-01-18 10:37</em></p>
+    <p><em>Generated: 2026-01-18 15:27</em></p>
 
     <div class="summary-box">
         <h3>Executive Summary</h3>
@@ -545,7 +545,7 @@ li {
 
     <figure>
         <img src="fig4.01_strategy_comparison.png" alt="Strategy Comparison">
-        <figcaption><strong>Figure 22:</strong> Strategy comparison: COP by temperature (top-left), COP improvement (top-right),
+        <figcaption><strong>Figure 4.1:</strong> Strategy comparison: COP by temperature (top-left), COP improvement (top-right),
         schedule alignment with PV (bottom-left), expected improvements (bottom-right).</figcaption>
     </figure>
     </section>
@@ -685,7 +685,7 @@ li {
 
     <figure>
         <img src="fig4.02_simulation_results.png" alt="Simulation Results">
-        <figcaption><strong>Figure 23:</strong> Simulation results: example week COP (top-left), daily self-sufficiency (top-right),
+        <figcaption><strong>Figure 4.2:</strong> Simulation results: example week COP (top-left), daily self-sufficiency (top-right),
         strategy comparison bars (bottom-left), hourly COP profile with PV availability (bottom-right).</figcaption>
     </figure>
     </section>
@@ -825,7 +825,7 @@ li {
 
     <figure>
         <img src="fig4.03_parameter_space.png" alt="Parameter Space">
-        <figcaption><strong>Figure 24:</strong> Parameter space visualization: curve rise vs COP (top-left), schedule duration
+        <figcaption><strong>Figure 4.3:</strong> Parameter space visualization: curve rise vs COP (top-left), schedule duration
         vs self-sufficiency (top-right), comfort-efficiency trade-off (bottom-left),
         parameter summary table (bottom-right).</figcaption>
     </figure>
@@ -841,7 +841,7 @@ li {
         <li><strong>Population</strong>: 100 individuals</li>
         <li><strong>Generations</strong>: 20</li>
         <li><strong>Evaluations</strong>: 2,000</li>
-        <li><strong>Pareto solutions</strong>: 5</li>
+        <li><strong>Pareto solutions</strong>: 6</li>
     </ul>
     
 
@@ -882,23 +882,23 @@ li {
         <tr>
             <td><strong>Grid-Minimal</strong></td>
             <td>22.0°C</td>
-            <td>19.0°C</td>
+            <td>18.9°C</td>
             <td>12:00-16:00</td>
-            <td>1.02</td>
-            <td>19.7</td>
-            <td>2111</td>
-            <td>610.0</td>
+            <td>1.01</td>
+            <td>19.6</td>
+            <td>2285</td>
+            <td>658.1</td>
         </tr>
         
         <tr>
             <td><strong>Balanced</strong></td>
             <td>22.0°C</td>
-            <td>18.9°C</td>
+            <td>19.0°C</td>
             <td>12:00-16:00</td>
-            <td>1.06</td>
-            <td>19.8</td>
-            <td>2141</td>
-            <td>618.8</td>
+            <td>1.04</td>
+            <td>19.7</td>
+            <td>2316</td>
+            <td>667.1</td>
         </tr>
         
         <tr>
@@ -906,21 +906,21 @@ li {
             <td>22.0°C</td>
             <td>19.0°C</td>
             <td>12:00-16:00</td>
-            <td>1.09</td>
-            <td>19.9</td>
-            <td>2171</td>
-            <td>627.6</td>
+            <td>1.07</td>
+            <td>19.8</td>
+            <td>2344</td>
+            <td>675.2</td>
         </tr>
         
         <tr>
             <td><strong>Balanced-3</strong></td>
             <td>22.0°C</td>
-            <td>19.0°C</td>
+            <td>18.9°C</td>
             <td>12:00-16:00</td>
-            <td>1.12</td>
-            <td>20.0</td>
-            <td>2198</td>
-            <td>635.5</td>
+            <td>1.11</td>
+            <td>19.9</td>
+            <td>2376</td>
+            <td>684.9</td>
         </tr>
         
         <tr>
@@ -928,10 +928,21 @@ li {
             <td>22.0°C</td>
             <td>19.0°C</td>
             <td>12:00-16:00</td>
-            <td>1.19</td>
-            <td>20.2</td>
-            <td>2264</td>
-            <td>654.9</td>
+            <td>1.14</td>
+            <td>20.0</td>
+            <td>2410</td>
+            <td>694.7</td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First-2</strong></td>
+            <td>22.0°C</td>
+            <td>18.9°C</td>
+            <td>12:00-16:00</td>
+            <td>1.18</td>
+            <td>20.1</td>
+            <td>2445</td>
+            <td>705.2</td>
         </tr>
         
     </table>
@@ -943,13 +954,13 @@ li {
     <h3>Pareto Front Visualization</h3>
     <figure>
         <img src="fig4.04_pareto_front.png" alt="Pareto Front">
-        <figcaption><strong>Figure 26:</strong> Pareto front showing trade-offs between objectives.
+        <figcaption><strong>Figure 4.4:</strong> Pareto front showing trade-offs between objectives.
         Blue points are the 10 selected strategies.</figcaption>
     </figure>
 
     <figure>
         <img src="fig4.05_pareto_strategy_comparison.png" alt="Strategy Comparison">
-        <figcaption><strong>Figure 26:</strong> Radar chart comparing parameter values across selected strategies.</figcaption>
+        <figcaption><strong>Figure 4.5:</strong> Radar chart comparing parameter values across selected strategies.</figcaption>
     </figure>
     </section>
     
@@ -1003,10 +1014,10 @@ li {
         <tr>
             <td><strong>Grid-Minimal</strong></td>
             <td>22.0°C</td>
-            <td>19.0°C</td>
+            <td>18.9°C</td>
             <td>12:00-16:00</td>
             <td>21.0°C</td>
-            <td>18.9°C</td>
+            <td>18.8°C</td>
             <td style="background-color: #ccffcc">0.0%</td>
             <td>0h</td>
             <td style="background-color: #ccffcc"><strong>PASS</strong></td>
@@ -1015,10 +1026,10 @@ li {
         <tr>
             <td><strong>Balanced</strong></td>
             <td>22.0°C</td>
-            <td>18.9°C</td>
+            <td>19.0°C</td>
             <td>12:00-16:00</td>
-            <td>21.4°C</td>
-            <td>19.3°C</td>
+            <td>21.2°C</td>
+            <td>19.0°C</td>
             <td style="background-color: #ccffcc">0.0%</td>
             <td>0h</td>
             <td style="background-color: #ccffcc"><strong>PASS</strong></td>
@@ -1029,8 +1040,8 @@ li {
             <td>22.0°C</td>
             <td>19.0°C</td>
             <td>12:00-16:00</td>
-            <td>21.7°C</td>
-            <td>19.5°C</td>
+            <td>21.5°C</td>
+            <td>19.3°C</td>
             <td style="background-color: #ccffcc">0.0%</td>
             <td>0h</td>
             <td style="background-color: #ccffcc"><strong>PASS</strong></td>
@@ -1039,10 +1050,10 @@ li {
         <tr>
             <td><strong>Balanced-3</strong></td>
             <td>22.0°C</td>
-            <td>19.0°C</td>
+            <td>18.9°C</td>
             <td>12:00-16:00</td>
-            <td>22.0°C</td>
-            <td>19.8°C</td>
+            <td>21.9°C</td>
+            <td>19.7°C</td>
             <td style="background-color: #ccffcc">0.0%</td>
             <td>0h</td>
             <td style="background-color: #ccffcc"><strong>PASS</strong></td>
@@ -1053,8 +1064,20 @@ li {
             <td>22.0°C</td>
             <td>19.0°C</td>
             <td>12:00-16:00</td>
-            <td>22.7°C</td>
-            <td>20.5°C</td>
+            <td>22.2°C</td>
+            <td>20.0°C</td>
+            <td style="background-color: #ccffcc">0.0%</td>
+            <td>0h</td>
+            <td style="background-color: #ccffcc"><strong>PASS</strong></td>
+        </tr>
+        
+        <tr>
+            <td><strong>Comfort-First-2</strong></td>
+            <td>22.0°C</td>
+            <td>18.9°C</td>
+            <td>12:00-16:00</td>
+            <td>22.6°C</td>
+            <td>20.4°C</td>
             <td style="background-color: #ccffcc">0.0%</td>
             <td>0h</td>
             <td style="background-color: #ccffcc"><strong>PASS</strong></td>
@@ -1065,7 +1088,7 @@ li {
     <h3>Key Findings</h3>
     
     <ul>
-        <li><strong>Constraint satisfaction:</strong> 5/5 strategies pass the 5% limit</li>
+        <li><strong>Constraint satisfaction:</strong> 6/6 strategies pass the 5% limit</li>
         <li><strong>Violation range:</strong> 0.0% to 0.0%</li>
     
     </ul>
@@ -1073,7 +1096,7 @@ li {
     <h3>Winter 2026/2027 Temperature Predictions</h3>
     <figure>
         <img src="fig4.07_strategy_temperature_predictions.png" alt="Strategy Temperature Predictions">
-        <figcaption><strong>Figure 28:</strong> Predicted weighted indoor temperatures for each strategy
+        <figcaption><strong>Figure 4.7:</strong> Predicted weighted indoor temperatures for each strategy
         over winter 2026/2027. Red dashed line indicates the comfort threshold. Strategies with
         violation percentages exceeding the constraint limit are highlighted.</figcaption>
     </figure>
@@ -1116,17 +1139,17 @@ li {
         <tr>
             <td><strong>Grid-Minimal</strong></td>
             <td>22.0°C</td>
-            <td>19.0°C</td>
+            <td>18.9°C</td>
             <td>12:00-16:00</td>
-            <td>1.02</td>
+            <td>1.01</td>
         </tr>
         
         <tr>
             <td><strong>Balanced</strong></td>
             <td>22.0°C</td>
-            <td>18.9°C</td>
+            <td>19.0°C</td>
             <td>12:00-16:00</td>
-            <td>1.06</td>
+            <td>1.04</td>
         </tr>
         </table>
     <h3>Energy Performance Comparison</h3>
@@ -1149,18 +1172,18 @@ li {
         
         <tr>
             <td><strong>Grid-Minimal</strong></td>
-            <td>2555</td>
-            <td style="color: green">+6.5%</td>
-            <td>2665</td>
-            <td>4.02</td>
+            <td>2537</td>
+            <td style="color: green">+7.2%</td>
+            <td>2646</td>
+            <td>4.05</td>
         </tr>
         
         <tr>
             <td><strong>Balanced</strong></td>
-            <td>2598</td>
-            <td style="color: green">+4.9%</td>
-            <td>2710</td>
-            <td>3.98</td>
+            <td>2580</td>
+            <td style="color: green">+5.6%</td>
+            <td>2690</td>
+            <td>4.00</td>
         </tr>
         </table>
     <h3>Temperature Performance (Occupied Hours)</h3>
@@ -1183,17 +1206,17 @@ li {
         
         <tr>
             <td><strong>Grid-Minimal</strong></td>
-            <td>21.1</td>
-            <td>18.9</td>
-            <td>20.0</td>
+            <td>21.0</td>
+            <td>18.8</td>
+            <td>19.9</td>
             <td style="background-color: #ccffcc">0.0%</td>
         </tr>
         
         <tr>
             <td><strong>Balanced</strong></td>
-            <td>21.5</td>
-            <td>19.3</td>
-            <td>20.4</td>
+            <td>21.3</td>
+            <td>19.0</td>
+            <td>20.2</td>
             <td style="background-color: #ccffcc">0.0%</td>
         </tr>
         </table>
@@ -1201,21 +1224,21 @@ li {
 
     <figure>
         <img src="fig4.08_strategy_detailed_timeseries.png" alt="Strategy Time Series">
-        <figcaption><strong>Figure 31:</strong> Time series showing (A) simulated temperature by strategy,
+        <figcaption><strong>Figure 4.8:</strong> Time series showing (A) simulated temperature by strategy,
         (B) outdoor temperature and PV generation, (C) simulated hourly grid import by strategy,
         (D) daily grid import comparison.</figcaption>
     </figure>
 
     <figure>
         <img src="fig4.09_strategy_hourly_patterns.png" alt="Hourly Patterns">
-        <figcaption><strong>Figure 31:</strong> Hourly patterns showing (A) temperature profiles,
+        <figcaption><strong>Figure 4.9:</strong> Hourly patterns showing (A) temperature profiles,
         (B) grid import profiles, (C) COP profiles, (D) PV vs demand,
         (E-F) grid import heatmaps for Baseline and Grid-Minimal strategies.</figcaption>
     </figure>
 
     <figure>
         <img src="fig4.10_strategy_energy_patterns.png" alt="Energy Patterns">
-        <figcaption><strong>Figure 31:</strong> Energy analysis showing (A) total energy comparison,
+        <figcaption><strong>Figure 4.10:</strong> Energy analysis showing (A) total energy comparison,
         (B) grid savings vs baseline, (C) average COP, (D) daily grid distribution,
         (E) temperature box plots, (F) summary table.</figcaption>
     </figure>
@@ -1224,9 +1247,9 @@ li {
     <ul>
     
         <li><strong>Best grid efficiency:</strong> Grid-Minimal saves
-            6.5%
+            7.2%
             grid import vs Baseline</li>
-        <li><strong>Best COP:</strong> Grid-Minimal achieves COP 4.02
+        <li><strong>Best COP:</strong> Grid-Minimal achieves COP 4.05
             vs Baseline COP 3.84</li>
         <li><strong>Energy model calibration:</strong> Uses BASE_LOAD=11.0 kWh/day,
             THERMAL_COEF=10.0 kWh/HDD (electrical = thermal/COP)</li>

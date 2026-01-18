@@ -8,7 +8,7 @@ parameter space within the specified resolution.
 
 Decision Variables (5):
 - setpoint_comfort: [19.0, 22.0] °C, step 0.5°C
-- setpoint_eco: [12.0, 19.0] °C, step 1.0°C
+- setpoint_eco: [12.0, 22.0] °C, step 1.0°C
 - comfort_start: [6.0, 12.0] hours, step 0.5h
 - comfort_end: [16.0, 22.0] hours, step 0.5h
 - curve_rise: [0.80, 1.20], step 0.05
@@ -67,7 +67,7 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 GRID_CONFIG = {
     'setpoint_comfort': {'min': 19.0, 'max': 22.0, 'step': 0.5},  # 7 values
-    'setpoint_eco': {'min': 12.0, 'max': 19.0, 'step': 1.0},      # 8 values
+    'setpoint_eco': {'min': 12.0, 'max': 22.0, 'step': 1.0},      # 11 values
     'comfort_start': {'min': 6.0, 'max': 12.0, 'step': 0.5},      # 13 values
     'comfort_end': {'min': 16.0, 'max': 22.0, 'step': 0.5},       # 13 values
     'curve_rise': {'min': 0.80, 'max': 1.20, 'step': 0.05},       # 9 values
@@ -89,6 +89,17 @@ BASELINE = {
 # ============================================================================
 # Model Parameters
 # ============================================================================
+
+# Empirical hourly heating intensity profile (derived from observed consumption)
+# Values represent relative heating intensity at each hour (0-23)
+# Derived by subtracting base load from hourly consumption and normalizing
+HOURLY_HEATING_PROFILE = np.array([
+    0.0349, 0.0213, 0.0256, 0.0341, 0.0252, 0.0254,  # 00-05: night
+    0.0364, 0.0750, 0.0573, 0.0380, 0.0633, 0.0474,  # 06-11: morning
+    0.0601, 0.0415, 0.0489, 0.0354, 0.0477, 0.0519,  # 12-17: afternoon
+    0.0512, 0.0532, 0.0493, 0.0285, 0.0173, 0.0310,  # 18-23: evening
+])
+
 
 def load_heating_curve_params():
     """Load parametric heating curve from Phase 2 JSON."""
@@ -214,8 +225,9 @@ def evaluate_parameters(params, sim_data, T_weighted, hours, T_outdoor, pv_gen, 
     violation_pct = violation_count / len(T_weighted_occupied) if len(T_weighted_occupied) > 0 else 0.0
 
     # --- Energy/Cost Simulation ---
-    BASE_LOAD_KWH = 11.0
-    THERMAL_COEF = 10.0
+    # Calibrated from daily consumption = BASE + THERMAL * HDD / COP (R² = 0.81)
+    BASE_LOAD_KWH = 10.5
+    THERMAL_COEF = 8.4
     BASE_LOAD_TIMESTEP = BASE_LOAD_KWH / 96
     DT_HOURS = 0.25
 
@@ -228,12 +240,21 @@ def evaluate_parameters(params, sim_data, T_weighted, hours, T_outdoor, pv_gen, 
 
     cop = predict_cop(T_outdoor, T_HK2)
 
+    # Eco mode reduction factor based on setback
     setback_range = setpoint_comfort - 12.0
     actual_setback = setpoint_comfort - setpoint_eco
-    eco_mode_factor = max(0.1, 1.0 - 0.9 * (actual_setback / setback_range)) if setback_range > 0 else 1.0
-    mode_factor = np.where(is_comfort, 1.0, eco_mode_factor)
+    eco_mode_factor = max(0.1, 1.0 - 0.7 * (actual_setback / setback_range)) if setback_range > 0 else 1.0
 
-    thermal_demand_weight = np.maximum(0, T_HK2 - T_outdoor) * mode_factor
+    # Build heating weights using empirical hourly profile + comfort/eco mode
+    # Get base profile weights for each timestep (4 slots per hour)
+    hour_indices = hours.astype(int)
+    base_weights = HOURLY_HEATING_PROFILE[hour_indices]
+
+    # Apply comfort/eco mode factors:
+    # - During comfort: use full profile weight
+    # - During eco: reduce weight to reflect lower heating activity
+    mode_factor = np.where(is_comfort, 1.0, eco_mode_factor)
+    thermal_demand_weight = base_weights * mode_factor
 
     unique_dates = np.unique(dates)
     heating_kwh = np.zeros(len(sim_data))
@@ -247,13 +268,14 @@ def evaluate_parameters(params, sim_data, T_weighted, hours, T_outdoor, pv_gen, 
         if daily_thermal_kwh < 0.1:
             continue
 
-        day_thermal_weights = thermal_demand_weight[date_mask]
+        day_weights = thermal_demand_weight[date_mask]
         day_cops = cop[date_mask]
 
-        total_thermal_weight = np.sum(day_thermal_weights)
-        if total_thermal_weight > 0.01:
-            avg_cop = np.sum(day_cops * day_thermal_weights) / total_thermal_weight
-            normalized_weights = day_thermal_weights / total_thermal_weight
+        total_weight = np.sum(day_weights)
+        if total_weight > 0.01:
+            # Weight COP by heating intensity to get effective COP
+            avg_cop = np.sum(day_cops * day_weights) / total_weight
+            normalized_weights = day_weights / total_weight
         else:
             avg_cop = np.mean(day_cops)
             normalized_weights = np.ones(np.sum(date_mask)) / np.sum(date_mask)

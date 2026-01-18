@@ -774,7 +774,7 @@ def plot_thermal_analysis(results: list, heating_curve: dict, df: pd.DataFrame) 
     plt.close()
     print("  Saved: fig3.01_thermal_model.png")
 
-    # Figure 18b: Time series for all rooms (only if multiple sensors)
+    # Figure 3.1b: Time series for all rooms (only if multiple sensors)
     if n_sensors >= 2:
         n_rows = (n_sensors + 1) // 2
         fig2, axes = plt.subplots(n_rows, 2, figsize=(14, 4 * n_rows))
@@ -912,7 +912,7 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
 
     <figure>
         <img src="fig3.01a_lpf_visualization.png" alt="Low-Pass Filter Visualization">
-        <figcaption><strong>Figure 18a:</strong> Low-pass filter behavior: step response (left),
+        <figcaption><strong>Figure 3.1a:</strong> Low-pass filter behavior: step response (left),
         impulse response/decay (middle), and filter equations (right).</figcaption>
     </figure>
 
@@ -997,7 +997,7 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
 
     <figure>
         <img src="fig3.01_thermal_model.png" alt="Thermal Model Analysis">
-        <figcaption><strong>Figure 18:</strong> Thermal model: heating curve (left),
+        <figcaption><strong>Figure 3.1:</strong> Thermal model: heating curve (left),
         actual vs predicted scatter (middle), time series validation (right).</figcaption>
     </figure>
 
@@ -1008,7 +1008,7 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
 
     <figure>
         <img src="fig3.01c_model_decomposition.png" alt="Model Term Decomposition">
-        <figcaption><strong>Figure 18c:</strong> Model term decomposition for a representative week.
+        <figcaption><strong>Figure 3.1c:</strong> Model term decomposition for a representative week.
         Panel 1: Actual vs predicted room temperature. Panel 2: Outdoor temperature contribution.
         Panel 3: Heating effort contribution. Panel 4: Solar/PV contribution.</figcaption>
     </figure>
@@ -1020,7 +1020,7 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
         html = html.replace('<h3>Model Term Decomposition</h3>', f"""
     <figure>
         <img src="fig3.01d_room_timeseries.png" alt="Room Temperature Time Series">
-        <figcaption><strong>Figure 18b:</strong> Actual vs predicted temperature for all rooms
+        <figcaption><strong>Figure 3.1b:</strong> Actual vs predicted temperature for all rooms
         in the weighted temperature objective (last 2 weeks).</figcaption>
     </figure>
 

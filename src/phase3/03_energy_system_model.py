@@ -569,7 +569,7 @@ def generate_report(pv_results: dict, battery_results: dict,
 
     <figure>
         <img src="fig3.03_energy_system_model.png" alt="Energy System Model">
-        <figcaption><strong>Figure 20:</strong> Energy system analysis: daily profile (top-left),
+        <figcaption><strong>Figure 3.3:</strong> Energy system analysis: daily profile (top-left),
         battery patterns (top-right), monthly grid balance (bottom-left),
         self-sufficiency scenarios (bottom-right).</figcaption>
     </figure>

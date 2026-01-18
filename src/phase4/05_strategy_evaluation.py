@@ -160,7 +160,7 @@ def calculate_delta_T(params: dict) -> float:
     return delta_T
 
 
-def evaluate_strategy(params: dict, df: pd.DataFrame, thermal_sim: ThermalSimulator = None) -> dict:
+def evaluate_strategy(params: dict, df: pd.DataFrame, thermal_sim=None) -> dict:
     """
     Evaluate a strategy for comfort violations using grey-box forward simulation.
 
@@ -233,7 +233,7 @@ def evaluate_strategy(params: dict, df: pd.DataFrame, thermal_sim: ThermalSimula
 
 
 def generate_winter_predictions(df: pd.DataFrame, strategies: list,
-                                thermal_sim: ThermalSimulator = None) -> pd.DataFrame:
+                                thermal_sim=None) -> pd.DataFrame:
     """
     Generate predicted T_weighted for winter 2026/2027 (Nov 2026 - Feb 2027).
 
@@ -600,7 +600,7 @@ def generate_report(strategies: list, evaluations: dict) -> str:
     <h3>Winter 2026/2027 Temperature Predictions</h3>
     <figure>
         <img src="fig4.07_strategy_temperature_predictions.png" alt="Strategy Temperature Predictions">
-        <figcaption><strong>Figure 28:</strong> Predicted weighted indoor temperatures for each strategy
+        <figcaption><strong>Figure 4.7:</strong> Predicted weighted indoor temperatures for each strategy
         over winter 2026/2027. Red dashed line indicates the comfort threshold. Strategies with
         violation percentages exceeding the constraint limit are highlighted.</figcaption>
     </figure>

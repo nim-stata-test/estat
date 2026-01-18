@@ -855,21 +855,21 @@ def generate_report(df: pd.DataFrame, strategies: list, stats_df: pd.DataFrame) 
 
     <figure>
         <img src="fig4.08_strategy_detailed_timeseries.png" alt="Strategy Time Series">
-        <figcaption><strong>Figure 31:</strong> Time series showing (A) simulated temperature by strategy,
+        <figcaption><strong>Figure 4.8:</strong> Time series showing (A) simulated temperature by strategy,
         (B) outdoor temperature and PV generation, (C) simulated hourly grid import by strategy,
         (D) daily grid import comparison.</figcaption>
     </figure>
 
     <figure>
         <img src="fig4.09_strategy_hourly_patterns.png" alt="Hourly Patterns">
-        <figcaption><strong>Figure 31:</strong> Hourly patterns showing (A) temperature profiles,
+        <figcaption><strong>Figure 4.9:</strong> Hourly patterns showing (A) temperature profiles,
         (B) grid import profiles, (C) COP profiles, (D) PV vs demand,
         (E-F) grid import heatmaps for Baseline and Grid-Minimal strategies.</figcaption>
     </figure>
 
     <figure>
         <img src="fig4.10_strategy_energy_patterns.png" alt="Energy Patterns">
-        <figcaption><strong>Figure 31:</strong> Energy analysis showing (A) total energy comparison,
+        <figcaption><strong>Figure 4.10:</strong> Energy analysis showing (A) total energy comparison,
         (B) grid savings vs baseline, (C) average COP, (D) daily grid distribution,
         (E) temperature box plots, (F) summary table.</figcaption>
     </figure>

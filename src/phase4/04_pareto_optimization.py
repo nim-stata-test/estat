@@ -1279,13 +1279,13 @@ T_room[k+1] = T_room[k] + (dt/τ_room) × [r_heat×(T_buf[k] - T_room[k]) - (T_r
     <h3>Pareto Front Visualization</h3>
     <figure>
         <img src="fig4.04_pareto_front.png" alt="Pareto Front">
-        <figcaption><strong>Figure 26:</strong> Pareto front showing trade-offs between objectives.
+        <figcaption><strong>Figure 4.4:</strong> Pareto front showing trade-offs between objectives.
         Blue points are the 10 selected strategies.</figcaption>
     </figure>
 
     <figure>
         <img src="fig4.05_pareto_strategy_comparison.png" alt="Strategy Comparison">
-        <figcaption><strong>Figure 26:</strong> Radar chart comparing parameter values across selected strategies.</figcaption>
+        <figcaption><strong>Figure 4.5:</strong> Radar chart comparing parameter values across selected strategies.</figcaption>
     </figure>
     </section>
     """

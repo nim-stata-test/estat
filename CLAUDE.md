@@ -127,9 +127,13 @@ Where Effort = T_HK2 - baseline_curve. Key: g_effort = 0.208 (stable, CV=9%).
 
 **Comfort constraint:** T_weighted < 18.5C for <=5% of daytime hours (08:00-22:00)
 
-**Decision variables:** setpoint_comfort [19-22C], setpoint_eco [12-19C], comfort_start [06-12h], comfort_end [16-22h], curve_rise [0.80-1.20]
+**Decision variables:** setpoint_comfort [19-22C], setpoint_eco [12-22C], comfort_start [06-12h], comfort_end [16-22h], curve_rise [0.80-1.20]
 
-**Key finding:** Optimal strategies use narrow afternoon comfort windows (12:00-16:00) aligned with PV production, minimal eco setback (19C), achieving 2.9% violation with 17.7C minimum.
+**Key finding:** Grid search over 98,865 combinations found that **all Pareto-optimal strategies use minimal eco setback (eco=20-22C)**. The primary optimization lever is the narrow comfort window (12:00-16:00) aligned with PV production, not overnight setback. With ~19h thermal time constant, maintaining stable temperature is more efficient than deep setback + recovery cycles.
+
+**Pareto front trade-offs (curve_rise as main lever):**
+- Comfort-First (rise=1.20): 20.8°C avg, 2148 kWh grid, CHF 632
+- Grid-Minimal (rise=0.80): 19.6°C avg, 1824 kWh grid, CHF 534
 
 ## Key Sensors
 

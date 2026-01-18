@@ -488,7 +488,7 @@ def generate_report(deviation_stats: dict, lag_model: dict, xcorr: dict) -> str:
 
     <figure>
         <img src="fig2.17_hk2_target_actual.png" alt="HK2 Target vs Actual Analysis">
-        <figcaption><strong>Figure 17:</strong> HK2 target vs actual temperature analysis:
+        <figcaption><strong>Figure 2.17:</strong> HK2 target vs actual temperature analysis:
         time series (top-left), scatter correlation (top-right), deviation distribution (bottom-left),
         lag model fit (bottom-right).</figcaption>
     </figure>

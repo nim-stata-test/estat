@@ -711,7 +711,7 @@ def generate_report(comparison: pd.DataFrame, daily_metrics: pd.DataFrame,
 
     <figure>
         <img src="fig4.02_simulation_results.png" alt="Simulation Results">
-        <figcaption><strong>Figure 23:</strong> Simulation results: example week COP (top-left), daily self-sufficiency (top-right),
+        <figcaption><strong>Figure 4.2:</strong> Simulation results: example week COP (top-left), daily self-sufficiency (top-right),
         strategy comparison bars (bottom-left), hourly COP profile with PV availability (bottom-right).</figcaption>
     </figure>
     </section>

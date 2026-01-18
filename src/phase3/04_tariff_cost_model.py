@@ -716,7 +716,7 @@ def generate_report(cost_patterns: dict, forecast_results: dict,
 
     <figure>
         <img src="fig3.04_tariff_cost_model.png" alt="Tariff Cost Model">
-        <figcaption><strong>Figure 21:</strong> Cost analysis: monthly costs (top-left), tariff breakdown (top-right),
+        <figcaption><strong>Figure 3.4:</strong> Cost analysis: monthly costs (top-left), tariff breakdown (top-right),
         daily profile (bottom-left), optimization scenarios (bottom-right).</figcaption>
     </figure>
     </section>

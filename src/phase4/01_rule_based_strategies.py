@@ -530,7 +530,7 @@ def generate_report(strategies: dict, cop_analysis: pd.DataFrame) -> str:
 
     <figure>
         <img src="fig4.01_strategy_comparison.png" alt="Strategy Comparison">
-        <figcaption><strong>Figure 22:</strong> Strategy comparison: COP by temperature (top-left), COP improvement (top-right),
+        <figcaption><strong>Figure 4.1:</strong> Strategy comparison: COP by temperature (top-left), COP improvement (top-right),
         schedule alignment with PV (bottom-left), expected improvements (bottom-right).</figcaption>
     </figure>
     </section>

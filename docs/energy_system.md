@@ -26,7 +26,27 @@ Analysis comparing model vs observed battery behavior revealed:
 - **Total capacity**: 13.8 kWh with 20% min SoC -> usable capacity 11.04 kWh
 - **Post-degradation efficiency**: 77% round-trip (down from 84% after Feb-Mar 2025 event)
 - **Time-of-use strategy**: Discharge concentrated 15:00-22:00, minimal overnight
-- **Result**: Model grid import now within +0.8% of observed (was -2.1%)
+- **Result**: Model grid import within -3.8% of observed (daily R² = 0.82)
+
+## Consumption Model (Grid Search)
+
+The grid search optimization uses a calibrated consumption model:
+
+```python
+# Daily consumption = BASE_LOAD + THERMAL_COEF * HDD / COP
+BASE_LOAD_KWH = 10.5      # Non-heating base load (kWh/day)
+THERMAL_COEF = 8.4        # Thermal demand coefficient (kWh_thermal per HDD)
+
+# Hourly distribution uses empirical heating profile
+HOURLY_HEATING_PROFILE = [...]  # 24 values derived from observed consumption
+```
+
+**Model fit (R² = 0.81):** Captures daily consumption well. Hourly profile distributes
+heating realistically (morning peak at 07:00, afternoon activity, evening reduction).
+
+**Tariff accuracy:**
+- High tariff share: 44.8% simulated vs 44.0% actual
+- Cost error: -3.6% (improved from -6.9% with old model)
 
 ## COP Model
 
