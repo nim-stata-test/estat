@@ -36,14 +36,30 @@ python src/phase4/run_optimization.py
 python src/generate_main_report.py       # output/index.html
 ```
 
+## Phase 4 Pipeline (Default)
+
+`python src/phase4/run_optimization.py` runs all steps:
+
+| Step | Script | Description |
+|------|--------|-------------|
+| 4.1 | `01_rule_based_strategies.py` | Define baseline + optimized strategies |
+| 4.2 | `02_strategy_simulation.py` | Simulate on historical data |
+| 4.3 | `03_parameter_sets.py` | Generate Phase 5 parameters |
+| 4.4a | `04b_grid_search_optimization.py --coarse` | Grid search (~3 min) |
+| 4.4b | `04_pareto_optimization.py` | NSGA-II multi-objective |
+| 4.5 | `05_strategy_evaluation.py` | Comfort violation analysis |
+| 4.6 | `06_strategy_detailed_analysis.py` | Detailed visualizations |
+| 4.7 | `07_pareto_animation.py` | Pareto evolution GIF/MP4 |
+
+**Outputs:** 12 figures (fig4.01-fig4.12), animations, combined HTML report.
+
 ## Key Commands
 
 | Command | Description |
 |---------|-------------|
-| `python src/phase4/04_pareto_optimization.py` | NSGA-II multi-objective optimization |
-| `python src/phase4/04_pareto_optimization.py --fresh` | Start fresh optimization |
-| `python src/phase4/04b_grid_search_optimization.py` | Exhaustive grid search (~38 min) |
-| `python src/phase4/05_strategy_evaluation.py` | Comfort violation analysis |
+| `python src/phase4/04_pareto_optimization.py --fresh` | Fresh NSGA-II (ignore archive) |
+| `python src/phase4/04b_grid_search_optimization.py` | Full grid search (~38 min) |
+| `python src/phase4/04b_grid_search_optimization.py --coarse` | Coarse grid (~3 min) |
 | `python src/phase5_pilot/run_pilot.py` | Generate pilot design + schedule |
 | `python src/phase5_pilot/run_pilot.py --analyze-rsm` | RSM block-averaged analysis |
 
@@ -68,9 +84,9 @@ src/
 output/
 ├── index.html           # Main report with TOC
 ├── phase1/              # Parquet files, preprocessing report
-├── phase2/              # EDA figures (fig01-fig16), HTML reports
-├── phase3/              # Model figures (fig18-fig22), weekly decomposition
-├── phase4/              # Optimization figures (fig22-fig33), Pareto archive
+├── phase2/              # EDA figures (fig2.01-fig2.19), HTML reports
+├── phase3/              # Model figures (fig3.01-fig3.08), weekly decomposition
+├── phase4/              # Optimization figures (fig4.01-fig4.12), Pareto archive, animations
 ├── phase5/              # Intervention study outputs
 ├── phase5_pilot/        # Pilot experiment outputs
 └── xtra/                # Standalone analysis outputs
