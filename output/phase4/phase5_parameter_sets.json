@@ -30,11 +30,11 @@
     },
     "expected_outcomes": {
       "cop_mean": 3.9,
-      "cop_vs_baseline": -0.02,
-      "self_sufficiency": 0.367,
+      "cop_vs_baseline": -0.05,
+      "self_sufficiency": 0.37,
       "self_sufficiency_vs_baseline_pp": 0.0,
-      "comfort_compliance": 0.845,
-      "daily_net_cost_chf": 3.53,
+      "comfort_compliance": 0.831,
+      "daily_net_cost_chf": 3.47,
       "cost_reduction_pct": 0.0
     },
     "confidence_intervals": {
@@ -73,12 +73,12 @@
       "notes": "Optional automation rules - manual implementation in Phase 5"
     },
     "expected_outcomes": {
-      "cop_mean": 4.21,
-      "cop_vs_baseline": 0.29,
-      "self_sufficiency": 0.367,
+      "cop_mean": 4.2,
+      "cop_vs_baseline": 0.26,
+      "self_sufficiency": 0.37,
       "self_sufficiency_vs_baseline_pp": 0.0,
-      "comfort_compliance": 0.845,
-      "daily_net_cost_chf": 3.53,
+      "comfort_compliance": 0.831,
+      "daily_net_cost_chf": 3.47,
       "cost_reduction_pct": 0.0
     },
     "confidence_intervals": {
@@ -117,12 +117,12 @@
       "notes": "Optional automation rules - manual implementation in Phase 5"
     },
     "expected_outcomes": {
-      "cop_mean": 4.26,
-      "cop_vs_baseline": 0.34,
-      "self_sufficiency": 0.367,
+      "cop_mean": 4.25,
+      "cop_vs_baseline": 0.31,
+      "self_sufficiency": 0.37,
       "self_sufficiency_vs_baseline_pp": 0.0,
-      "comfort_compliance": 0.845,
-      "daily_net_cost_chf": 3.53,
+      "comfort_compliance": 0.831,
+      "daily_net_cost_chf": 3.47,
       "cost_reduction_pct": 0.0
     },
     "confidence_intervals": {

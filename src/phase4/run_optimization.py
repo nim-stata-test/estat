@@ -212,6 +212,7 @@ def main():
     print("Phase 4: Optimization Strategy Development")
     print("="*60)
 
+    # Phase 4.1-4.3: Strategy definitions and simulation
     scripts = [
         '01_rule_based_strategies.py',
         '02_strategy_simulation.py',
@@ -219,16 +220,34 @@ def main():
     ]
 
     success_count = 0
+    total_scripts = 0
 
     for script in scripts:
+        total_scripts += 1
         if run_script(script):
             success_count += 1
         else:
             print(f"  WARNING: {script} failed")
 
-    # Run Pareto optimization (warm-start if archive exists, otherwise fresh)
+    # Phase 4.4a: Grid Search Optimization (coarse mode for speed)
     print(f"\n{'='*60}")
-    print("Running Pareto Multi-Objective Optimization")
+    print("Running Grid Search Optimization (coarse mode)")
+    print('='*60)
+    grid_script = Path(__file__).parent / '04b_grid_search_optimization.py'
+    grid_args = [sys.executable, str(grid_script), '--coarse']
+    print("  Grid search with coarse resolution (~8 minutes)")
+
+    total_scripts += 1
+    result = subprocess.run(grid_args, cwd=str(PROJECT_ROOT))
+    if result.returncode == 0:
+        success_count += 1
+        print("  Grid search completed successfully")
+    else:
+        print("  WARNING: Grid search optimization failed")
+
+    # Phase 4.4b: NSGA-II Pareto Optimization
+    print(f"\n{'='*60}")
+    print("Running NSGA-II Pareto Optimization")
     print('='*60)
     pareto_script = Path(__file__).parent / '04_pareto_optimization.py'
     pareto_archive = OUTPUT_DIR / 'pareto_archive.json'
@@ -241,17 +260,34 @@ def main():
         pareto_args = [sys.executable, str(pareto_script), '--fresh', '-g', '50', '-p', '100']
         print("  Starting fresh optimization (50 generations, pop=100)")
 
+    total_scripts += 1
     result = subprocess.run(pareto_args, cwd=str(PROJECT_ROOT))
     if result.returncode == 0:
         success_count += 1
     else:
-        print("  WARNING: Pareto optimization failed")
+        print("  WARNING: NSGA-II Pareto optimization failed")
 
-    # Generate Pareto animation
+    # Phase 4.5: Strategy Evaluation (comfort violation analysis)
+    total_scripts += 1
+    if run_script('05_strategy_evaluation.py'):
+        success_count += 1
+    else:
+        print("  WARNING: Strategy evaluation failed")
+
+    # Phase 4.6: Detailed Strategy Analysis
+    total_scripts += 1
+    if run_script('06_strategy_detailed_analysis.py'):
+        success_count += 1
+    else:
+        print("  WARNING: Detailed strategy analysis failed")
+
+    # Phase 4.7: Generate Pareto evolution animation
     print(f"\n{'='*60}")
     print("Generating Pareto evolution animation")
     print('='*60)
+    total_scripts += 1
     if run_script('07_pareto_animation.py'):
+        success_count += 1
         print("  Animation generated successfully")
     else:
         print("  WARNING: Animation generation failed")
@@ -263,27 +299,30 @@ def main():
     print("\n" + "="*60)
     print("PHASE 4 COMPLETE")
     print("="*60)
-    total_scripts = len(scripts) + 1  # +1 for Pareto optimization
     print(f"Scripts completed: {success_count}/{total_scripts}")
     print(f"Output directory: {OUTPUT_DIR}")
     print("\nKey outputs:")
     print("  - phase4_report.html (combined report)")
     print("  - selected_strategies.json (Pareto-optimized strategies)")
     print("  - pareto_archive.json (full Pareto front for warm-starting)")
+    print("  - grid_search_pareto.json (grid search Pareto front)")
     print("  - phase5_parameter_sets.json (intervention parameters)")
     print("  - phase5_predictions.json (testable predictions)")
     print("  - strategy_detailed_stats.csv (detailed strategy statistics)")
+    print("  - strategy_violation_analysis.csv (comfort violation stats)")
     print("\nFigures:")
     print("  - fig4.01_strategy_comparison.png")
     print("  - fig4.02_simulation_results.png")
     print("  - fig4.03_parameter_space.png")
-    print("  - fig4.04_pareto_front.png (Pareto optimization)")
+    print("  - fig4.04_pareto_front.png (NSGA-II Pareto)")
     print("  - fig4.05_pareto_strategy_comparison.png (Pareto strategies)")
     print("  - fig4.06_pareto_evolution.png (Pareto evolution frame)")
     print("  - fig4.07_strategy_temperature_predictions.png (Comfort evaluation)")
     print("  - fig4.08_strategy_detailed_timeseries.png (Detailed time series)")
     print("  - fig4.09_strategy_hourly_patterns.png (Hourly patterns)")
     print("  - fig4.10_strategy_energy_patterns.png (Energy patterns)")
+    print("  - fig4.11_grid_search_results.png (Grid search)")
+    print("  - fig4.12_objective_landscape.png (Objective heatmaps)")
     print("\nAnimations:")
     print("  - pareto_evolution.gif / .mp4 (2D Pareto evolution)")
     print("  - pareto_evolution_3d.gif / .mp4 (3D Pareto evolution)")

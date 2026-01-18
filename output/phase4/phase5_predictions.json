@@ -2,16 +2,16 @@
   "baseline": {
     "strategy_name": "Baseline",
     "grid_per_hdd": {
-      "value": 1.15,
+      "value": 1.13,
       "unit": "kWh/HDD",
-      "baseline": 1.15,
+      "baseline": 1.13,
       "reduction_pct": 0.0,
       "measurement": "Sum of external_supply_kwh / Sum of HDD per block"
     },
     "self_sufficiency": {
-      "target": 36.7,
-      "range_min": 31.7,
-      "range_max": 41.7,
+      "target": 37.0,
+      "range_min": 32.0,
+      "range_max": 42.0,
       "unit": "percent",
       "measurement": "(1 - grid_import/total_consumption) \u00d7 100"
     },
@@ -22,17 +22,17 @@
       "measurement": "produced_heating / consumed_heating (daily)"
     },
     "comfort_compliance": {
-      "target_pct": 84.5,
+      "target_pct": 83.1,
       "minimum_pct": 95.0,
       "measurement": "Percent of readings within comfort band during occupied hours (08:00-22:00)"
     },
     "cost": {
-      "daily_net_chf": 3.53,
+      "daily_net_chf": 3.47,
       "cost_reduction_pct": 0.0,
       "measurement": "(grid_import \u00d7 purchase_rate - pv_export \u00d7 feedin_rate) / 100"
     },
     "success_criteria": [
-      "Self-sufficiency \u2265 33.7%",
+      "Self-sufficiency \u2265 34.0%",
       "COP \u2265 3.7",
       "Comfort compliance \u2265 95%",
       "No manual overrides required"
@@ -41,38 +41,38 @@
   "energy_optimized": {
     "strategy_name": "Energy-Optimized",
     "grid_per_hdd": {
-      "value": 1.15,
+      "value": 1.13,
       "unit": "kWh/HDD",
-      "baseline": 1.15,
+      "baseline": 1.13,
       "reduction_pct": 0.0,
       "measurement": "Sum of external_supply_kwh / Sum of HDD per block"
     },
     "self_sufficiency": {
-      "target": 36.7,
-      "range_min": 31.7,
-      "range_max": 41.7,
+      "target": 37.0,
+      "range_min": 32.0,
+      "range_max": 42.0,
       "unit": "percent",
       "measurement": "(1 - grid_import/total_consumption) \u00d7 100"
     },
     "cop": {
-      "target": 4.21,
-      "range_min": 3.91,
-      "range_max": 4.51,
+      "target": 4.2,
+      "range_min": 3.9,
+      "range_max": 4.5,
       "measurement": "produced_heating / consumed_heating (daily)"
     },
     "comfort_compliance": {
-      "target_pct": 84.5,
+      "target_pct": 83.1,
       "minimum_pct": 95.0,
       "measurement": "Percent of readings within comfort band during occupied hours (08:00-22:00)"
     },
     "cost": {
-      "daily_net_chf": 3.53,
+      "daily_net_chf": 3.47,
       "cost_reduction_pct": 0.0,
       "measurement": "(grid_import \u00d7 purchase_rate - pv_export \u00d7 feedin_rate) / 100"
     },
     "success_criteria": [
-      "Self-sufficiency \u2265 33.7%",
-      "COP \u2265 4.01",
+      "Self-sufficiency \u2265 34.0%",
+      "COP \u2265 4.0",
       "Comfort compliance \u2265 95%",
       "No manual overrides required"
     ]
@@ -80,38 +80,38 @@
   "cost_optimized": {
     "strategy_name": "Cost-Optimized",
     "grid_per_hdd": {
-      "value": 1.15,
+      "value": 1.13,
       "unit": "kWh/HDD",
-      "baseline": 1.15,
+      "baseline": 1.13,
       "reduction_pct": 0.0,
       "measurement": "Sum of external_supply_kwh / Sum of HDD per block"
     },
     "self_sufficiency": {
-      "target": 36.7,
-      "range_min": 31.7,
-      "range_max": 41.7,
+      "target": 37.0,
+      "range_min": 32.0,
+      "range_max": 42.0,
       "unit": "percent",
       "measurement": "(1 - grid_import/total_consumption) \u00d7 100"
     },
     "cop": {
-      "target": 4.26,
-      "range_min": 3.96,
-      "range_max": 4.56,
+      "target": 4.25,
+      "range_min": 3.95,
+      "range_max": 4.55,
       "measurement": "produced_heating / consumed_heating (daily)"
     },
     "comfort_compliance": {
-      "target_pct": 84.5,
+      "target_pct": 83.1,
       "minimum_pct": 95.0,
       "measurement": "Percent of readings within comfort band during occupied hours (08:00-22:00)"
     },
     "cost": {
-      "daily_net_chf": 3.53,
+      "daily_net_chf": 3.47,
       "cost_reduction_pct": 0.0,
       "measurement": "(grid_import \u00d7 purchase_rate - pv_export \u00d7 feedin_rate) / 100"
     },
     "success_criteria": [
-      "Self-sufficiency \u2265 33.7%",
-      "COP \u2265 4.06",
+      "Self-sufficiency \u2265 34.0%",
+      "COP \u2265 4.05",
       "Comfort compliance \u2265 95%",
       "No manual overrides required",
       "Cost reduction \u2265 -10.0% vs baseline"
