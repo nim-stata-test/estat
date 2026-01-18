@@ -534,8 +534,23 @@ def create_extended_decomposition(df, energy_df, heating_df, params, hc_params,
     heating_mask = (heating_df.index >= start_date) & (heating_df.index < end_date)
     heating_week = heating_df[heating_mask].copy()
 
-    # Compute model terms
-    terms = compute_model_terms(df_week, params, hc_params)
+    # Compute model terms on FULL dataset for proper LPF initialization, then extract week
+    terms_full = compute_model_terms(df, params, hc_params)
+
+    # Extract week portion from full terms
+    week_idx = df.index.get_indexer(df_week.index)
+    terms = {
+        't_out': terms_full['t_out'][week_idx],
+        'effort': terms_full['effort'][week_idx],
+        'pv': terms_full['pv'][week_idx],
+        'lpf_out': terms_full['lpf_out'][week_idx],
+        'lpf_eff': terms_full['lpf_eff'][week_idx],
+        'lpf_pv': terms_full['lpf_pv'][week_idx],
+        'contrib_out': terms_full['contrib_out'][week_idx],
+        'contrib_eff': terms_full['contrib_eff'][week_idx],
+        'contrib_pv': terms_full['contrib_pv'][week_idx],
+        't_pred': terms_full['t_pred'][week_idx],
+    }
 
     # Get actual room temperature
     t_actual = df_week['davis_inside_temperature'].values
