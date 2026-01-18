@@ -3,15 +3,15 @@
     "id": "strategy_01",
     "variables": {
       "setpoint_comfort": 22.0,
-      "setpoint_eco": 19.0,
+      "setpoint_eco": 18.900000000000002,
       "comfort_start": 12.0,
       "comfort_end": 16.0,
-      "curve_rise": 1.02
+      "curve_rise": 1.01
     },
     "objectives": {
-      "mean_temp": 19.662106485566444,
-      "grid_kwh": 2110.7996967331774,
-      "cost_chf": 609.974929494408
+      "mean_temp": 19.56064330206878,
+      "grid_kwh": 2285.3197265768968,
+      "cost_chf": 658.1341822996822
     },
     "is_pareto": true,
     "label": "Grid-Minimal"
@@ -20,15 +20,15 @@
     "id": "strategy_02",
     "variables": {
       "setpoint_comfort": 22.0,
-      "setpoint_eco": 18.900000000000002,
+      "setpoint_eco": 19.0,
       "comfort_start": 12.0,
       "comfort_end": 16.0,
-      "curve_rise": 1.06
+      "curve_rise": 1.04
     },
     "objectives": {
-      "mean_temp": 19.75795288556644,
-      "grid_kwh": 2140.546694294888,
-      "cost_chf": 618.7972306424639
+      "mean_temp": 19.668928102068783,
+      "grid_kwh": 2316.2697580066506,
+      "cost_chf": 667.1445048054196
     },
     "is_pareto": true,
     "label": "Balanced"
@@ -40,12 +40,12 @@
       "setpoint_eco": 19.0,
       "comfort_start": 12.0,
       "comfort_end": 16.0,
-      "curve_rise": 1.09
+      "curve_rise": 1.07
     },
     "objectives": {
-      "mean_temp": 19.866237685566436,
-      "grid_kwh": 2170.934285609807,
-      "cost_chf": 627.6211330758397
+      "mean_temp": 19.756412902068778,
+      "grid_kwh": 2343.511174619604,
+      "cost_chf": 675.1683672146288
     },
     "is_pareto": true,
     "label": "Balanced-2"
@@ -54,15 +54,15 @@
     "id": "strategy_04",
     "variables": {
       "setpoint_comfort": 22.0,
-      "setpoint_eco": 19.0,
+      "setpoint_eco": 18.900000000000002,
       "comfort_start": 12.0,
       "comfort_end": 16.0,
-      "curve_rise": 1.12
+      "curve_rise": 1.11
     },
     "objectives": {
-      "mean_temp": 19.95372248556644,
-      "grid_kwh": 2197.8773761112852,
-      "cost_chf": 635.531252161138
+      "mean_temp": 19.852259302068784,
+      "grid_kwh": 2376.2290327683313,
+      "cost_chf": 684.9133876343444
     },
     "is_pareto": true,
     "label": "Balanced-3"
@@ -74,14 +74,31 @@
       "setpoint_eco": 19.0,
       "comfort_start": 12.0,
       "comfort_end": 16.0,
-      "curve_rise": 1.19
+      "curve_rise": 1.1400000000000001
     },
     "objectives": {
-      "mean_temp": 20.157853685566444,
-      "grid_kwh": 2263.7198414956993,
-      "cost_chf": 654.8645644643152
+      "mean_temp": 19.960544102068784,
+      "grid_kwh": 2410.006109462694,
+      "cost_chf": 694.7471590938684
     },
     "is_pareto": true,
     "label": "Comfort-First"
+  },
+  {
+    "id": "strategy_06",
+    "variables": {
+      "setpoint_comfort": 22.0,
+      "setpoint_eco": 18.900000000000002,
+      "comfort_start": 12.0,
+      "comfort_end": 16.0,
+      "curve_rise": 1.18
+    },
+    "objectives": {
+      "mean_temp": 20.056390502068783,
+      "grid_kwh": 2445.046497212149,
+      "cost_chf": 705.1595167027825
+    },
+    "is_pareto": true,
+    "label": "Comfort-First-2"
   }
 ]

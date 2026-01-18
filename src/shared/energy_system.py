@@ -19,6 +19,16 @@ from typing import Dict, Tuple, Optional
 from pathlib import Path
 import json
 
+# Try to import numba for JIT compilation (optional, for performance)
+try:
+    from numba import njit
+    HAS_NUMBA = True
+except ImportError:
+    HAS_NUMBA = False
+    # Dummy decorator when numba not available
+    def njit(func):
+        return func
+
 
 # ============================================================================
 # Battery Parameters (estimated from historical data)
@@ -204,6 +214,88 @@ def predict_t_hk2_variable_setpoint(t_outdoor: np.ndarray,
 # Battery Model Functions
 # ============================================================================
 
+def _simulate_battery_core(pv: np.ndarray, cons: np.ndarray,
+                           max_charge: float, max_discharge: float,
+                           one_way_eff: float, min_soc: float, max_soc: float,
+                           initial_soc: float, can_discharge: np.ndarray
+                           ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Core battery simulation loop - optimized for speed.
+
+    This function contains only the essential loop logic with all parameters
+    pre-computed as scalars/arrays. When numba is available, it will be JIT compiled.
+
+    Returns:
+        Tuple of (soc, grid_import, grid_export, battery_flow)
+    """
+    n = len(pv)
+    soc = np.empty(n)
+    grid_import = np.empty(n)
+    grid_export = np.empty(n)
+    battery_flow = np.empty(n)
+
+    current_soc = initial_soc
+    max_discharge_output = max_discharge * one_way_eff
+
+    for i in range(n):
+        net_energy = pv[i] - cons[i]
+
+        if net_energy > 0:
+            # Excess PV: charge battery (up to max_soc)
+            charge_room = max_soc - current_soc
+            charge_possible = net_energy * one_way_eff
+            if charge_possible > max_charge:
+                charge_possible = max_charge
+            if charge_possible > charge_room:
+                charge_possible = charge_room
+
+            battery_flow[i] = charge_possible
+            excess = net_energy - charge_possible / one_way_eff
+            grid_export[i] = excess if excess > 0 else 0.0
+            grid_import[i] = 0.0
+            current_soc = current_soc + charge_possible
+        else:
+            # Deficit: discharge battery (if above min_soc AND allowed)
+            deficit = -net_energy
+            usable_energy = (current_soc - min_soc) * one_way_eff
+
+            if can_discharge[i] and usable_energy > 0:
+                discharge_output = deficit
+                if discharge_output > max_discharge_output:
+                    discharge_output = max_discharge_output
+                if discharge_output > usable_energy:
+                    discharge_output = usable_energy
+
+                soc_change = discharge_output / one_way_eff
+                battery_flow[i] = -soc_change
+                remaining = deficit - discharge_output
+                grid_import[i] = remaining if remaining > 0 else 0.0
+                current_soc = current_soc - soc_change
+            else:
+                # Cannot discharge: import all from grid
+                battery_flow[i] = 0.0
+                grid_import[i] = deficit
+
+            grid_export[i] = 0.0
+
+        # Store SoC (clamp to valid range)
+        if current_soc < min_soc:
+            current_soc = min_soc
+        elif current_soc > max_soc:
+            current_soc = max_soc
+        soc[i] = current_soc
+
+    return soc, grid_import, grid_export, battery_flow
+
+
+# Apply numba JIT if available (provides ~10-50x speedup)
+if HAS_NUMBA:
+    _simulate_battery_core = njit(_simulate_battery_core)
+
+
+# ============================================================================
+# ============================================================================
+
 def simulate_battery_soc(pv_generation: np.ndarray, consumption: np.ndarray,
                          dt_hours: float = 0.25,
                          battery_params: Dict = None,
@@ -260,75 +352,31 @@ def simulate_battery_soc(pv_generation: np.ndarray, consumption: np.ndarray,
     discharge_end = battery_params.get('discharge_end_hour', 22.0)
     allow_overnight = battery_params.get('allow_overnight_discharge', False)
 
-    pv = np.asarray(pv_generation)
-    cons = np.asarray(consumption)
+    pv = np.asarray(pv_generation, dtype=np.float64)
+    cons = np.asarray(consumption, dtype=np.float64)
     n = len(pv)
-
-    # Output arrays
-    soc = np.zeros(n)
-    grid_import = np.zeros(n)
-    grid_export = np.zeros(n)
-    battery_flow = np.zeros(n)
 
     # Initial state (clamp to valid range)
     initial_soc = np.clip(capacity * initial_soc_pct / 100, min_soc, max_soc)
-    current_soc = initial_soc
 
-    # Determine discharge permission per interval
+    # Determine discharge permission per interval (vectorized)
     if timestamps is not None:
         hours = timestamps.hour + timestamps.minute / 60
-        # Primary discharge window: discharge_start to discharge_end
-        in_discharge_window = (hours >= discharge_start) & (hours < discharge_end)
-        # Overnight (00:00-06:00) - allow if flag set
+        # Overnight (00:00-06:00) - block discharge unless flag set
         is_overnight = (hours >= 0) & (hours < 6)
-        # Allow discharge during window OR if overnight is allowed
-        can_discharge = in_discharge_window | (is_overnight & allow_overnight) | (~is_overnight & (hours >= 6) & (hours < discharge_start))
-        # Actually, simpler: only block overnight if flag is False
         if not allow_overnight:
             can_discharge = ~is_overnight
         else:
-            can_discharge = np.ones(n, dtype=bool)
+            can_discharge = np.ones(n, dtype=np.bool_)
     else:
         # No timestamps: allow discharge always (backward compatible)
-        can_discharge = np.ones(n, dtype=bool)
+        can_discharge = np.ones(n, dtype=np.bool_)
 
-    for i in range(n):
-        net_energy = pv[i] - cons[i]
-
-        if net_energy > 0:
-            # Excess PV: charge battery (up to max_soc)
-            charge_room = max_soc - current_soc
-            charge_possible = min(net_energy * one_way_eff, max_charge, charge_room)
-
-            battery_flow[i] = charge_possible  # Positive = charging
-            grid_export[i] = max(0, net_energy - charge_possible / one_way_eff)
-            grid_import[i] = 0
-
-            current_soc = current_soc + charge_possible
-        else:
-            # Deficit: discharge battery (if above min_soc AND allowed)
-            deficit = -net_energy
-            usable_energy = (current_soc - min_soc) * one_way_eff  # Energy available above min_soc
-
-            if can_discharge[i] and usable_energy > 0:
-                discharge_output = min(deficit, max_discharge * one_way_eff, usable_energy)
-                soc_change = discharge_output / one_way_eff
-
-                battery_flow[i] = -soc_change  # Negative = discharging
-                grid_import[i] = max(0, deficit - discharge_output)
-                current_soc = current_soc - soc_change
-            else:
-                # Cannot discharge: import all from grid
-                battery_flow[i] = 0
-                grid_import[i] = deficit
-
-            grid_export[i] = 0
-
-        # Store SoC (clamp to valid range)
-        soc[i] = np.clip(current_soc, min_soc, max_soc)
-        current_soc = soc[i]
-
-    return soc, grid_import, grid_export, battery_flow
+    # Call optimized core function (JIT-compiled if numba available)
+    return _simulate_battery_core(
+        pv, cons, max_charge, max_discharge, one_way_eff,
+        min_soc, max_soc, initial_soc, can_discharge
+    )
 
 
 # ============================================================================
