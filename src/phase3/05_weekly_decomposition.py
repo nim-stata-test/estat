@@ -276,6 +276,19 @@ def generate_html_report(all_stats, params, output_dir):
     # Build figure sections
     figure_sections = ""
     for stats in all_stats:
+        # Check if extended figure exists
+        extended_fig = f"week_{stats['week_num']:02d}_extended.png"
+        extended_exists = (output_dir / extended_fig).exists()
+
+        extended_section = ""
+        if extended_exists:
+            extended_section = f"""
+            <h4 style="margin-top: 20px; color: #555;">Extended Decomposition (with Energy/COP)</h4>
+            <figure>
+                <img src="{extended_fig}" alt="Week {stats['week_num']} extended decomposition">
+            </figure>
+            """
+
         figure_sections += f"""
         <div class="week-section">
             <h3>Week {stats['week_num']}: {stats['week_start'].strftime('%b %d')} - {(stats['week_end'] - pd.Timedelta(days=1)).strftime('%b %d, %Y')}</h3>
@@ -288,9 +301,11 @@ def generate_html_report(all_stats, params, output_dir):
                     <td><strong>Points:</strong> {stats['n_points']:,}</td>
                 </tr>
             </table>
+            <h4 style="color: #555;">Thermal Model Decomposition</h4>
             <figure>
                 <img src="{stats['fig_name']}" alt="Week {stats['week_num']} decomposition">
             </figure>
+            {extended_section}
         </div>
         """
 
@@ -384,13 +399,21 @@ def generate_html_report(all_stats, params, output_dir):
 
     <div class="summary-box">
         <h3 style="margin-top: 0; border: none; padding-left: 0;">Summary</h3>
-        <p>This report shows the thermal model decomposition for each week of available data.
-        Each figure breaks down the room temperature prediction into its component terms:</p>
+        <p>This report shows the thermal model decomposition for each week of available data.</p>
+
+        <p><strong>Thermal Model Decomposition (4 panels):</strong></p>
         <ul>
             <li><strong>Panel 1:</strong> Actual vs predicted room temperature</li>
             <li><strong>Panel 2:</strong> Outdoor temperature contribution (g<sub>out</sub> × LPF(T<sub>out</sub>))</li>
             <li><strong>Panel 3:</strong> Heating effort contribution (g<sub>eff</sub> × LPF(Effort))</li>
             <li><strong>Panel 4:</strong> Solar/PV contribution (g<sub>pv</sub> × LPF(PV))</li>
+        </ul>
+
+        <p><strong>Extended Decomposition (10 panels):</strong> Adds energy system analysis:</p>
+        <ul>
+            <li><strong>Panels 5-6:</strong> COP model (actual vs predicted, residuals)</li>
+            <li><strong>Panels 7-8:</strong> Energy flows (PV, grid, battery)</li>
+            <li><strong>Panels 9-10:</strong> Battery state and electricity costs</li>
         </ul>
     </div>
 

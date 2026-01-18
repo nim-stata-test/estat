@@ -80,17 +80,25 @@
 </head>
 <body>
     <h1>Weekly Model Decomposition Report</h1>
-    <p><em>Generated: 2026-01-18 10:22</em></p>
+    <p><em>Generated: 2026-01-18 10:50</em></p>
 
     <div class="summary-box">
         <h3 style="margin-top: 0; border: none; padding-left: 0;">Summary</h3>
-        <p>This report shows the thermal model decomposition for each week of available data.
-        Each figure breaks down the room temperature prediction into its component terms:</p>
+        <p>This report shows the thermal model decomposition for each week of available data.</p>
+
+        <p><strong>Thermal Model Decomposition (4 panels):</strong></p>
         <ul>
             <li><strong>Panel 1:</strong> Actual vs predicted room temperature</li>
             <li><strong>Panel 2:</strong> Outdoor temperature contribution (g<sub>out</sub> × LPF(T<sub>out</sub>))</li>
             <li><strong>Panel 3:</strong> Heating effort contribution (g<sub>eff</sub> × LPF(Effort))</li>
             <li><strong>Panel 4:</strong> Solar/PV contribution (g<sub>pv</sub> × LPF(PV))</li>
+        </ul>
+
+        <p><strong>Extended Decomposition (10 panels):</strong> Adds energy system analysis:</p>
+        <ul>
+            <li><strong>Panels 5-6:</strong> COP model (actual vs predicted, residuals)</li>
+            <li><strong>Panels 7-8:</strong> Energy flows (PV, grid, battery)</li>
+            <li><strong>Panels 9-10:</strong> Battery state and electricity costs</li>
         </ul>
     </div>
 
@@ -140,9 +148,16 @@
                     <td><strong>Points:</strong> 262</td>
                 </tr>
             </table>
+            <h4 style="color: #555;">Thermal Model Decomposition</h4>
             <figure>
                 <img src="week_01_20251027.png" alt="Week 1 decomposition">
             </figure>
+            
+            <h4 style="margin-top: 20px; color: #555;">Extended Decomposition (with Energy/COP)</h4>
+            <figure>
+                <img src="week_01_extended.png" alt="Week 1 extended decomposition">
+            </figure>
+            
         </div>
         
         <div class="week-section">
@@ -156,9 +171,16 @@
                     <td><strong>Points:</strong> 387</td>
                 </tr>
             </table>
+            <h4 style="color: #555;">Thermal Model Decomposition</h4>
             <figure>
                 <img src="week_02_20251103.png" alt="Week 2 decomposition">
             </figure>
+            
+            <h4 style="margin-top: 20px; color: #555;">Extended Decomposition (with Energy/COP)</h4>
+            <figure>
+                <img src="week_02_extended.png" alt="Week 2 extended decomposition">
+            </figure>
+            
         </div>
         
         <div class="week-section">
@@ -172,9 +194,16 @@
                     <td><strong>Points:</strong> 366</td>
                 </tr>
             </table>
+            <h4 style="color: #555;">Thermal Model Decomposition</h4>
             <figure>
                 <img src="week_03_20251110.png" alt="Week 3 decomposition">
             </figure>
+            
+            <h4 style="margin-top: 20px; color: #555;">Extended Decomposition (with Energy/COP)</h4>
+            <figure>
+                <img src="week_03_extended.png" alt="Week 3 extended decomposition">
+            </figure>
+            
         </div>
         
         <div class="week-section">
@@ -188,9 +217,16 @@
                     <td><strong>Points:</strong> 383</td>
                 </tr>
             </table>
+            <h4 style="color: #555;">Thermal Model Decomposition</h4>
             <figure>
                 <img src="week_04_20251117.png" alt="Week 4 decomposition">
             </figure>
+            
+            <h4 style="margin-top: 20px; color: #555;">Extended Decomposition (with Energy/COP)</h4>
+            <figure>
+                <img src="week_04_extended.png" alt="Week 4 extended decomposition">
+            </figure>
+            
         </div>
         
         <div class="week-section">
@@ -204,9 +240,16 @@
                     <td><strong>Points:</strong> 352</td>
                 </tr>
             </table>
+            <h4 style="color: #555;">Thermal Model Decomposition</h4>
             <figure>
                 <img src="week_05_20251124.png" alt="Week 5 decomposition">
             </figure>
+            
+            <h4 style="margin-top: 20px; color: #555;">Extended Decomposition (with Energy/COP)</h4>
+            <figure>
+                <img src="week_05_extended.png" alt="Week 5 extended decomposition">
+            </figure>
+            
         </div>
         
         <div class="week-section">
@@ -220,9 +263,16 @@
                     <td><strong>Points:</strong> 366</td>
                 </tr>
             </table>
+            <h4 style="color: #555;">Thermal Model Decomposition</h4>
             <figure>
                 <img src="week_06_20251201.png" alt="Week 6 decomposition">
             </figure>
+            
+            <h4 style="margin-top: 20px; color: #555;">Extended Decomposition (with Energy/COP)</h4>
+            <figure>
+                <img src="week_06_extended.png" alt="Week 6 extended decomposition">
+            </figure>
+            
         </div>
         
         <div class="week-section">
@@ -236,9 +286,16 @@
                     <td><strong>Points:</strong> 375</td>
                 </tr>
             </table>
+            <h4 style="color: #555;">Thermal Model Decomposition</h4>
             <figure>
                 <img src="week_07_20251208.png" alt="Week 7 decomposition">
             </figure>
+            
+            <h4 style="margin-top: 20px; color: #555;">Extended Decomposition (with Energy/COP)</h4>
+            <figure>
+                <img src="week_07_extended.png" alt="Week 7 extended decomposition">
+            </figure>
+            
         </div>
         
         <div class="week-section">
@@ -252,9 +309,16 @@
                     <td><strong>Points:</strong> 383</td>
                 </tr>
             </table>
+            <h4 style="color: #555;">Thermal Model Decomposition</h4>
             <figure>
                 <img src="week_08_20251215.png" alt="Week 8 decomposition">
             </figure>
+            
+            <h4 style="margin-top: 20px; color: #555;">Extended Decomposition (with Energy/COP)</h4>
+            <figure>
+                <img src="week_08_extended.png" alt="Week 8 extended decomposition">
+            </figure>
+            
         </div>
         
         <div class="week-section">
@@ -268,9 +332,16 @@
                     <td><strong>Points:</strong> 418</td>
                 </tr>
             </table>
+            <h4 style="color: #555;">Thermal Model Decomposition</h4>
             <figure>
                 <img src="week_09_20251222.png" alt="Week 9 decomposition">
             </figure>
+            
+            <h4 style="margin-top: 20px; color: #555;">Extended Decomposition (with Energy/COP)</h4>
+            <figure>
+                <img src="week_09_extended.png" alt="Week 9 extended decomposition">
+            </figure>
+            
         </div>
         
         <div class="week-section">
@@ -284,9 +355,16 @@
                     <td><strong>Points:</strong> 454</td>
                 </tr>
             </table>
+            <h4 style="color: #555;">Thermal Model Decomposition</h4>
             <figure>
                 <img src="week_10_20251229.png" alt="Week 10 decomposition">
             </figure>
+            
+            <h4 style="margin-top: 20px; color: #555;">Extended Decomposition (with Energy/COP)</h4>
+            <figure>
+                <img src="week_10_extended.png" alt="Week 10 extended decomposition">
+            </figure>
+            
         </div>
         
         <div class="week-section">
@@ -300,9 +378,16 @@
                     <td><strong>Points:</strong> 402</td>
                 </tr>
             </table>
+            <h4 style="color: #555;">Thermal Model Decomposition</h4>
             <figure>
                 <img src="week_11_20260105.png" alt="Week 11 decomposition">
             </figure>
+            
+            <h4 style="margin-top: 20px; color: #555;">Extended Decomposition (with Energy/COP)</h4>
+            <figure>
+                <img src="week_11_extended.png" alt="Week 11 extended decomposition">
+            </figure>
+            
         </div>
         
         <div class="week-section">
@@ -316,9 +401,11 @@
                     <td><strong>Points:</strong> 430</td>
                 </tr>
             </table>
+            <h4 style="color: #555;">Thermal Model Decomposition</h4>
             <figure>
                 <img src="week_12_20260112.png" alt="Week 12 decomposition">
             </figure>
+            
         </div>
         
 
