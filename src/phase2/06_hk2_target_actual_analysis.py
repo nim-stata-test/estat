@@ -15,7 +15,7 @@ Analysis components:
 4. Statistical analysis of deviations
 
 Output:
-- output/phase2/fig17_hk2_target_actual.png (4-panel visualization)
+- output/phase2/fig2.17_hk2_target_actual.png (4-panel visualization)
 - output/phase2/hk2_target_actual_stats.csv (statistics summary)
 - output/phase2/hk2_target_actual_report_section.html
 """
@@ -375,10 +375,10 @@ def create_visualization(df: pd.DataFrame, lag_model: dict, xcorr: dict,
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig17_hk2_target_actual.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.17_hk2_target_actual.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig17_hk2_target_actual.png")
+    print("  Saved: fig2.17_hk2_target_actual.png")
 
 
 def generate_report(deviation_stats: dict, lag_model: dict, xcorr: dict) -> str:
@@ -487,7 +487,7 @@ def generate_report(deviation_stats: dict, lag_model: dict, xcorr: dict) -> str:
     </ul>
 
     <figure>
-        <img src="fig17_hk2_target_actual.png" alt="HK2 Target vs Actual Analysis">
+        <img src="fig2.17_hk2_target_actual.png" alt="HK2 Target vs Actual Analysis">
         <figcaption><strong>Figure 17:</strong> HK2 target vs actual temperature analysis:
         time series (top-left), scatter correlation (top-right), deviation distribution (bottom-left),
         lag model fit (bottom-right).</figcaption>

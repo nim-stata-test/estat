@@ -4,7 +4,7 @@
 
 After running `python src/phase2/run_eda.py`, outputs are saved to `output/phase2/`:
 
-**Figures (fig01-fig16):**
+**Figures (fig2.01-fig2.16):**
 - Energy patterns (time series, monthly, hourly heatmaps, seasonal)
 - Heating system (COP analysis, temperature differentials, indoor/outdoor)
 - Solar-heating correlation (hourly patterns, battery usage, forced grid)
@@ -25,7 +25,7 @@ python src/phase2/03_heating_curve_analysis.py
 ```
 
 **Outputs:**
-- `output/phase2/fig12_heating_curve_schedule.png` - 4-panel visualization
+- `output/phase2/fig2.12_heating_curve_schedule.png` - 4-panel visualization
 - `output/phase2/heating_curve_schedules.csv` - Detected schedule regimes
 - `output/phase2/heating_curve_setpoints.csv` - Detected setpoint regimes
 - `output/phase2/heating_curve_params.json` - Model parameters for Phase 3/4 import
@@ -90,7 +90,7 @@ python src/phase2/05_weighted_temperature_analysis.py
 ```
 
 **Outputs:**
-- `output/phase2/fig13_weighted_temp_parameters.png` - 4-panel visualization
+- `output/phase2/fig2.13_weighted_temp_parameters.png` - 4-panel visualization
 - `output/phase2/weighted_temp_regimes.csv` - Parameter regime summary
 - `output/phase2/weighted_temp_sensitivity.csv` - Parameter effects
 - `output/phase2/weighted_temp_report_section.html` - HTML section for report

@@ -18,8 +18,8 @@ Focus sensors:
 - Status: evaporator_defrost, is_heating (filtering)
 
 Output:
-- output/phase2/fig_sensor_coverage.png
-- output/phase2/fig_sensor_correlations.png
+- output/phase2/fig2.18_sensor_coverage.png
+- output/phase2/fig2.19_sensor_correlations.png
 - output/phase2/sensor_exploration_rankings.csv
 - output/phase2/sensor_exploration_report.html
 """
@@ -407,9 +407,9 @@ def create_coverage_figure(coverage_df: pd.DataFrame) -> None:
              bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig_sensor_coverage.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.18_sensor_coverage.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig_sensor_coverage.png")
+    print("  Saved: fig2.18_sensor_coverage.png")
 
 
 def create_correlation_figure(rankings: pd.DataFrame,
@@ -525,9 +525,9 @@ def create_correlation_figure(rankings: pd.DataFrame,
     ax6.set_title('Focus Sensors: Correlation Summary')
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig_sensor_correlations.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.19_sensor_correlations.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig_sensor_correlations.png")
+    print("  Saved: fig2.19_sensor_correlations.png")
 
 
 def generate_report(coverage_df: pd.DataFrame,
@@ -679,12 +679,12 @@ def generate_report(coverage_df: pd.DataFrame,
     </div>
 
     <div class="figure">
-        <img src="fig_sensor_coverage.png" alt="Sensor Coverage Analysis">
+        <img src="fig2.18_sensor_coverage.png" alt="Sensor Coverage Analysis">
         <div class="figure-caption">Sensor coverage analysis: data availability by category, top sensors, focus sensors, and overall distribution.</div>
     </div>
 
     <div class="figure">
-        <img src="fig_sensor_correlations.png" alt="Sensor Correlation Analysis">
+        <img src="fig2.19_sensor_correlations.png" alt="Sensor Correlation Analysis">
         <div class="figure-caption">Correlation analysis: top correlations with room temperature (left), model residuals (center), and COP (right). Bottom row shows combined scores, pressure sensor dynamics, and focus sensor summary.</div>
     </div>
     """

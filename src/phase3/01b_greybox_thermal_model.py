@@ -561,9 +561,9 @@ def plot_greybox_results(stats: dict, validation: dict, split: dict,
                  fontsize=9, color='red', fontweight='bold')
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig18b_greybox_model.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig3.01b_greybox_model.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig18b_greybox_model.png")
+    print("  Saved: fig3.01b_greybox_model.png")
 
 
 def generate_report(stats: dict, validation: dict, diagnostics: dict) -> str:
@@ -729,7 +729,7 @@ def generate_report(stats: dict, validation: dict, diagnostics: dict) -> str:
     </ul>
 
     <figure>
-        <img src="fig18b_greybox_model.png" alt="Grey-Box Thermal Model Results">
+        <img src="fig3.01b_greybox_model.png" alt="Grey-Box Thermal Model Results">
         <figcaption><strong>Figure 18b:</strong> Grey-box thermal model: state trajectories (top-left),
         actual vs predicted scatter (top-right), residual distribution (bottom-left),
         model comparison (bottom-right).</figcaption>

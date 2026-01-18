@@ -309,7 +309,7 @@ def create_animation(frames, metadata, output_path):
     print(f"Animation saved: {output_path}")
 
     # Also save final frame as static image
-    static_path = output_path.with_name('fig27_pareto_evolution.png')
+    static_path = output_path.with_name('fig4.06_pareto_evolution.png')
     update(len(frames) - 1)  # Update to final frame
     fig.savefig(static_path, dpi=150, bbox_inches='tight')
     print(f"Static image saved: {static_path}")

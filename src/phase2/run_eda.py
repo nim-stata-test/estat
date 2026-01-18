@@ -309,26 +309,26 @@ def collect_figure_info() -> list[dict]:
     figures = []
 
     figure_descriptions = {
-        "fig01_daily_energy_timeseries.png": "Daily PV generation, consumption, grid interaction, and battery activity over time",
-        "fig02_monthly_energy_patterns.png": "Monthly aggregated energy patterns, grid balance, and self-sufficiency",
-        "fig03_hourly_heatmaps.png": "Average consumption, PV generation, and grid import by hour and day of week",
-        "fig04_seasonal_patterns.png": "Seasonal comparison of PV generation, consumption, and self-sufficiency",
-        "fig05_heat_pump_cop.png": "Heat pump COP analysis: time series, vs outdoor temperature, consumption patterns",
-        "fig06_temperature_differentials.png": "Flow/return temperatures, buffer tank, and heating circuits",
-        "fig07_indoor_outdoor_temp.png": "Outdoor vs indoor room temperatures with comfort bounds",
-        "fig08_solar_heating_hourly.png": "Hourly PV generation, heating activity, and grid import profiles",
-        "fig09_battery_evening_heating.png": "Battery charging/discharging patterns and evening energy sources",
-        "fig10_forced_grid_heating.png": "Periods of grid-dependent heating when no PV is available",
-        "fig11_summary_statistics.png": "Monthly breakdown, HDD analysis, consumption distribution, yearly totals",
-        "fig12_heating_curve_schedule.png": "Heating curve analysis: setpoint regimes, target vs outdoor temperature, model residuals",
-        "fig12a_heating_curve_censored.png": "Heating curve analysis (censored): excluding anomalous eco >= comfort periods",
-        "fig13_weighted_temp_parameters.png": "Weighted temperature analysis: parameter response with 48h washout exclusion",
-        "fig14_tariff_timeline.png": "Electricity tariff timeline: purchase and feed-in rates over time (2023-2025)",
-        "fig15_tariff_windows.png": "Tariff time windows: high/low tariff distribution by hour and day",
-        "fig16_tariff_costs.png": "Tariff cost implications: rate trends and comparison scenarios",
-        "fig17_hk2_target_actual.png": "HK2 target vs actual temperature: time series, scatter correlation, deviation distribution, lag model",
-        "fig_sensor_coverage.png": "Sensor coverage analysis: data availability by category and individual sensor",
-        "fig_sensor_correlations.png": "Sensor correlation analysis: correlations with room temperature, model residuals, and COP",
+        "fig2.01_daily_energy_timeseries.png": "Daily PV generation, consumption, grid interaction, and battery activity over time",
+        "fig2.02_monthly_energy_patterns.png": "Monthly aggregated energy patterns, grid balance, and self-sufficiency",
+        "fig2.03_hourly_heatmaps.png": "Average consumption, PV generation, and grid import by hour and day of week",
+        "fig2.04_seasonal_patterns.png": "Seasonal comparison of PV generation, consumption, and self-sufficiency",
+        "fig2.05_heat_pump_cop.png": "Heat pump COP analysis: time series, vs outdoor temperature, consumption patterns",
+        "fig2.06_temperature_differentials.png": "Flow/return temperatures, buffer tank, and heating circuits",
+        "fig2.07_indoor_outdoor_temp.png": "Outdoor vs indoor room temperatures with comfort bounds",
+        "fig2.08_solar_heating_hourly.png": "Hourly PV generation, heating activity, and grid import profiles",
+        "fig2.09_battery_evening_heating.png": "Battery charging/discharging patterns and evening energy sources",
+        "fig2.10_forced_grid_heating.png": "Periods of grid-dependent heating when no PV is available",
+        "fig2.11_summary_statistics.png": "Monthly breakdown, HDD analysis, consumption distribution, yearly totals",
+        "fig2.12_heating_curve_schedule.png": "Heating curve analysis: setpoint regimes, target vs outdoor temperature, model residuals",
+        "fig2.12a_heating_curve_censored.png": "Heating curve analysis (censored): excluding anomalous eco >= comfort periods",
+        "fig2.13_weighted_temp_parameters.png": "Weighted temperature analysis: parameter response with 48h washout exclusion",
+        "fig2.14_tariff_timeline.png": "Electricity tariff timeline: purchase and feed-in rates over time (2023-2025)",
+        "fig2.15_tariff_windows.png": "Tariff time windows: high/low tariff distribution by hour and day",
+        "fig2.16_tariff_costs.png": "Tariff cost implications: rate trends and comparison scenarios",
+        "fig2.17_hk2_target_actual.png": "HK2 target vs actual temperature: time series, scatter correlation, deviation distribution, lag model",
+        "fig2.18_sensor_coverage.png": "Sensor coverage analysis: data availability by category and individual sensor",
+        "fig2.19_sensor_correlations.png": "Sensor correlation analysis: correlations with room temperature, model residuals, and COP",
     }
 
     for fig_file, description in figure_descriptions.items():
@@ -818,11 +818,11 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
 
         <h2 id="energy">4. Energy Patterns</h2>
 
-        {figures_html.split('fig05')[0] if 'fig05' in figures_html else figures_html[:len(figures_html)//3]}
+        {figures_html.split('fig2.05')[0] if 'fig2.05' in figures_html else figures_html[:len(figures_html)//3]}
 
         <h2 id="heating">5. Heating System</h2>
 
-        {''.join([f for f in figures_html.split('</div>') if 'fig05' in f or 'fig06' in f or 'fig07' in f])}
+        {''.join([f for f in figures_html.split('</div>') if 'fig2.05' in f or 'fig2.06' in f or 'fig2.07' in f])}
 
         {generate_cop_model_section(cop_models or {})}
 
@@ -836,11 +836,11 @@ def generate_html_report(figures: list[dict], stats: dict, eda_log: str,
             </table>
         </div>
 
-        {''.join([f for f in figures_html.split('</div>') if 'fig08' in f or 'fig09' in f or 'fig10' in f])}
+        {''.join([f for f in figures_html.split('</div>') if 'fig2.08' in f or 'fig2.09' in f or 'fig2.10' in f])}
 
         <h2 id="summary">7. Summary Statistics</h2>
 
-        {''.join([f for f in figures_html.split('</div>') if 'fig11' in f])}
+        {''.join([f for f in figures_html.split('</div>') if 'fig2.11' in f])}
 
         {load_heating_curve_section()}
 

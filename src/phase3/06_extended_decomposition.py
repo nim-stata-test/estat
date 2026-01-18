@@ -13,7 +13,7 @@ Creates comprehensive decomposition figures showing:
 8. Grid import
 9. Heat pump COP
 
-This replaces fig18c and is placed after fig21.
+This replaces fig3.01c and is placed after fig3.04.
 """
 
 import pandas as pd
@@ -820,7 +820,7 @@ def main():
     end_date = overlap_end
     start_date = end_date - pd.Timedelta(days=7)
 
-    output_path = OUTPUT_DIR / 'fig22_extended_decomposition.png'
+    output_path = OUTPUT_DIR / 'fig3.05_extended_decomposition.png'
     success = create_extended_decomposition(
         integrated, energy, heating, params, hc_params,
         start_date, end_date, output_path,
@@ -865,7 +865,7 @@ def main():
     print("EXTENDED DECOMPOSITION COMPLETE")
     print("=" * 60)
     print(f"\nOutputs:")
-    print(f"  - {OUTPUT_DIR / 'fig22_extended_decomposition.png'}")
+    print(f"  - {OUTPUT_DIR / 'fig3.05_extended_decomposition.png'}")
     print(f"  - {WEEKLY_DIR / 'week_XX_extended.png'} (multiple)")
 
 

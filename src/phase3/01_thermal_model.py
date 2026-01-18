@@ -213,9 +213,9 @@ def plot_lpf_visualization(output_dir: Path) -> None:
              bbox=dict(boxstyle='round', facecolor='#f8f9fa', edgecolor='#dee2e6'))
 
     plt.tight_layout()
-    plt.savefig(output_dir / 'fig18a_lpf_visualization.png', dpi=150, bbox_inches='tight')
+    plt.savefig(output_dir / 'fig3.01a_lpf_visualization.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig18a_lpf_visualization.png")
+    print("  Saved: fig3.01a_lpf_visualization.png")
 
 
 def select_representative_week(df: pd.DataFrame, room_col: str) -> tuple:
@@ -395,9 +395,9 @@ def plot_model_decomposition(result: dict, df: pd.DataFrame, effort: pd.Series,
                  fontsize=12, y=1.01)
 
     plt.tight_layout()
-    plt.savefig(output_dir / 'fig18c_model_decomposition.png', dpi=150, bbox_inches='tight')
+    plt.savefig(output_dir / 'fig3.01c_model_decomposition.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig18c_model_decomposition.png")
+    print("  Saved: fig3.01c_model_decomposition.png")
 
 
 def load_data() -> pd.DataFrame:
@@ -770,9 +770,9 @@ def plot_thermal_analysis(results: list, heating_curve: dict, df: pd.DataFrame) 
                  bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig18_thermal_model.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig3.01_thermal_model.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig18_thermal_model.png")
+    print("  Saved: fig3.01_thermal_model.png")
 
     # Figure 18b: Time series for all rooms (only if multiple sensors)
     if n_sensors >= 2:
@@ -803,9 +803,9 @@ def plot_thermal_analysis(results: list, heating_curve: dict, df: pd.DataFrame) 
 
         plt.suptitle('Room Temperature Models: Actual vs Predicted (Last 2 Weeks)', fontsize=14, y=1.02)
         plt.tight_layout()
-        plt.savefig(OUTPUT_DIR / 'fig18b_room_timeseries.png', dpi=150, bbox_inches='tight')
+        plt.savefig(OUTPUT_DIR / 'fig3.01d_room_timeseries.png', dpi=150, bbox_inches='tight')
         plt.close()
-        print("  Saved: fig18b_room_timeseries.png")
+        print("  Saved: fig3.01d_room_timeseries.png")
 
 
 def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> str:
@@ -911,7 +911,7 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
     </table>
 
     <figure>
-        <img src="fig18a_lpf_visualization.png" alt="Low-Pass Filter Visualization">
+        <img src="fig3.01a_lpf_visualization.png" alt="Low-Pass Filter Visualization">
         <figcaption><strong>Figure 18a:</strong> Low-pass filter behavior: step response (left),
         impulse response/decay (middle), and filter equations (right).</figcaption>
     </figure>
@@ -996,7 +996,7 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
     </ul>
 
     <figure>
-        <img src="fig18_thermal_model.png" alt="Thermal Model Analysis">
+        <img src="fig3.01_thermal_model.png" alt="Thermal Model Analysis">
         <figcaption><strong>Figure 18:</strong> Thermal model: heating curve (left),
         actual vs predicted scatter (middle), time series validation (right).</figcaption>
     </figure>
@@ -1007,7 +1007,7 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
     and its contribution to the room temperature prediction (orange, right axis):</p>
 
     <figure>
-        <img src="fig18c_model_decomposition.png" alt="Model Term Decomposition">
+        <img src="fig3.01c_model_decomposition.png" alt="Model Term Decomposition">
         <figcaption><strong>Figure 18c:</strong> Model term decomposition for a representative week.
         Panel 1: Actual vs predicted room temperature. Panel 2: Outdoor temperature contribution.
         Panel 3: Heating effort contribution. Panel 4: Solar/PV contribution.</figcaption>
@@ -1015,11 +1015,11 @@ def generate_report(results: list, heating_curve: dict, weighted_r2: float) -> s
     </section>
     """
 
-    # Add fig18b only if multiple sensors
+    # Add fig3.01d only if multiple sensors
     if len(results) >= 2:
         html = html.replace('<h3>Model Term Decomposition</h3>', f"""
     <figure>
-        <img src="fig18b_room_timeseries.png" alt="Room Temperature Time Series">
+        <img src="fig3.01d_room_timeseries.png" alt="Room Temperature Time Series">
         <figcaption><strong>Figure 18b:</strong> Actual vs predicted temperature for all rooms
         in the weighted temperature objective (last 2 weeks).</figcaption>
     </figure>

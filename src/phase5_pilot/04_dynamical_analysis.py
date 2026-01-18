@@ -25,8 +25,8 @@ Outputs:
     output/phase5_pilot/dynamical_model_params.json
     output/phase5_pilot/step_response_analysis.csv
     output/phase5_pilot/model_validation.csv
-    output/phase5_pilot/fig_dynamical_model.png
-    output/phase5_pilot/fig_step_responses.png
+    output/phase5_pilot/fig5p.01_dynamical_model.png
+    output/phase5_pilot/fig5p.02_step_responses.png
     output/phase5_pilot/dynamical_analysis_report.html
 """
 
@@ -960,7 +960,7 @@ T_room[k+1] = T_room[k] + (dt/tau_room) * [r_heat*(T_buffer[k] - T_room[k]) - (T
     </div>
 
     <figure>
-        <img src="fig_dynamical_model.png" alt="Dynamical Model Results" style="max-width: 100%;">
+        <img src="fig5p.01_dynamical_model.png" alt="Dynamical Model Results" style="max-width: 100%;">
         <figcaption>Grey-box model fit to continuous pilot data.</figcaption>
     </figure>
 
@@ -1025,7 +1025,7 @@ T_room[k+1] = T_room[k] + (dt/tau_room) * [r_heat*(T_buffer[k] - T_room[k]) - (T
     </div>
 
     <figure>
-        <img src="fig_step_responses.png" alt="Step Response Analysis" style="max-width: 100%;">
+        <img src="fig5p.02_step_responses.png" alt="Step Response Analysis" style="max-width: 100%;">
         <figcaption>Step response characteristics at parameter transitions.</figcaption>
     </figure>
 '''
@@ -1243,10 +1243,10 @@ def main():
     # Create visualizations
     plot_dynamical_model(
         x_obs, stats['x_pred'], u_inputs, timestamps, regime_changes, stats,
-        OUTPUT_DIR / 'fig_dynamical_model.png'
+        OUTPUT_DIR / 'fig5p.01_dynamical_model.png'
     )
 
-    plot_step_responses(step_df, OUTPUT_DIR / 'fig_step_responses.png')
+    plot_step_responses(step_df, OUTPUT_DIR / 'fig5p.02_step_responses.png')
 
     # Save results
     save_results(stats, step_df, validation, effects)

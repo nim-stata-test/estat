@@ -11,9 +11,9 @@ NOW INCLUDES PROPER ENERGY SIMULATION:
 - Shows meaningful energy differences between strategies
 
 Outputs:
-- fig29_strategy_detailed_timeseries.png
-- fig30_strategy_hourly_patterns.png
-- fig31_strategy_energy_patterns.png
+- fig4.08_strategy_detailed_timeseries.png
+- fig4.09_strategy_hourly_patterns.png
+- fig4.10_strategy_energy_patterns.png
 - strategy_detailed_stats.csv
 - strategy_detailed_report.html
 """
@@ -448,11 +448,11 @@ def plot_detailed_timeseries(df: pd.DataFrame, strategies: list, energy_results:
     ax4.xaxis.set_major_formatter(mdates.DateFormatter('%b %d'))
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig29_strategy_detailed_timeseries.png',
+    plt.savefig(OUTPUT_DIR / 'fig4.08_strategy_detailed_timeseries.png',
                 dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig29_strategy_detailed_timeseries.png")
+    print("  Saved: fig4.08_strategy_detailed_timeseries.png")
 
 
 def plot_hourly_patterns(df: pd.DataFrame, strategies: list, energy_results: dict):
@@ -590,11 +590,11 @@ def plot_hourly_patterns(df: pd.DataFrame, strategies: list, energy_results: dic
         ax6.set_yticklabels([str(grid_heatmap_gm.index[i])[:10] for i in range(0, n_dates, step)], fontsize=8)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig30_strategy_hourly_patterns.png',
+    plt.savefig(OUTPUT_DIR / 'fig4.09_strategy_hourly_patterns.png',
                 dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig30_strategy_hourly_patterns.png")
+    print("  Saved: fig4.09_strategy_hourly_patterns.png")
 
 
 def plot_energy_patterns(df: pd.DataFrame, strategies: list, energy_results: dict, stats_df: pd.DataFrame):
@@ -738,11 +738,11 @@ def plot_energy_patterns(df: pd.DataFrame, strategies: list, energy_results: dic
                  fontsize=12, fontweight='bold', y=0.95)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig31_strategy_energy_patterns.png',
+    plt.savefig(OUTPUT_DIR / 'fig4.10_strategy_energy_patterns.png',
                 dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig31_strategy_energy_patterns.png")
+    print("  Saved: fig4.10_strategy_energy_patterns.png")
 
 
 def generate_report(df: pd.DataFrame, strategies: list, stats_df: pd.DataFrame) -> str:
@@ -854,21 +854,21 @@ def generate_report(df: pd.DataFrame, strategies: list, stats_df: pd.DataFrame) 
     <h3>Visualizations</h3>
 
     <figure>
-        <img src="fig29_strategy_detailed_timeseries.png" alt="Strategy Time Series">
+        <img src="fig4.08_strategy_detailed_timeseries.png" alt="Strategy Time Series">
         <figcaption><strong>Figure 31:</strong> Time series showing (A) simulated temperature by strategy,
         (B) outdoor temperature and PV generation, (C) simulated hourly grid import by strategy,
         (D) daily grid import comparison.</figcaption>
     </figure>
 
     <figure>
-        <img src="fig30_strategy_hourly_patterns.png" alt="Hourly Patterns">
+        <img src="fig4.09_strategy_hourly_patterns.png" alt="Hourly Patterns">
         <figcaption><strong>Figure 31:</strong> Hourly patterns showing (A) temperature profiles,
         (B) grid import profiles, (C) COP profiles, (D) PV vs demand,
         (E-F) grid import heatmaps for Baseline and Grid-Minimal strategies.</figcaption>
     </figure>
 
     <figure>
-        <img src="fig31_strategy_energy_patterns.png" alt="Energy Patterns">
+        <img src="fig4.10_strategy_energy_patterns.png" alt="Energy Patterns">
         <figcaption><strong>Figure 31:</strong> Energy analysis showing (A) total energy comparison,
         (B) grid savings vs baseline, (C) average COP, (D) daily grid distribution,
         (E) temperature box plots, (F) summary table.</figcaption>

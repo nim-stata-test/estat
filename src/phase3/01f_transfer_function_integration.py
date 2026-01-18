@@ -322,9 +322,9 @@ def create_comparison_figure(df: pd.DataFrame):
     ax4.set_title('Summary')
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig_transfer_function_integration.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig3.08_transfer_function_integration.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig_transfer_function_integration.png")
+    print("  Saved: fig3.08_transfer_function_integration.png")
 
 
 def generate_report():
@@ -460,7 +460,7 @@ for each timestep:
 <p>This ensures the optimization respects the physical constraints of the system.</p>
 
 <figure>
-<img src="fig_transfer_function_integration.png" alt="Coefficient comparison" style="max-width:100%">
+<img src="fig3.08_transfer_function_integration.png" alt="Coefficient comparison" style="max-width:100%">
 <figcaption>Figure: Comparison of Phase 2 regression vs Phase 3 transfer function coefficients</figcaption>
 </figure>
 

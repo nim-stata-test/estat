@@ -273,7 +273,7 @@ The grey-box model is used for **forward simulation** in Phase 4 optimization:
 
 ### Visual Comparison
 
-See `output/phase3/fig18b_greybox_model.png` for side-by-side visualization including:
+See `output/phase3/fig3.01b_greybox_model.png` for side-by-side visualization including:
 - State trajectories (T_buffer, T_room)
 - Prediction residuals
 - Model comparison panel

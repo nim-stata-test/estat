@@ -2,7 +2,7 @@
 """
 Phase 3: Weekly Model Decomposition Report
 
-Generates a figure like fig18c for every week of available data,
+Generates a figure like fig3.01c for every week of available data,
 compiled into a single HTML report for model exploration.
 
 Usage:

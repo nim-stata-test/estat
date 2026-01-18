@@ -697,8 +697,8 @@ T_room[k+1] = T_room[k] + (dt/τ_room) × [r_heat×(T_buffer[k] - T_room[k]) - (
 **Key outputs:**
 - `dynamical_model_params.json` - Fitted grey-box parameters
 - `step_response_analysis.csv` - Metrics at each parameter transition
-- `fig_dynamical_model.png` - Model fit visualization
-- `fig_step_responses.png` - Step response characteristics
+- `fig5.01_dynamical_model.png` - Model fit visualization
+- `fig5.02_step_responses.png` - Step response characteristics
 
 #### E.6.2 RSM Analysis (Comparison)
 

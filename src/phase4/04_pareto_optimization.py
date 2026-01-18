@@ -1126,10 +1126,10 @@ def plot_pareto_front(solutions: list, selected: list = None):
     fig.suptitle('Pareto Front: Multi-Objective Heating Optimization\n'
                  '(Maximize Comfort, Minimize Grid Import, Minimize Cost)', fontsize=13, fontweight='bold')
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig25_pareto_front.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig4.04_pareto_front.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig25_pareto_front.png")
+    print("  Saved: fig4.04_pareto_front.png")
 
 
 def plot_strategy_comparison(selected: list):
@@ -1174,10 +1174,10 @@ def plot_strategy_comparison(selected: list):
     ax.set_title('Strategy Parameter Comparison (Normalized)', fontsize=12)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig26_pareto_strategy_comparison.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig4.05_pareto_strategy_comparison.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig26_pareto_strategy_comparison.png")
+    print("  Saved: fig4.05_pareto_strategy_comparison.png")
 
 
 def generate_report(solutions: list, selected: list, metadata: dict) -> str:
@@ -1278,13 +1278,13 @@ T_room[k+1] = T_room[k] + (dt/τ_room) × [r_heat×(T_buf[k] - T_room[k]) - (T_r
 
     <h3>Pareto Front Visualization</h3>
     <figure>
-        <img src="fig25_pareto_front.png" alt="Pareto Front">
+        <img src="fig4.04_pareto_front.png" alt="Pareto Front">
         <figcaption><strong>Figure 26:</strong> Pareto front showing trade-offs between objectives.
         Blue points are the 10 selected strategies.</figcaption>
     </figure>
 
     <figure>
-        <img src="fig26_pareto_strategy_comparison.png" alt="Strategy Comparison">
+        <img src="fig4.05_pareto_strategy_comparison.png" alt="Strategy Comparison">
         <figcaption><strong>Figure 26:</strong> Radar chart comparing parameter values across selected strategies.</figcaption>
     </figure>
     </section>

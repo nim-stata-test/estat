@@ -445,10 +445,10 @@ def create_heat_pump_plots(daily: pd.DataFrame, heating: pd.DataFrame,
             ax4.legend()
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig19_heat_pump_model.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig3.02_heat_pump_model.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig19_heat_pump_model.png")
+    print("  Saved: fig3.02_heat_pump_model.png")
 
 
 def generate_report(daily: pd.DataFrame, cop_results: dict,
@@ -551,7 +551,7 @@ def generate_report(daily: pd.DataFrame, cop_results: dict,
     </ul>
 
     <figure>
-        <img src="fig19_heat_pump_model.png" alt="Heat Pump Model Analysis">
+        <img src="fig3.02_heat_pump_model.png" alt="Heat Pump Model Analysis">
         <figcaption><strong>Figure 19:</strong> Heat pump analysis: COP vs outdoor temperature (top-left),
         COP vs T_HK2 (top-right), 3D COP surface with regression plane (bottom-left),
         daily energy with outdoor temperature overlay (bottom-right).</figcaption>

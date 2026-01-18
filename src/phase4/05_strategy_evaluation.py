@@ -6,7 +6,7 @@ Evaluates selected Pareto strategies for comfort violations and predicts
 temperature profiles for winter 2026/2027.
 
 Outputs:
-- fig28_strategy_temperature_predictions.png
+- fig4.07_strategy_temperature_predictions.png
 - strategy_violation_analysis.csv
 - strategy_evaluation_report.html
 """
@@ -489,11 +489,11 @@ def plot_strategy_predictions(predictions: pd.DataFrame, strategies: list, evalu
     ax6.set_title('Strategy Evaluation Summary', fontsize=12, fontweight='bold', y=0.95)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig28_strategy_temperature_predictions.png',
+    plt.savefig(OUTPUT_DIR / 'fig4.07_strategy_temperature_predictions.png',
                 dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig28_strategy_temperature_predictions.png")
+    print("  Saved: fig4.07_strategy_temperature_predictions.png")
 
 
 def generate_report(strategies: list, evaluations: dict) -> str:
@@ -599,7 +599,7 @@ def generate_report(strategies: list, evaluations: dict) -> str:
 
     <h3>Winter 2026/2027 Temperature Predictions</h3>
     <figure>
-        <img src="fig28_strategy_temperature_predictions.png" alt="Strategy Temperature Predictions">
+        <img src="fig4.07_strategy_temperature_predictions.png" alt="Strategy Temperature Predictions">
         <figcaption><strong>Figure 28:</strong> Predicted weighted indoor temperatures for each strategy
         over winter 2026/2027. Red dashed line indicates the comfort threshold. Strategies with
         violation percentages exceeding the constraint limit are highlighted.</figcaption>

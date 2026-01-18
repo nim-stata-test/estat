@@ -17,7 +17,7 @@ Key features:
 - Generates visualizations and documentation
 
 Output:
-- output/phase2/fig13_weighted_temp_parameters.png (4-panel visualization)
+- output/phase2/fig2.13_weighted_temp_parameters.png (4-panel visualization)
 - output/phase2/weighted_temp_regimes.csv (regime summary)
 - output/phase2/weighted_temp_sensitivity.csv (parameter effects)
 - output/phase2/weighted_temp_report_section.html
@@ -889,9 +889,9 @@ def create_visualization(df: pd.DataFrame, regimes: pd.DataFrame,
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig13_weighted_temp_parameters.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.13_weighted_temp_parameters.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print(f"  Saved: fig13_weighted_temp_parameters.png")
+    print(f"  Saved: fig2.13_weighted_temp_parameters.png")
 
 
 def generate_report_section(regime_stats: pd.DataFrame, sensitivity: dict, df: pd.DataFrame,
@@ -1103,7 +1103,7 @@ def generate_report_section(regime_stats: pd.DataFrame, sensitivity: dict, df: p
 
     html += """
         <div class="figure">
-            <img src="fig13_weighted_temp_parameters.png" alt="Weighted temperature parameter analysis">
+            <img src="fig2.13_weighted_temp_parameters.png" alt="Weighted temperature parameter analysis">
             <div class="figure-caption">Fig 13: Weighted indoor temperature analysis (6 panels).
             <strong>Top row:</strong> Full time series with washout periods and regime changes (left),
             multivariate model coefficients with 95% CI (right).

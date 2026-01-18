@@ -763,9 +763,9 @@ def plot_results(stats: dict, x_obs: np.ndarray, u_inputs: np.ndarray,
     ax6.grid(True, alpha=0.3, axis='y')
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig18c_stable_greybox_model.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig3.01d_stable_greybox_model.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig18c_stable_greybox_model.png")
+    print("  Saved: fig3.01d_stable_greybox_model.png")
 
 
 def generate_report(stats: dict) -> str:
@@ -842,7 +842,7 @@ def generate_report(stats: dict) -> str:
     </ul>
 
     <figure>
-        <img src="fig18c_stable_greybox_model.png" alt="Stable Grey-Box Model Results">
+        <img src="fig3.01d_stable_greybox_model.png" alt="Stable Grey-Box Model Results">
         <figcaption><strong>Figure 18c:</strong> Stability-constrained grey-box model with eigenvalue
         constraints. Top: forward simulation and Kalman filter vs actual. Bottom: residuals,
         eigenvalue plot, and model comparison.</figcaption>

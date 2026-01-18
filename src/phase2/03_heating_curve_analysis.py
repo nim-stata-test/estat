@@ -14,7 +14,7 @@ Key features:
 - Generates visualizations and documentation
 
 Output:
-- output/phase2/fig12_heating_curve_schedule.png (4-panel visualization)
+- output/phase2/fig2.12_heating_curve_schedule.png (4-panel visualization)
 - output/phase2/heating_curve_analysis.csv (schedule regimes)
 """
 
@@ -630,9 +630,9 @@ def create_visualization(transitions: pd.DataFrame,
             bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig12_heating_curve_schedule.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.12_heating_curve_schedule.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print(f"  Saved: fig12_heating_curve_schedule.png")
+    print(f"  Saved: fig2.12_heating_curve_schedule.png")
 
     # Create censored version (excluding anomalous eco >= comfort periods)
     create_censored_visualization(df, model_results, regimes_df)
@@ -772,9 +772,9 @@ def create_censored_visualization(df: pd.DataFrame, model_results: dict, regimes
             bbox=dict(boxstyle='round', facecolor='lightgreen', alpha=0.5))
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig12a_heating_curve_censored.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.12a_heating_curve_censored.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print(f"  Saved: fig12a_heating_curve_censored.png")
+    print(f"  Saved: fig2.12a_heating_curve_censored.png")
 
 
 def generate_report_section(regimes_df: pd.DataFrame, model_results: dict,
@@ -873,13 +873,13 @@ def generate_report_section(regimes_df: pd.DataFrame, model_results: dict,
         </div>
 
         <div class="figure">
-            <img src="fig12_heating_curve_schedule.png" alt="Heating curve analysis with schedule detection">
+            <img src="fig2.12_heating_curve_schedule.png" alt="Heating curve analysis with schedule detection">
             <div class="figure-caption">Fig 12: Heating curve analysis (all data): setpoint regimes (top-left), target vs outdoor temperature colored by setpoint (top-right),
             model residuals by hour (bottom-left), and model summary (bottom-right)</div>
         </div>
 
         <div class="figure">
-            <img src="fig12a_heating_curve_censored.png" alt="Heating curve analysis excluding anomalous periods">
+            <img src="fig2.12a_heating_curve_censored.png" alt="Heating curve analysis excluding anomalous periods">
             <div class="figure-caption">Fig 12a: Heating curve analysis (censored): excluding anomalous periods where eco >= comfort.
             Shows residual distribution (top-left), target vs outdoor (top-right), predicted vs actual (bottom-left), and summary stats (bottom-right).
             R² = {normal_r_squared:.4f}, RMSE = {normal_rmse:.2f}°C for normal operation.</div>

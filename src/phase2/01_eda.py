@@ -176,9 +176,9 @@ def analyze_energy_patterns(data):
 
     plt.xlabel('Date')
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig01_daily_energy_timeseries.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.01_daily_energy_timeseries.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig01_daily_energy_timeseries.png")
+    print("  Saved: fig2.01_daily_energy_timeseries.png")
 
     # --- Figure 2: Monthly Aggregated Patterns ---
     monthly = energy.groupby(['year', 'month']).agg({
@@ -246,9 +246,9 @@ def analyze_energy_patterns(data):
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig02_monthly_energy_patterns.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.02_monthly_energy_patterns.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig02_monthly_energy_patterns.png")
+    print("  Saved: fig2.02_monthly_energy_patterns.png")
 
     # --- Figure 3: Hourly Heatmap (using 15-min data) ---
     energy_15min = data['energy_15min'].copy()
@@ -299,9 +299,9 @@ def analyze_energy_patterns(data):
     plt.colorbar(im, ax=axes[2])
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig03_hourly_heatmaps.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.03_hourly_heatmaps.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig03_hourly_heatmaps.png")
+    print("  Saved: fig2.03_hourly_heatmaps.png")
 
     # --- Figure 4: Seasonal Patterns ---
     seasonal = energy.groupby('season').agg({
@@ -352,9 +352,9 @@ def analyze_energy_patterns(data):
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig04_seasonal_patterns.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.04_seasonal_patterns.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig04_seasonal_patterns.png")
+    print("  Saved: fig2.04_seasonal_patterns.png")
 
     # Print summary statistics
     print("\n  Summary Statistics:")
@@ -696,9 +696,9 @@ def analyze_heating_system(data):
         ax.set_title('COP Model Comparison\n(green = best R²)', fontsize=10, pad=10)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig05_heat_pump_cop.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.05_heat_pump_cop.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig05_heat_pump_cop.png")
+    print("  Saved: fig2.05_heat_pump_cop.png")
 
     # Print COP model comparison
     if cop_models:
@@ -772,9 +772,9 @@ def analyze_heating_system(data):
         ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig06_temperature_differentials.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.06_temperature_differentials.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig06_temperature_differentials.png")
+    print("  Saved: fig2.06_temperature_differentials.png")
 
     # --- Figure 7: Outdoor vs Indoor Temperature ---
     fig, axes = plt.subplots(2, 1, figsize=(14, 10))
@@ -830,9 +830,9 @@ def analyze_heating_system(data):
         ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig07_indoor_outdoor_temp.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.07_indoor_outdoor_temp.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig07_indoor_outdoor_temp.png")
+    print("  Saved: fig2.07_indoor_outdoor_temp.png")
 
     # Print summary statistics
     if not daily_heating.empty and 'cop' in daily_heating.columns:
@@ -960,9 +960,9 @@ def analyze_solar_heating_correlation(data):
         ax.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig08_solar_heating_hourly.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.08_solar_heating_hourly.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig08_solar_heating_hourly.png")
+    print("  Saved: fig2.08_solar_heating_hourly.png")
 
     # --- Figure 9: Battery Utilization for Evening/Night Heating ---
     fig, axes = plt.subplots(2, 1, figsize=(14, 8))
@@ -1009,9 +1009,9 @@ def analyze_solar_heating_correlation(data):
         ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig09_battery_evening_heating.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.09_battery_evening_heating.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig09_battery_evening_heating.png")
+    print("  Saved: fig2.09_battery_evening_heating.png")
 
     # --- Figure 10: Forced Grid Consumption Analysis ---
     fig, axes = plt.subplots(2, 1, figsize=(14, 8))
@@ -1053,9 +1053,9 @@ def analyze_solar_heating_correlation(data):
         ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig10_forced_grid_heating.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.10_forced_grid_heating.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig10_forced_grid_heating.png")
+    print("  Saved: fig2.10_forced_grid_heating.png")
 
     # Print summary statistics
     if 'pv_generation_kwh' in integrated.columns and heating_col:
@@ -1190,9 +1190,9 @@ def generate_summary_statistics(data, energy_patterns, daily_heating):
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig11_summary_statistics.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig2.11_summary_statistics.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig11_summary_statistics.png")
+    print("  Saved: fig2.11_summary_statistics.png")
 
     # Seasonal findings for summary
     seasonal = energy.groupby('season').agg({

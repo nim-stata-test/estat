@@ -4,17 +4,17 @@
 
 After running `python src/phase4/run_optimization.py`, outputs are saved to `output/phase4/`:
 
-**Figures (fig22-fig31):**
-- fig22: Strategy comparison (COP by strategy, schedule alignment, expected improvements)
-- fig23: Simulation results (time series, self-sufficiency, hourly COP profiles)
-- fig24: Parameter space (trade-offs, parameter summary table)
-- fig25: Pareto front (2D projections of Pareto-optimal solutions)
-- fig26: Pareto strategy comparison (radar chart comparing strategies)
-- fig27: Pareto evolution (optimization history animation frame)
-- fig28: Strategy temperature predictions (winter 2026/2027, violation analysis)
-- fig29: Detailed time series (T_weighted, outdoor, solar, grid by strategy)
-- fig30: Hourly patterns (temperature heatmaps, PV/grid profiles, comfort windows)
-- fig31: Energy patterns (daily balance, self-sufficiency, temperature distributions)
+**Figures (fig4.01-fig4.10):**
+- fig4.01: Strategy comparison (COP by strategy, schedule alignment, expected improvements)
+- fig4.02: Simulation results (time series, self-sufficiency, hourly COP profiles)
+- fig4.03: Parameter space (trade-offs, parameter summary table)
+- fig4.04: Pareto front (2D projections of Pareto-optimal solutions)
+- fig4.05: Pareto strategy comparison (radar chart comparing strategies)
+- fig4.06: Pareto evolution (optimization history animation frame)
+- fig4.07: Strategy temperature predictions (winter 2026/2027, violation analysis)
+- fig4.08: Detailed time series (T_weighted, outdoor, solar, grid by strategy)
+- fig4.09: Hourly patterns (temperature heatmaps, PV/grid profiles, comfort windows)
+- fig4.10: Energy patterns (daily balance, self-sufficiency, temperature distributions)
 
 **Reports:**
 - `phase4_report.html` - Combined optimization report
@@ -169,9 +169,9 @@ output/phase4/
 ├── pareto_front.csv           # All Pareto-optimal solutions
 ├── selected_strategies.csv    # 10 diverse strategies selected
 ├── selected_strategies.json   # Machine-readable format
-├── fig25_pareto_front.png     # 2D projections of Pareto front
-├── fig26_pareto_strategy_comparison.png # Radar chart comparing strategies
-├── fig27_pareto_evolution.png # Pareto front evolution frame
+├── fig4.04_pareto_front.png     # 2D projections of Pareto front
+├── fig4.05_pareto_strategy_comparison.png # Radar chart comparing strategies
+├── fig4.06_pareto_evolution.png # Pareto front evolution frame
 ├── pareto_evolution.gif       # 2D animated Pareto evolution
 ├── pareto_evolution.mp4       # 2D animation for PowerPoint
 ├── pareto_evolution_3d.gif    # 3D animated Pareto evolution
@@ -257,8 +257,8 @@ output/phase4/
 ├── grid_search_all_results.csv    # All 85,176 evaluations
 ├── grid_search_pareto.csv         # 9 Pareto-optimal solutions
 ├── grid_search_pareto.json        # Machine-readable Pareto front
-├── fig32_grid_search_results.png  # Feasible region visualization
-└── fig33_objective_landscape.png  # Objective space heatmaps
+├── fig4.11_grid_search_results.png  # Feasible region visualization
+└── fig4.12_objective_landscape.png  # Objective space heatmaps
 ```
 
 ### Pareto Solutions (Jan 2026, at T_outdoor ref = 5C)
@@ -304,7 +304,7 @@ python src/phase4/05_strategy_evaluation.py
 
 ```
 output/phase4/
-├── fig28_strategy_temperature_predictions.png  # Winter 2026/2027 predictions
+├── fig4.07_strategy_temperature_predictions.png  # Winter 2026/2027 predictions
 ├── strategy_violation_analysis.csv             # Detailed violation stats
 └── strategy_evaluation_report.html             # HTML report section
 ```
@@ -321,6 +321,6 @@ python src/phase4/06_strategy_detailed_analysis.py
 
 - `strategy_detailed_stats.csv` - Comprehensive statistics for Phase 5 strategies
 - `strategy_detailed_report.html` - HTML report with time series and energy analysis
-- `fig29_strategy_detailed_timeseries.png` - Full-period temperature and energy time series
-- `fig30_strategy_hourly_patterns.png` - Hourly patterns, heatmaps, and comfort windows
-- `fig31_strategy_energy_patterns.png` - Energy balance, self-sufficiency, temperature distributions
+- `fig4.08_strategy_detailed_timeseries.png` - Full-period temperature and energy time series
+- `fig4.09_strategy_hourly_patterns.png` - Hourly patterns, heatmaps, and comfort windows
+- `fig4.10_strategy_energy_patterns.png` - Energy balance, self-sufficiency, temperature distributions

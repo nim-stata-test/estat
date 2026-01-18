@@ -369,9 +369,9 @@ def create_visualization(df: pd.DataFrame, results: dict) -> None:
     ax4.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig_adaptive_thermal_model.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig3.07_adaptive_thermal_model.png', dpi=150, bbox_inches='tight')
     plt.close()
-    print("  Saved: fig_adaptive_thermal_model.png")
+    print("  Saved: fig3.07_adaptive_thermal_model.png")
 
 
 def main():

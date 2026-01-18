@@ -520,10 +520,10 @@ def create_visualization(daily: pd.DataFrame, cop_results: dict) -> None:
     ax4.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig_pressure_cop_model.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig3.06_pressure_cop_model.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print(f"  Saved: fig_pressure_cop_model.png")
+    print(f"  Saved: fig3.06_pressure_cop_model.png")
 
 
 # ============================================================
@@ -607,7 +607,7 @@ COP_actual = η × COP_carnot                 [η is efficiency factor]
     </ul>
 
     <figure>
-        <img src="fig_pressure_cop_model.png" alt="Thermodynamic COP Model">
+        <img src="fig3.06_pressure_cop_model.png" alt="Thermodynamic COP Model">
         <figcaption>Thermodynamic COP analysis: pressure-temperature relationship,
         Carnot vs actual COP, model comparison, and efficiency factors.</figcaption>
     </figure>

@@ -693,11 +693,11 @@ def main():
     print("\nCreating visualizations...")
     create_grid_search_visualization(
         results_df, pareto_df,
-        OUTPUT_DIR / 'fig32_grid_search_results.png'
+        OUTPUT_DIR / 'fig4.11_grid_search_results.png'
     )
     create_objective_landscape(
         results_df,
-        OUTPUT_DIR / 'fig33_objective_landscape.png'
+        OUTPUT_DIR / 'fig4.12_objective_landscape.png'
     )
 
     # Print summary

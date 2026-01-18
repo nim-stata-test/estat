@@ -53,17 +53,17 @@ PHASES = [
             </ul>
         ''',
         'key_outputs': [
-            ('fig01-fig11', 'Energy and heating analysis'),
-            ('fig12', 'Heating curve schedule detection'),
-            ('fig13', 'Weighted temperature response'),
-            ('fig14-fig16', 'Tariff analysis'),
-            ('fig17', 'HK2 target vs actual temperature'),
+            ('fig2.01-fig2.11', 'Energy and heating analysis'),
+            ('fig2.12', 'Heating curve schedule detection'),
+            ('fig2.13', 'Weighted temperature response'),
+            ('fig2.14-fig2.16', 'Tariff analysis'),
+            ('fig2.17', 'HK2 target vs actual temperature'),
         ],
         'figures': [
-            ('fig01_daily_energy_timeseries.png', 'Daily Energy Time Series'),
-            ('fig05_heat_pump_cop.png', 'Heat Pump COP Analysis'),
-            ('fig12_heating_curve_schedule.png', 'Heating Curve Schedule'),
-            ('fig17_hk2_target_actual.png', 'HK2 Target vs Actual'),
+            ('fig2.01_daily_energy_timeseries.png', 'Daily Energy Time Series'),
+            ('fig2.05_heat_pump_cop.png', 'Heat Pump COP Analysis'),
+            ('fig2.12_heating_curve_schedule.png', 'Heating Curve Schedule'),
+            ('fig2.17_hk2_target_actual.png', 'HK2 Target vs Actual'),
         ]
     },
     {
@@ -80,16 +80,16 @@ PHASES = [
             </ul>
         ''',
         'key_outputs': [
-            ('fig18', 'Transfer function thermal model'),
-            ('fig19', 'Heat pump COP model'),
-            ('fig20', 'Energy system analysis'),
-            ('fig21', 'Tariff cost model'),
+            ('fig3.01', 'Transfer function thermal model'),
+            ('fig3.02', 'Heat pump COP model'),
+            ('fig3.03', 'Energy system analysis'),
+            ('fig3.04', 'Tariff cost model'),
             ('causal_coefficients.json', 'Physics-based coefficients for Phase 4'),
         ],
         'figures': [
-            ('fig18_thermal_model.png', 'Thermal Model'),
-            ('fig19_heat_pump_model.png', 'Heat Pump Model'),
-            ('fig_transfer_function_integration.png', 'Causal Coefficients'),
+            ('fig3.01_thermal_model.png', 'Thermal Model'),
+            ('fig3.02_heat_pump_model.png', 'Heat Pump Model'),
+            ('fig3.08_transfer_function_integration.png', 'Causal Coefficients'),
         ]
     },
     {
@@ -106,14 +106,14 @@ PHASES = [
             </ul>
         ''',
         'key_outputs': [
-            ('fig22-fig24', 'Strategy comparison and simulation'),
-            ('fig25-fig27', 'Pareto optimization results'),
-            ('fig28-fig31', 'Detailed strategy analysis'),
+            ('fig4.01-fig4.03', 'Strategy comparison and simulation'),
+            ('fig4.04-fig4.06', 'Pareto optimization results'),
+            ('fig4.07-fig4.10', 'Detailed strategy analysis'),
             ('selected_strategies.json', 'Pareto-optimal parameters'),
         ],
         'figures': [
-            ('fig25_pareto_front.png', 'Pareto Front'),
-            ('fig28_strategy_temperature_predictions.png', 'Temperature Predictions'),
+            ('fig4.04_pareto_front.png', 'Pareto Front'),
+            ('fig4.07_strategy_temperature_predictions.png', 'Temperature Predictions'),
         ]
     },
     {

@@ -550,10 +550,10 @@ def create_cost_analysis_plots(hourly_costs: pd.DataFrame, daily_costs: pd.DataF
     ax.grid(True, alpha=0.3, axis='y')
 
     plt.tight_layout()
-    plt.savefig(OUTPUT_DIR / 'fig21_tariff_cost_model.png', dpi=150, bbox_inches='tight')
+    plt.savefig(OUTPUT_DIR / 'fig3.04_tariff_cost_model.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("  Saved: fig21_tariff_cost_model.png")
+    print("  Saved: fig3.04_tariff_cost_model.png")
 
 
 def generate_report(cost_patterns: dict, forecast_results: dict,
@@ -715,7 +715,7 @@ def generate_report(cost_patterns: dict, forecast_results: dict,
     </ul>
 
     <figure>
-        <img src="fig21_tariff_cost_model.png" alt="Tariff Cost Model">
+        <img src="fig3.04_tariff_cost_model.png" alt="Tariff Cost Model">
         <figcaption><strong>Figure 21:</strong> Cost analysis: monthly costs (top-left), tariff breakdown (top-right),
         daily profile (bottom-left), optimization scenarios (bottom-right).</figcaption>
     </figure>
