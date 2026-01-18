@@ -16,6 +16,7 @@ Creates comprehensive decomposition figures showing:
 This replaces fig3.01c and is placed after fig3.04.
 """
 
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -30,6 +31,10 @@ OUTPUT_DIR = PROJECT_ROOT / 'output' / 'phase3'
 WEEKLY_DIR = OUTPUT_DIR / 'weekly_decomposition'
 OUTPUT_DIR.mkdir(exist_ok=True)
 WEEKLY_DIR.mkdir(exist_ok=True)
+
+# Import shared constants
+sys.path.insert(0, str(PROJECT_ROOT / 'src'))
+from shared import ANALYSIS_START_DATE
 
 # Figure style
 plt.rcParams.update({
@@ -840,29 +845,33 @@ def main():
     # Generate weekly decomposition figures
     print("\nGenerating weekly extended decomposition figures...")
 
-    # Use same week boundaries as 05_weekly_decomposition.py (ISO weeks, Monday start)
-    # Filter to valid data range
-    mask = (integrated.index >= overlap_start) & (integrated.index <= overlap_end)
-    valid_data = integrated.loc[mask, ['davis_inside_temperature', 'stiebel_eltron_isg_outdoor_temperature']].dropna()
+    # Use ANALYSIS_START_DATE as the first week start, then 7-day intervals
+    # This aligns with 05_weekly_decomposition.py
+    valid_data = integrated[['davis_inside_temperature', 'stiebel_eltron_isg_outdoor_temperature']].dropna()
 
-    # Group by ISO week and count points
-    valid_data = valid_data.copy()
-    valid_data['week'] = valid_data.index.to_period('W').start_time
-    week_counts = valid_data.groupby('week').size()
+    # Handle timezone: match ANALYSIS_START_DATE to data's timezone
+    start_date = ANALYSIS_START_DATE
+    if valid_data.index.tz is not None and start_date.tz is None:
+        start_date = start_date.tz_localize(valid_data.index.tz)
+    elif valid_data.index.tz is None and start_date.tz is not None:
+        start_date = start_date.tz_localize(None)
 
-    # Require at least 2 days of data (2 × 96 = 192 points per day)
-    min_points = 2 * 96
-    valid_weeks = week_counts[week_counts >= min_points].index.tolist()
+    valid_data = valid_data[valid_data.index >= start_date]
+    data_end = min(overlap_end, valid_data.index.max())
 
-    # Build week list with start/end dates (matching weekly_decomposition.py)
+    # Generate week boundaries
     weeks = []
-    for week_start in sorted(valid_weeks):
-        week_end = week_start + pd.Timedelta(days=7)
-        # Clip to overlap_end for partial final week
-        week_end = min(week_end, overlap_end + pd.Timedelta(days=1))
-        weeks.append((week_start, week_end))
+    current = start_date
+    while current < data_end:
+        week_end = min(current + pd.Timedelta(days=7), data_end + pd.Timedelta(hours=1))
+        # Count points in this week
+        week_data = valid_data[(valid_data.index >= current) & (valid_data.index < week_end)]
+        # Require at least 2 days of data
+        if len(week_data) >= 2 * 96:
+            weeks.append((current, week_end))
+        current = current + pd.Timedelta(days=7)
 
-    print(f"  Found {len(weeks)} weeks (ISO week boundaries)")
+    print(f"  Found {len(weeks)} weeks (starting {start_date.date()})")
 
     for i, (start, end) in enumerate(weeks):
         week_num = i + 1

@@ -9,6 +9,7 @@ Usage:
     python src/phase3/05_weekly_decomposition.py
 """
 
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,6 +22,10 @@ PROCESSED_DIR = PROJECT_ROOT / 'output' / 'phase1'
 PHASE3_DIR = PROJECT_ROOT / 'output' / 'phase3'
 OUTPUT_DIR = PHASE3_DIR / 'weekly_decomposition'
 OUTPUT_DIR.mkdir(exist_ok=True)
+
+# Import shared constants
+sys.path.insert(0, str(PROJECT_ROOT / 'src'))
+from shared import ANALYSIS_START_DATE
 
 # Import from thermal model
 from importlib.util import spec_from_file_location, module_from_spec
@@ -89,23 +94,50 @@ def load_heating_curve():
 
 
 def get_weeks_with_data(df, room_col):
-    """Get list of week start dates with sufficient data."""
-    # Filter to valid data
+    """Get list of week start dates with sufficient data.
+
+    Uses ANALYSIS_START_DATE as the first week start, then 7-day intervals.
+    This ensures all weekly analyses (decomposition, extended) align.
+    """
+    # Filter to valid data starting from analysis date
     valid = df[[room_col, OUTDOOR_COL, PV_COL, HK2_COL]].dropna()
 
-    # Group by week and count
-    valid['week'] = valid.index.to_period('W').start_time
-    week_counts = valid.groupby('week').size()
+    # Handle timezone: match ANALYSIS_START_DATE to data's timezone
+    start_date = ANALYSIS_START_DATE
+    if valid.index.tz is not None and start_date.tz is None:
+        start_date = start_date.tz_localize(valid.index.tz)
+    elif valid.index.tz is None and start_date.tz is not None:
+        start_date = start_date.tz_localize(None)
 
-    # Require at least 2 days of data (davis_inside sensor has gaps)
-    min_points = 2 * 96  # 2 days × 96 points/day
-    valid_weeks = week_counts[week_counts >= min_points].index.tolist()
+    valid = valid[valid.index >= start_date]
 
-    print(f"\nFound {len(valid_weeks)} weeks with sufficient data (>= 2 days):")
-    for w in sorted(valid_weeks):
-        days = week_counts[w] / 96
-        print(f"  {w.date()}: {days:.1f} days")
-    return sorted(valid_weeks)
+    if len(valid) == 0:
+        return []
+
+    # Generate week boundaries starting from start_date (timezone-aware)
+    data_end = valid.index.max()
+    weeks = []
+    current = start_date
+
+    while current < data_end:
+        week_end = current + pd.Timedelta(days=7)
+        # Count points in this week
+        week_data = valid[(valid.index >= current) & (valid.index < week_end)]
+        n_points = len(week_data)
+
+        # Require at least 2 days of data (2 × 96 = 192 points)
+        if n_points >= 2 * 96:
+            weeks.append((current, n_points / 96))
+
+        current = week_end
+
+    print(f"\nFound {len(weeks)} weeks with sufficient data (>= 2 days):")
+    print(f"  Starting from: {start_date.date()} (ANALYSIS_START_DATE)")
+    for w, days in weeks:
+        week_start_date = w.date() if hasattr(w, 'date') else w
+        print(f"  {week_start_date}: {days:.1f} days")
+
+    return [w for w, _ in weeks]
 
 
 def plot_week_decomposition(df, effort, params, week_start, week_num, output_dir):

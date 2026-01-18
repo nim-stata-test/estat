@@ -1,5 +1,11 @@
 """Shared utilities for ESTAT project."""
 
+import pandas as pd
+
+# Analysis start date - good sensor data begins Oct 29, 2025
+# All model estimation and weekly analyses should use this as the start
+ANALYSIS_START_DATE = pd.Timestamp('2025-10-29')
+
 from .report_style import (
     CSS, COLORS,
     get_html_head, get_html_footer, wrap_html,
@@ -17,6 +23,8 @@ from .energy_system import (
 )
 
 __all__ = [
+    # Analysis constants
+    'ANALYSIS_START_DATE',
     # Report styling (statistik.bs.ch design)
     'CSS', 'COLORS',
     'get_html_head', 'get_html_footer', 'wrap_html',

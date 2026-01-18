@@ -78,6 +78,16 @@ src/
 └── xtra/                # Standalone analyses (battery degradation, savings)
 ```
 
+## Shared Constants
+
+The `src/shared/__init__.py` module exports constants used across all phases:
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `ANALYSIS_START_DATE` | 2025-10-29 | Good sensor data begins here. All model estimation and weekly analyses use this as start. |
+
+Usage: `from shared import ANALYSIS_START_DATE`
+
 ## Output Structure
 
 ```

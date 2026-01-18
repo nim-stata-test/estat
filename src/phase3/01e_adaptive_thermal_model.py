@@ -211,9 +211,10 @@ def load_data() -> pd.DataFrame:
     print("Loading data...")
     df = pd.read_parquet(PHASE1_DIR / 'integrated_dataset.parquet')
 
-    # Filter to overlap period
-    overlap_start = pd.Timestamp('2025-10-28', tz='UTC')
-    df = df[df.index >= overlap_start]
+    # Filter to analysis period (good sensor data)
+    from shared import ANALYSIS_START_DATE
+    analysis_start = ANALYSIS_START_DATE.tz_localize('UTC') if ANALYSIS_START_DATE.tz is None else ANALYSIS_START_DATE
+    df = df[df.index >= analysis_start]
 
     # Select required columns
     cols = [ROOM_COL, OUTDOOR_COL, HK2_COL, PV_COL]

@@ -134,9 +134,10 @@ def compute_coverage_stats(df: pd.DataFrame, summary: pd.DataFrame) -> pd.DataFr
     heating_end = df.index.max()
     total_intervals = len(df)
 
-    # Define overlap period for heating analysis (Oct 2025 onward)
-    overlap_start = pd.Timestamp('2025-10-28', tz='UTC')
-    df_overlap = df[df.index >= overlap_start]
+    # Define analysis period for heating analysis (good sensor data)
+    from shared import ANALYSIS_START_DATE
+    analysis_start = ANALYSIS_START_DATE.tz_localize('UTC') if ANALYSIS_START_DATE.tz is None else ANALYSIS_START_DATE
+    df_overlap = df[df.index >= analysis_start]
     overlap_intervals = len(df_overlap)
 
     stats_list = []
