@@ -78,24 +78,27 @@ def load_integrated_dataset() -> pd.DataFrame:
 
 
 def load_thermal_residuals() -> pd.Series:
-    """Load thermal model residuals from 3-state model."""
+    """Load thermal model residuals from transfer function model."""
     print("Loading thermal model residuals...")
-    residuals_file = PHASE3_DIR / 'threestate_greybox_results.csv'
 
-    if not residuals_file.exists():
-        # Try stable greybox
-        residuals_file = PHASE3_DIR / 'stable_greybox_results.csv'
+    # Try transfer function model results first
+    residuals_file = PHASE3_DIR / 'thermal_model_results.csv'
 
     if residuals_file.exists():
         res_df = pd.read_csv(residuals_file)
-        res_df['timestamp'] = pd.to_datetime(res_df['timestamp'])
-        res_df['residual'] = res_df['T_room_actual'] - res_df['T_room_pred']
-        residuals = res_df.set_index('timestamp')['residual']
-        print(f"  Loaded {len(residuals):,} residual values")
-        return residuals
-    else:
-        print("  WARNING: No thermal model residuals found")
-        return None
+        # Check if residuals are available in the file
+        if 'residual' in res_df.columns or ('T_room_actual' in res_df.columns and 'T_room_pred' in res_df.columns):
+            if 'timestamp' in res_df.columns:
+                res_df['timestamp'] = pd.to_datetime(res_df['timestamp'])
+                res_df = res_df.set_index('timestamp')
+            if 'residual' not in res_df.columns:
+                res_df['residual'] = res_df['T_room_actual'] - res_df['T_room_pred']
+            residuals = res_df['residual']
+            print(f"  Loaded {len(residuals):,} residual values from transfer function model")
+            return residuals
+
+    print("  NOTE: No thermal model residuals available (run Phase 3 first)")
+    return None
 
 
 def load_cop_data() -> pd.DataFrame:

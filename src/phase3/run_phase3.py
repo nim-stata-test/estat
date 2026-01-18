@@ -307,12 +307,14 @@ def main():
     # Run each modeling script
     scripts = [
         '01_thermal_model.py',
-        # '01b_greybox_thermal_model.py',  # Removed: abandoned approach (see CLAUDE.md)
+        '01e_adaptive_thermal_model.py',      # Time-varying parameters via RLS (R² 0.68→0.86)
+        '01f_transfer_function_integration.py',  # Causal coefficients for Phase 4 optimization
         '02_heat_pump_model.py',
+        '02b_pressure_cop_model.py',          # Thermodynamic COP model using refrigerant pressures
         '03_energy_system_model.py',
         '04_tariff_cost_model.py',
         '05_weekly_decomposition.py',
-        '06_extended_decomposition.py',  # Extended decomposition with energy/COP panels
+        '06_extended_decomposition.py',       # Extended decomposition with energy/COP panels
     ]
 
     for script in scripts:
@@ -337,6 +339,9 @@ def main():
     print("  - fig3.03_energy_system_model.png")
     print("  - fig3.04_tariff_cost_model.png")
     print("  - fig3.05_extended_decomposition.png (with energy/COP panels)")
+    print("  - fig3.06_pressure_cop_model.png (thermodynamic COP)")
+    print("  - fig3.07_adaptive_thermal_model.png (time-varying parameters)")
+    print("  - fig3.08_transfer_function_integration.png (causal coefficients)")
     print("  - phase3_report.html")
     print("  - weekly_decomposition/ (extended weekly figures)")
 

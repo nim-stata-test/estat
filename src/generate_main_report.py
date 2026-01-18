@@ -125,7 +125,7 @@ PHASES = [
             <ul>
                 <li>10 blocks × 7 days with varied heating parameters</li>
                 <li>T_HK2 spread: 9.5°C (comfort), 10.7°C (eco)</li>
-                <li>Dynamical analysis using grey-box model (no washout needed)</li>
+                <li>RSM analysis using block-averaged metrics (48h washout)</li>
                 <li>Goal: Learn T_indoor = f(T_HK2 history, T_outdoor, thermal_mass)</li>
             </ul>
         ''',

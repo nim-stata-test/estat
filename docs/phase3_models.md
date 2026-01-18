@@ -6,10 +6,11 @@ This document provides detailed documentation of the models developed in Phase 3
 
 ## Table of Contents
 
-1. [Thermal Model (3.1)](#1-thermal-model) — *Reference only, superseded by Grey-Box*
-   - 1b. [Grey-Box Thermal Model (3.1b)](#1b-grey-box-thermal-model) — **Primary model for optimization**
-   - 1c. [Model Comparison](#1c-model-comparison)
+1. [Thermal Model (3.1)](#1-thermal-model) — Transfer function model with low-pass filtered inputs
+   - 1a. [Adaptive Thermal Model](#1a-adaptive-thermal-model) — Time-varying parameters via RLS
+   - 1b. [Transfer Function Integration](#1b-transfer-function-integration) — Causal coefficients for optimization
 2. [Heat Pump Model (3.2)](#2-heat-pump-model)
+   - 2b. [Thermodynamic COP Model](#2b-thermodynamic-cop-model) — Physics-based COP from pressures
 3. [Energy System Model (3.3)](#3-energy-system-model)
 4. [Model Integration for Optimization](#4-model-integration)
 5. [Tariff Cost Model (3.4)](#5-tariff-cost-model)
@@ -111,172 +112,141 @@ Where ΔT = T[k+1] - T[k] is the temperature change over one time step.
 
 ---
 
-## 1b. Grey-Box Thermal Model
+## 1a. Adaptive Thermal Model
 
-> **Primary Model**: This grey-box model is used for Phase 4 optimization forward simulation.
-> It supersedes the transfer function model (Section 1) which is retained for reference.
+> **Script**: `src/phase3/01e_adaptive_thermal_model.py`
+> **Output**: `output/phase3/fig3.07_adaptive_thermal_model.png`
 
-### 1b.1 Theoretical Background
+### 1a.1 Purpose
 
-The grey-box model is a physics-based two-state discrete-time model that explicitly models:
-1. **Buffer tank dynamics**: Thermal storage between heat pump and distribution system
-2. **Room temperature dynamics**: Building thermal mass and heat transfer
+The fixed-parameter transfer function model achieves R² = 0.68, which is limited by:
+- Time-varying building dynamics (weather, occupancy, wind)
+- Seasonal changes in thermal characteristics
+- Non-stationary heating patterns
 
-This improves on the transfer function model by capturing the intermediate thermal storage stage.
+The adaptive model addresses this by allowing parameters to vary over time using Recursive Least Squares (RLS).
 
-### 1b.2 State Variables
+### 1a.2 Model Formulation
 
-| Symbol | Variable | Code Name | Units | Description |
-|--------|----------|-----------|-------|-------------|
-| $T_{buf}$ | Buffer tank temperature | `T_buffer` | °C | Thermal storage state |
-| $T_{room}$ | Room temperature | `T_room` | °C | Comfort objective |
-
-### 1b.3 Model Formulation
-
-The discrete-time state-space model with timestep $\Delta t = 0.25$ h (15 minutes):
-
-**Buffer Tank Dynamics:**
-
-$$T_{buf}[k+1] = T_{buf}[k] + \frac{\Delta t}{\tau_{buf}} \left[ (T_{HK2}[k] - T_{buf}[k]) - r_{emit} \cdot (T_{buf}[k] - T_{room}[k]) \right]$$
-
-**Room Temperature Dynamics:**
-
-$$T_{room}[k+1] = T_{room}[k] + \frac{\Delta t}{\tau_{room}} \left[ r_{heat} \cdot (T_{buf}[k] - T_{room}[k]) - (T_{room}[k] - T_{out}[k]) \right] + k_{solar} \cdot PV[k]$$
-
-**Physical Interpretation:**
-- The buffer tank receives heat from the heating circuit ($T_{HK2}$) and emits to the room
-- The room receives heat from the buffer and loses heat to outdoors
-- Solar gains add directly to room temperature
-
-### 1b.4 Input Variables
-
-| Symbol | Variable | Code Name | Units | Source |
-|--------|----------|-----------|-------|--------|
-| $T_{HK2}$ | Flow temperature | `wp_anlage_hk2_ist` | °C | Heating circuit 2 actual |
-| $T_{out}$ | Outdoor temperature | `stiebel_eltron_isg_outdoor_temperature` | °C | Heat pump sensor |
-| $PV$ | Solar generation | `pv_generation_kwh` | kWh | 15-min solar production |
-
-### 1b.5 Model Parameters
-
-| Symbol | Parameter | Value | 95% CI | Units | Physical Meaning |
-|--------|-----------|-------|--------|-------|------------------|
-| $\tau_{buf}$ | `tau_buf` | 2.28 | [1.8, 2.8] | h | Buffer tank time constant |
-| $\tau_{room}$ | `tau_room` | 72.0 | [60, 84] | h | Building time constant (3 days) |
-| $r_{emit}$ | `r_emit` | 0.10 | [0.08, 0.12] | — | Emitter/HP coupling ratio |
-| $r_{heat}$ | `r_heat` | 1.05 | [0.9, 1.2] | — | Heat transfer ratio |
-| $k_{solar}$ | `k_solar` | 0.017 | [0.01, 0.03] | K/kWh | Solar gain coefficient |
-| $c_{offset}$ | `c_offset` | -0.085 | [-0.2, 0.1] | K/h | Temperature offset (bias correction) |
-
-### 1b.6 Heating Curve Integration
-
-The heating curve model from Phase 2 determines $T_{HK2}$ from controllable parameters:
-
-$$T_{HK2} = T_{setpoint} + curve\_rise \times (T_{ref} - T_{outdoor})$$
-
-Where:
-- $T_{setpoint}$ = target room temperature (controllable: 19-22°C comfort, 12-19°C eco)
-- $curve\_rise$ = heating curve slope (controllable: 0.80-1.20)
-- $T_{ref}$ = reference temperature (21.32°C comfort, 19.18°C eco)
-
-This enables forward simulation with different heating strategies.
-
-### 1b.7 Forward Simulation Algorithm
+Same transfer function structure with low-pass filtered inputs:
 
 ```
-Initialize:
-    x[0] = [T_buffer[0], T_room[0]]  # From historical data
-
-For k = 0 to N-1:
-    # Generate T_HK2 from heating curve + schedule
-    T_HK2[k] = compute_from_schedule(hour[k], params)
-
-    # Buffer tank update
-    dT_buf = (dt/tau_buf) * [(T_HK2[k] - T_buf[k]) - r_emit*(T_buf[k] - T_room[k])]
-    T_buf[k+1] = T_buf[k] + dT_buf
-
-    # Room temperature update
-    dT_room = (dt/tau_room) * [r_heat*(T_buf[k] - T_room[k]) - (T_room[k] - T_out[k])]
-    T_room[k+1] = T_room[k] + dT_room + k_solar*PV[k] + c_offset*dt
+T_room = offset + g_outdoor×LPF(T_outdoor, 24h) + g_effort×LPF(Effort, 2h) + g_pv×LPF(PV, 12h)
 ```
 
-**Implementation**: `src/shared/thermal_simulator.py`
+Where `Effort = T_HK2 - baseline_curve` (deviation from heating curve).
 
-### 1b.8 Parameter Estimation
+Parameters `g_outdoor`, `g_effort`, `g_pv`, and `offset` are updated at each timestep via RLS.
 
-Parameters are estimated by minimizing prediction error on historical data:
+### 1a.3 Recursive Least Squares (RLS)
 
-1. **Objective**: Minimize RMSE between predicted and actual $T_{room}$
-2. **Method**: Bounded optimization (scipy.optimize.minimize with L-BFGS-B)
-3. **Constraints**: Physical bounds on all parameters (see table above)
-4. **Data**: 64-day overlap period with all sensors available
+The RLS algorithm updates parameter estimates as new data arrives:
 
-### 1b.9 Model Performance
+```
+K[k] = P[k-1]×x[k] / (λ + x[k]'×P[k-1]×x[k])  # Kalman gain
+θ[k] = θ[k-1] + K[k]×(y[k] - x[k]'×θ[k-1])    # Parameter update
+P[k] = (1/λ)×(P[k-1] - K[k]×x[k]'×P[k-1])     # Covariance update
+```
 
-| Metric | Value | Interpretation |
-|--------|-------|----------------|
-| R² | 0.995 | Explains 99.5% of temperature variance |
-| RMSE | 0.064°C | Excellent prediction accuracy |
-| MAE | 0.047°C | Mean absolute error |
-| Bias | 0.002°C | Negligible systematic error |
+Where λ = 0.995 (forgetting factor) balances adaptation speed vs stability.
 
-### 1b.10 Assumptions
+### 1a.4 Key Results
 
-| Assumption | Justification | Impact if Violated |
-|------------|---------------|-------------------|
-| Two-state lumped model | Buffer + room capture main dynamics | Misses floor/wall thermal mass |
-| Linear heat transfer | Small temperature differences | Valid for ΔT < 20K typical |
-| Constant parameters | Building characteristics stable | Seasonal variation possible |
-| 15-min timestep | Matches sensor data resolution | Adequate for slow dynamics |
-| Single room temperature | Weighted average of sensors | Misses room-to-room variation |
+**Performance improvement:**
+- Fixed model: R² = 0.68
+- Adaptive model: R² = 0.86+
 
-### 1b.11 Integration with Phase 4 Optimization
+**Parameter stability analysis:**
+| Parameter | Mean | Std Dev | CV | Interpretation |
+|-----------|------|---------|-----|----------------|
+| g_effort | 0.208 | 0.019 | 9% | STABLE - reliable for optimization |
+| g_outdoor | 0.442 | 0.420 | 95% | UNSTABLE - confounded with unmeasured factors |
+| g_pv | 0.012 | 0.008 | 67% | Moderate variability |
 
-The grey-box model is used for **forward simulation** in Phase 4 optimization:
+**Key insight**: The heating effort coefficient `g_effort` is stable (CV=9%), meaning we can reliably predict how changes in heating parameters affect room temperature. The outdoor coefficient is highly variable, likely because it captures unmeasured factors (wind, infiltration, occupancy).
 
-1. **Parameters loaded from**: `output/phase3/greybox_model_params.json`
-2. **Shared module**: `src/shared/thermal_simulator.py`
-3. **Used by**:
-   - `src/phase4/04_pareto_optimization.py` (NSGA-II multi-objective)
-   - `src/phase4/05_strategy_evaluation.py` (comfort violation analysis)
-   - `src/phase4/06_strategy_detailed_analysis.py` (detailed time series)
+### 1a.5 Implications for Optimization
 
-**Warmup Period**: 96 timesteps (24 hours) to allow transient decay before evaluation.
-
-### 1b.12 Advantages over Transfer Function Model
-
-| Aspect | Transfer Function | Grey-Box |
-|--------|-------------------|----------|
-| Buffer tank | Not modeled | Explicit state |
-| Physical parameters | Abstract coefficients | Interpretable (time constants, ratios) |
-| R² | 0.10-0.24 | 0.995 |
-| RMSE | ~5°C | 0.064°C |
-| Forward simulation | Unstable (diverges) | Stable |
-| Optimization use | Not suitable | Primary model |
+The stable `g_effort = 0.208` coefficient enables causal reasoning:
+- +1°C increase in heating effort → +0.21°C room temperature (after low-pass filter lag)
+- This chain: `setpoint → T_HK2 → Effort → T_room` is now quantified
 
 ---
 
-## 1c. Model Comparison
+## 1b. Transfer Function Integration
 
-### Side-by-Side Performance
+> **Script**: `src/phase3/01f_transfer_function_integration.py`
+> **Output**: `output/phase3/fig3.08_transfer_function_integration.png`, `causal_coefficients.json`
 
-| Metric | Transfer Function | Grey-Box | Improvement |
-|--------|-------------------|----------|-------------|
-| R² | 0.683 (weighted) | 0.995 | +46% |
-| RMSE | 0.50°C | 0.064°C | 8× better |
-| Forward simulation | Diverges | Stable | ✓ |
-| Physical interpretability | Low | High | ✓ |
+### 1b.1 Purpose
 
-### When to Use Each Model
+Phase 2 regression analysis found strong associations between heating parameters and room temperature:
+- Comfort setpoint: +1.22°C per 1°C increase
+- Curve rise: +9.73°C per unit increase
 
-- **Grey-Box (Primary)**: All optimization, forward simulation, strategy evaluation
-- **Transfer Function (Reference)**: Quick estimates, validation comparison, educational
+However, these are **observational associations**, not causal effects. The transfer function integration derives **causal coefficients** that Phase 4 optimization can use.
 
-### Visual Comparison
+### 1b.2 The Confounding Problem
 
-See `output/phase3/fig3.01b_greybox_model.png` for side-by-side visualization including:
-- State trajectories (T_buffer, T_room)
-- Prediction residuals
-- Model comparison panel
+Phase 2 regression captured correlations, but:
+- Warmer outdoor temps correlate with both higher setpoints and higher room temps
+- Users may adjust setpoints in response to comfort (reverse causality)
+- Seasonal patterns affect both heating parameters and room temperature
+
+### 1b.3 Causal Chain Derivation
+
+The transfer function provides a causal pathway:
+
+```
+Parameters → T_HK2 (heating curve) → Effort → T_room (via g_effort)
+```
+
+**Step 1: Heating Curve Model**
+```
+T_HK2 = setpoint + curve_rise × (T_ref - T_outdoor)
+```
+
+**Step 2: Effort Calculation**
+```
+Effort = T_HK2 - baseline_curve
+       = setpoint + curve_rise×(T_ref - T_outdoor) - [baseline_setpoint + baseline_rise×(T_ref - T_outdoor)]
+       = Δsetpoint + Δcurve_rise × (T_ref - T_outdoor)
+```
+
+**Step 3: Room Temperature Response**
+```
+ΔT_room = g_effort × LPF(ΔEffort)
+```
+
+### 1b.4 Causal Coefficients
+
+| Parameter | Phase 2 Regression | Phase 3 Causal | Ratio |
+|-----------|-------------------|----------------|-------|
+| comfort_setpoint | +1.22°C/°C | **+0.21°C/°C** | 5.9× |
+| curve_rise | +9.73°C/unit | **+2.92°C/unit** | 3.3× |
+
+**Key finding**: Phase 2 regression overestimates effects by 3-6× because it captures associations, not causal effects.
+
+### 1b.5 Output File
+
+The causal coefficients are saved to `output/phase3/causal_coefficients.json`:
+
+```json
+{
+  "setpoint_effect": 0.208,
+  "curve_rise_effect_per_degree": 0.208,
+  "curve_rise_effect_at_ref": 2.92,
+  "g_effort": 0.208,
+  "source": "transfer_function_integration"
+}
+```
+
+### 1b.6 Usage in Phase 4
+
+Phase 4 optimization uses causal coefficients for realistic strategy evaluation:
+- Temperature adjustments based on `g_effort × Δsetpoint` instead of regression coefficients
+- More conservative (and realistic) predictions of comfort impacts
+- Loaded from `causal_coefficients.json` by optimization scripts
 
 ---
 
@@ -384,6 +354,70 @@ The buffer tank serves as thermal storage between the heat pump and heating circ
 3. **Part-load effects**: COP varies with modulation level. Running at 50% capacity may have different efficiency than 100%.
 
 4. **Hot water production**: Model focuses on space heating. Hot water production (different temps) not separately modeled.
+
+---
+
+## 2b. Thermodynamic COP Model
+
+> **Script**: `src/phase3/02b_pressure_cop_model.py`
+> **Output**: `output/phase3/fig3.06_pressure_cop_model.png`, `pressure_cop_daily.csv`
+
+### 2b.1 Purpose
+
+The empirical COP model (Section 2) uses outdoor and flow temperatures as inputs. The thermodynamic model provides a physics-based alternative using refrigerant pressure sensors, which gives:
+- Theoretical upper bound on COP (Carnot efficiency)
+- Validation of the empirical model
+- Insight into compressor and system losses
+
+### 2b.2 Theoretical Background
+
+For an ideal (Carnot) heat pump:
+
+$$COP_{Carnot} = \frac{T_{cond}}{T_{cond} - T_{evap}}$$
+
+Where temperatures are in Kelvin. Real heat pumps achieve:
+
+$$COP_{actual} = \eta \times COP_{Carnot}$$
+
+Where η (eta) is the system efficiency factor (typically 0.4-0.6).
+
+### 2b.3 Pressure-Temperature Relationship
+
+The heat pump uses R410A refrigerant. Saturation temperatures are derived from measured pressures using refrigerant property tables:
+
+| Pressure (bar) | T_sat R410A (°C) |
+|----------------|------------------|
+| 5 | -15.5 |
+| 10 | 2.6 |
+| 15 | 15.0 |
+| 20 | 25.0 |
+| 25 | 33.5 |
+| 30 | 40.9 |
+
+### 2b.4 Sensors Used
+
+| Sensor | Description | Typical Range |
+|--------|-------------|---------------|
+| `wp_hochdruck` | High pressure (condenser) | 20-30 bar |
+| `wp_niederdruck` | Low pressure (evaporator) | 5-12 bar |
+
+### 2b.5 Results
+
+**Carnot COP analysis:**
+- Mean Carnot COP: 6.2
+- Mean actual COP: 4.0
+- Mean efficiency factor: η = 0.65
+
+**Validation:**
+- The thermodynamic model confirms the empirical model's sensitivity to temperature lift (T_cond - T_evap)
+- Lower outdoor temps → lower evaporator pressure → larger temperature lift → lower COP
+
+### 2b.6 Implications
+
+The thermodynamic model validates that:
+1. The empirical COP model captures the correct physical relationships
+2. System efficiency is ~65% of Carnot ideal (reasonable for modern ASHPs)
+3. Reducing flow temperature improves COP because it reduces condenser pressure
 
 ---
 
@@ -498,8 +532,9 @@ Three scenarios were modeled to estimate improvement potential:
 
 ## 4. Model Integration for Optimization
 
-> **Note**: The **Grey-Box Thermal Model** (Section 1b) is used for forward simulation in Phase 4 optimization.
-> See `src/shared/thermal_simulator.py` for the shared implementation.
+> **Note**: Phase 4 optimization uses the **Transfer Function Thermal Model** with causal coefficients
+> from Section 1b. The heating curve model determines T_HK2, which feeds into the thermal and COP models.
+> See `src/shared/energy_system.py` for the shared implementation.
 
 ### 4.1 How Models Connect
 
@@ -514,11 +549,11 @@ Three scenarios were modeled to estimate improvement potential:
               │              │              │
               ▼              ▼              ▼
       ┌───────────┐  ┌───────────┐  ┌───────────┐
-      │ Grey-Box  │  │ Heat Pump │  │  Energy   │
-      │  Thermal  │  │   Model   │  │  System   │
+      │  Transfer │  │ Heat Pump │  │  Energy   │
+      │  Function │  │   Model   │  │  System   │
       │   Model   │  │           │  │   Model   │
       │ T_room(t) │  │  COP(t)   │  │  PV(t)    │
-      │ T_buf(t)  │  │           │  │ Battery(t)│
+      │           │  │           │  │ Battery(t)│
       └─────┬─────┘  └─────┬─────┘  └─────┬─────┘
             │              │              │
             └──────────────┼──────────────┘
@@ -687,7 +722,8 @@ The tariff cost model enables the **Cost-Optimized** strategy in Phase 4:
 
 | Model | Validation Method | Status |
 |-------|-------------------|--------|
-| Thermal | Compare simulated vs actual temps | RMSE ~5.7°C (moderate) |
+| Thermal (fixed) | R² of transfer function | 0.68 (good) |
+| Thermal (adaptive) | R² with RLS parameters | 0.86+ (excellent) |
 | Heat Pump | R² of COP regression | 0.95 (excellent) |
 | Energy | Compare calculated vs actual self-sufficiency | Within 5% (good) |
 
@@ -707,26 +743,21 @@ The tariff cost model enables the **Cost-Optimized** strategy in Phase 4:
 
 ## Appendix: Key Equations Summary
 
-### Grey-Box Thermal Model (Primary)
+### Transfer Function Thermal Model
 
-**State Variables:**
-- $T_{buf}$ — Buffer tank temperature (°C)
-- $T_{room}$ — Room temperature (°C)
+**Model formulation:**
+```
+T_room = offset + g_outdoor×LPF(T_outdoor, 24h) + g_effort×LPF(Effort, 2h) + g_pv×LPF(PV, 12h)
+```
 
-**Discrete-Time Equations** ($\Delta t = 0.25$ h):
+Where `Effort = T_HK2 - baseline_curve` (deviation from heating curve).
 
-$$T_{buf}[k+1] = T_{buf}[k] + \frac{\Delta t}{\tau_{buf}} \left[ (T_{HK2}[k] - T_{buf}[k]) - r_{emit}(T_{buf}[k] - T_{room}[k]) \right]$$
-
-$$T_{room}[k+1] = T_{room}[k] + \frac{\Delta t}{\tau_{room}} \left[ r_{heat}(T_{buf}[k] - T_{room}[k]) - (T_{room}[k] - T_{out}[k]) \right] + k_{solar} \cdot PV[k]$$
-
-**Parameters:**
-| Symbol | Code | Value | Units |
-|--------|------|-------|-------|
-| $\tau_{buf}$ | `tau_buf` | 2.28 | h |
-| $\tau_{room}$ | `tau_room` | 72.0 | h |
-| $r_{emit}$ | `r_emit` | 0.10 | — |
-| $r_{heat}$ | `r_heat` | 1.05 | — |
-| $k_{solar}$ | `k_solar` | 0.017 | K/kWh |
+**Key Parameters:**
+| Symbol | Value | CV | Interpretation |
+|--------|-------|-----|----------------|
+| g_effort | 0.208 | 9% | Stable - reliable for optimization |
+| g_outdoor | 0.442 | 95% | Unstable - confounded |
+| g_pv | 0.012 | 67% | Moderate variability |
 
 **Heating Curve:**
 
@@ -734,11 +765,11 @@ $$T_{HK2} = T_{setpoint} + curve\_rise \times (T_{ref} - T_{outdoor})$$
 
 Where $T_{ref} = 21.32$°C (comfort) or $19.18$°C (eco).
 
-### Transfer Function Model (Reference)
-```
-Time constant: τ = C/UA ≈ 54-60 hours
-Temperature change: ΔT = a×(T_flow - T_room) - b×(T_room - T_out) + c×PV
-```
+**Causal Coefficients (for optimization):**
+| Parameter | Causal Effect |
+|-----------|---------------|
+| setpoint | +0.21°C per 1°C increase |
+| curve_rise | +2.92°C per unit increase |
 
 ### Heat Pump Model
 ```

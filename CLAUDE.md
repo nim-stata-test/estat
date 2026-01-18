@@ -58,7 +58,7 @@ src/
 ├── phase4/              # Optimization Strategy Development
 ├── phase5/              # Intervention Study (Nov 2027 - Mar 2028)
 ├── phase5_pilot/        # Pilot Experiment (Jan-Mar 2026)
-├── shared/              # Shared modules (energy_system.py, thermal_simulator.py)
+├── shared/              # Shared modules (energy_system.py, report_style.py)
 └── xtra/                # Standalone analyses (battery degradation, savings)
 ```
 

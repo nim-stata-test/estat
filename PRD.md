@@ -40,7 +40,7 @@ Optimize heating strategy for a residential building with solar/battery system t
 
 7. **Pareto-optimized strategies selected**: NSGA-II optimization (60K evaluations, 3040 solutions tracked) → Grid-Minimal (-20% grid, eco=14.1°C) and Balanced strategies. All optimal strategies converge to ~4h solar-aligned comfort window (11:00-16:00), curve_rise=0.82, and 22°C comfort setpoint.
 
-8. **Grey-box thermal model**: New two-state physics-based model (R²=0.992 test, RMSE=0.064°C) captures buffer tank dynamics and enables accurate temperature predictions for strategy evaluation.
+8. **Transfer function thermal model**: Linear model with low-pass filtered inputs (R²=0.68 fixed, R²=0.86 adaptive) captures building dynamics. Provides stable causal coefficients (g_effort=0.208, CV=9%) for optimization.
 
 ---
 
@@ -183,30 +183,35 @@ Investigation of Feb-Mar 2025 deep-discharge event (faulty inverter).
 
 **Outputs**: `fig17_thermal_model.png`, `thermal_model_results.csv`
 
-### 3.1b Grey-Box Thermal Model ✓ (Jan 2026)
-Physics-based two-state discrete-time model with explicit buffer tank dynamics.
+### 3.1a Adaptive Thermal Model ✓ (Jan 2026)
+Time-varying parameter model using Recursive Least Squares (RLS) to improve on fixed R²=0.68.
 
-**Model Formulation** (Δt = 15 min):
-```
-T_buffer[k+1] = T_buffer[k] + (dt/τ_buf) × [(T_HK2 - T_buffer) - r_emit × (T_buffer - T_room)]
-T_room[k+1] = T_room[k] + (dt/τ_room) × [r_heat × (T_buffer - T_room) - (T_room - T_outdoor)] + k_solar × PV
-```
+**Key findings**:
+| Parameter | Mean | CV | Status |
+|-----------|------|-----|--------|
+| g_effort | 0.208 | 9% | STABLE - reliable for optimization |
+| g_outdoor | 0.442 | 95% | UNSTABLE - confounded |
+| g_pv | 0.012 | 67% | Moderate variability |
 
-**Key findings (Grey-Box Model)**:
-| Parameter | Value | Interpretation |
-|-----------|-------|----------------|
-| τ_buffer | 2.3 h | Buffer tank time constant |
-| τ_room | 72 h | Building thermal mass (very high) |
-| r_emit | 0.10 | Buffer-to-room coupling |
-| r_heat | 1.05 | Heat transfer ratio |
-| k_solar | 0.017 K/kWh | Solar gain coefficient |
+**Performance**: R² = 0.86+ (up from 0.68 fixed)
 
-**Model Performance**:
-- Training R² = 0.995, Test R² = 0.992
-- RMSE = 0.064°C (one-step-ahead prediction)
-- Durbin-Watson = 1.46 (good residual properties)
+**Outputs**: `fig3.07_adaptive_thermal_model.png`, `adaptive_thermal_model.json`
 
-**Outputs**: `fig17b_greybox_model.png`, `greybox_model_params.json`
+### 3.1b Transfer Function Integration ✓ (Jan 2026)
+Derives causal coefficients from transfer function for Phase 4 optimization.
+
+**Key insight**: Phase 2 regression overestimates effects by 3-6× (associations, not causal).
+
+| Parameter | Phase 2 Regression | Phase 3 Causal | Ratio |
+|-----------|-------------------|----------------|-------|
+| setpoint | +1.22°C/°C | **+0.21°C/°C** | 5.9× |
+| curve_rise | +9.73°C/unit | **+2.92°C/unit** | 3.3× |
+
+**Outputs**: `fig3.08_transfer_function_integration.png`, `causal_coefficients.json`
+
+### 3.1c Grey-Box Thermal Model ✗ (ABANDONED)
+Physics-based two-state model tried but forward simulation diverged on validation data (R²=-6.7).
+Files deleted. See transfer function model instead.
 
 ### 3.2 Heat Pump Model ✓ COMPLETED
 - [x] COP as function of outdoor temperature: **+0.13 COP per °C**
@@ -282,14 +287,14 @@ Low tariff: Nights, weekends, holidays
 ### 4.2 Model Parameters for Optimization
 | Parameter | Value | Source |
 |-----------|-------|--------|
-| Buffer tank time constant (τ_buf) | 2.3 h | Grey-box model |
-| Building time constant (τ_room) | 72 h | Grey-box model |
-| Buffer-to-room coupling (r_emit) | 0.10 | Grey-box model |
-| Heat transfer ratio (r_heat) | 1.05 | Grey-box model |
-| Solar gain (k_solar) | 0.017 K/kWh | Grey-box model |
+| Heating effort gain (g_effort) | 0.208 (CV=9%) | Transfer function model |
+| Setpoint causal effect | +0.21°C/°C | Causal coefficients |
+| Curve rise causal effect | +2.92°C/unit | Causal coefficients |
+| T_ref (comfort) | 21.32°C | Heating curve model |
+| T_ref (eco) | 19.18°C | Heating curve model |
 | COP sensitivity (outdoor) | +0.13/°C | Heat pump model |
 | COP sensitivity (flow) | -0.10/°C | Heat pump model |
-| Battery round-trip efficiency | 83.7% | Energy system model |
+| Battery round-trip efficiency | 77% | Energy system model (post-degradation) |
 | Peak PV hours | 10:00-16:00 | Energy system model |
 | Daily PV generation | 56.2 kWh mean | Energy system model |
 

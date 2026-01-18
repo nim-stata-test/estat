@@ -67,24 +67,6 @@ Where T_ref = 21.32C (comfort) or 19.18C (eco).
 
 ---
 
-## Grey-Box Thermal Model (Abandoned)
-
-Physics-based two-state discrete-time model for room temperature prediction.
-**Status:** Tried but did not work well - poor predictive accuracy on validation data.
-
-**Model Formulation (dt = 15 min):**
-```
-T_buffer[k+1] = T_buffer[k] + (dt/tau_buf) * [(T_HK2[k] - T_buffer[k]) - r_emit * (T_buffer[k] - T_room[k])]
-T_room[k+1] = T_room[k] + (dt/tau_room) * [r_heat * (T_buffer[k] - T_room[k]) - (T_room[k] - T_out[k])] + k_solar * PV[k]
-```
-
-Parameters: `tau_buf` (buffer time constant), `tau_room` (building time constant),
-`r_emit`/`r_heat` (coupling ratios), `k_solar` (solar gain), `c_offset` (bias).
-
-Script: `src/phase3/01b_greybox_thermal_model.py`
-
----
-
 ## Transfer Function Thermal Model
 
 Linear transfer function model using low-pass filtered inputs:
@@ -124,3 +106,51 @@ setpoint +1C -> T_HK2 +1C -> Effort +1C -> LPF(Effort) +1C -> T_room +0.21C
 - `src/phase3/01_thermal_model.py` - Main thermal model
 - `src/phase3/01e_adaptive_thermal_model.py` - Time-varying parameters (RLS)
 - `src/phase3/01f_transfer_function_integration.py` - Causal coefficient derivation
+
+---
+
+## Adaptive Thermal Model (01e)
+
+Time-varying parameter model using Recursive Least Squares (RLS).
+
+**Why needed:** Fixed parameters achieve R² = 0.68. Building thermal dynamics change over time due to weather variability, heating mode changes, occupancy patterns, and wind/infiltration.
+
+**Model:** Same transfer function structure, but parameters updated via RLS:
+```
+T_room = offset + g_outdoor×LPF(T_outdoor) + g_effort×LPF(Effort) + g_pv×LPF(PV)
+```
+
+**Key finding:** Adaptive parameters achieve R² = 0.86+ but g_outdoor has high variance (CV=95%), confirming it's confounded with unmeasured factors.
+
+**Output:** `output/phase3/fig3.07_adaptive_thermal_model.png`, `adaptive_thermal_model.json`
+
+---
+
+## Transfer Function Integration (01f)
+
+Reconciles Phase 2 regression coefficients (observational) with Phase 3 causal estimates.
+
+**Key insight:** Phase 2 regression overestimates parameter effects by 3-6x because it captures correlations, not causal effects. Phase 4 optimization uses causal coefficients derived from the transfer function chain:
+```
+Parameters → T_HK2 (heating curve) → Effort → T_room (via g_effort)
+```
+
+**Output:** `output/phase3/fig3.08_transfer_function_integration.png`, `causal_coefficients.json`
+
+---
+
+## Thermodynamic COP Model (02b)
+
+Physics-based COP model using refrigerant pressure sensors.
+
+**Theory:**
+```
+COP_carnot = T_cond / (T_cond - T_evap)  [temperatures in Kelvin]
+COP_actual = η × COP_carnot
+```
+
+Where T_cond and T_evap are saturation temperatures derived from high/low pressure readings using R410A refrigerant properties.
+
+**Why useful:** Provides theoretical upper bound on COP and validates the empirical model. The efficiency factor η captures compressor and system losses.
+
+**Output:** `output/phase3/fig3.06_pressure_cop_model.png`, `pressure_cop_daily.csv`

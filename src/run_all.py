@@ -151,18 +151,6 @@ def run_phase3_step1():
     module.main()
 
 
-def run_phase3_step1b():
-    """Phase 3, Step 1b: Grey-Box Thermal Model."""
-    print("\n" + "=" * 70)
-    print("RUNNING: Phase 3, Step 1b - Grey-Box Thermal Model")
-    print("=" * 70)
-    script_path = SRC_DIR / "phase3" / "01b_greybox_thermal_model.py"
-    spec = importlib.util.spec_from_file_location("phase3_step1b", script_path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    module.main()
-
-
 def run_phase3_step2():
     """Phase 3, Step 2: Heat Pump Model."""
     print("\n" + "=" * 70)
@@ -293,7 +281,6 @@ PHASES = {
     },
     3: {
         1: ("Thermal Model (Transfer Function)", run_phase3_step1),
-        "1b": ("Thermal Model (Grey-Box)", run_phase3_step1b),
         2: ("Heat Pump Model", run_phase3_step2),
         3: ("Energy System Model", run_phase3_step3),
         4: ("Tariff Cost Model", run_phase3_step4),
@@ -426,7 +413,6 @@ Examples:
   python src/run_all.py --phase 4    # Run Phase 4 only (skips Pareto)
   python src/run_all.py --phase 4 --rerun_optimization  # Phase 4 with Pareto
   python src/run_all.py --step 1.2   # Run Phase 1, Step 2 only
-  python src/run_all.py --step 3.1b  # Run Grey-Box Thermal Model only
   python src/run_all.py --step 4.4   # Run Pareto optimization only
   python src/run_all.py --list       # List all available phases and steps
   python src/run_all.py --report     # Regenerate main report only

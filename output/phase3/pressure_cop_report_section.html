@@ -17,7 +17,7 @@ COP_actual = η × COP_carnot                 [η is efficiency factor]
     <h3>Data Summary</h3>
     <table>
         <tr><th>Metric</th><th>Value</th></tr>
-        <tr><td>Days analyzed</td><td>77</td></tr>
+        <tr><td>Days analyzed</td><td>83</td></tr>
         <tr><td>Mean Carnot COP</td><td>10.47</td></tr>
         <tr><td>Mean Actual COP</td><td>3.91</td></tr>
         <tr><td>Mean Efficiency (η)</td><td>37.3%</td></tr>
@@ -30,23 +30,23 @@ COP_actual = η × COP_carnot                 [η is efficiency factor]
     
         <tr>
             <td>Empirical</td>
-            <td><code>COP = 4.64 + 0.163×T_out + -0.054×T_HK2</code></td>
-            <td>0.9394</td>
-            <td>0.198</td>
+            <td><code>COP = 5.44 + 0.146×T_out + -0.075×T_HK2</code></td>
+            <td>0.9371</td>
+            <td>0.195</td>
         </tr>
                 
         <tr>
             <td>Thermodynamic</td>
             <td><code>COP = 0.373 × COP_carnot</code></td>
-            <td>0.9351</td>
-            <td>0.205</td>
+            <td>0.9341</td>
+            <td>0.200</td>
         </tr>
                 
         <tr>
             <td>Hybrid</td>
-            <td><code>COP = 1.33 + 0.178×COP_carnot + 0.110×T_out</code></td>
-            <td>0.9489</td>
-            <td>0.182</td>
+            <td><code>COP = 1.20 + 0.196×COP_carnot + 0.101×T_out</code></td>
+            <td>0.9469</td>
+            <td>0.179</td>
         </tr>
                 
     </table>
@@ -55,14 +55,14 @@ COP_actual = η × COP_carnot                 [η is efficiency factor]
     <ul>
         <li><strong>Refrigerant identified as R410A</strong> based on pressure-temperature relationship</li>
     
-        <li><strong>Best model: Hybrid</strong> with R²=0.9489</li>
+        <li><strong>Best model: Hybrid</strong> with R²=0.9469</li>
         <li>Mean efficiency η = 37.3% of Carnot maximum</li>
         <li>Efficiency decreases with temperature lift (larger ΔT = less efficient)</li>
         
     </ul>
 
     <figure>
-        <img src="fig_pressure_cop_model.png" alt="Thermodynamic COP Model">
+        <img src="fig3.06_pressure_cop_model.png" alt="Thermodynamic COP Model">
         <figcaption>Thermodynamic COP analysis: pressure-temperature relationship,
         Carnot vs actual COP, model comparison, and efficiency factors.</figcaption>
     </figure>
