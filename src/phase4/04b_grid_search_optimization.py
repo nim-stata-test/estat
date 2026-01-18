@@ -34,7 +34,11 @@ import argparse
 import sys
 from itertools import product
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import Pool, cpu_count
 import time
+
+# Module-level globals for parallel workers (initialized in main)
+_WORKER_DATA = {}
 
 # Add project root to path for shared imports
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -289,6 +293,32 @@ def evaluate_parameters(params, sim_data, T_weighted, hours, T_outdoor, pv_gen, 
         'comfort_hours': comfort_hours,
         'feasible': violation_pct <= 0.05,  # 5% violation limit
     }
+
+
+def _init_worker(sim_data, T_weighted, hours, T_outdoor, pv_gen, dates, timestamps):
+    """Initialize worker process with shared data."""
+    global _WORKER_DATA
+    _WORKER_DATA['sim_data'] = sim_data
+    _WORKER_DATA['T_weighted'] = T_weighted
+    _WORKER_DATA['hours'] = hours
+    _WORKER_DATA['T_outdoor'] = T_outdoor
+    _WORKER_DATA['pv_gen'] = pv_gen
+    _WORKER_DATA['dates'] = dates
+    _WORKER_DATA['timestamps'] = timestamps
+
+
+def _evaluate_params_worker(params):
+    """Worker function that uses global data."""
+    return evaluate_parameters(
+        params,
+        _WORKER_DATA['sim_data'],
+        _WORKER_DATA['T_weighted'],
+        _WORKER_DATA['hours'],
+        _WORKER_DATA['T_outdoor'],
+        _WORKER_DATA['pv_gen'],
+        _WORKER_DATA['dates'],
+        _WORKER_DATA['timestamps'],
+    )
 
 
 # ============================================================================
@@ -590,7 +620,8 @@ def load_simulation_data():
 def main():
     parser = argparse.ArgumentParser(description='Grid search optimization for heating strategies')
     parser.add_argument('--coarse', action='store_true', help='Use coarser grid (faster)')
-    parser.add_argument('--parallel', '-j', type=int, default=1, help='Number of parallel workers')
+    parser.add_argument('--parallel', '-j', type=int, default=1,
+                        help='Number of parallel workers (0=auto, 1=sequential, N=N workers)')
     args = parser.parse_args()
 
     print("=" * 60)
@@ -622,25 +653,52 @@ def main():
     grid = generate_grid()
     print(f"  Total valid combinations: {len(grid):,}")
 
+    # Determine number of workers
+    n_workers = args.parallel
+    if n_workers <= 0:
+        n_workers = cpu_count()
+    if n_workers > 1:
+        print(f"\nUsing {n_workers} parallel workers")
+
     # Evaluate all combinations
     print(f"\nEvaluating {len(grid):,} parameter combinations...", flush=True)
 
-    results = []
     start_time = time.time()
     report_interval = max(1, len(grid) // 20)  # Report 20 times
 
-    for i, params in enumerate(grid):
-        result = evaluate_parameters(
-            params, sim_data, T_weighted, hours, T_outdoor, pv_gen, dates, timestamps
-        )
-        results.append(result)
+    if n_workers > 1:
+        # Parallel evaluation using multiprocessing Pool
+        # Initialize worker data in this process first (for fork inheritance)
+        _init_worker(sim_data, T_weighted, hours, T_outdoor, pv_gen, dates, timestamps)
 
-        if (i + 1) % report_interval == 0 or i == len(grid) - 1:
-            elapsed = time.time() - start_time
-            pct = 100 * (i + 1) / len(grid)
-            rate = (i + 1) / elapsed
-            eta = (len(grid) - i - 1) / rate if rate > 0 else 0
-            print(f"  {i+1:,}/{len(grid):,} ({pct:.0f}%) - {elapsed:.1f}s elapsed, ~{eta:.0f}s remaining", flush=True)
+        # Use imap_unordered for better performance with progress tracking
+        results = []
+        with Pool(processes=n_workers, initializer=_init_worker,
+                  initargs=(sim_data, T_weighted, hours, T_outdoor, pv_gen, dates, timestamps)) as pool:
+            for i, result in enumerate(pool.imap_unordered(_evaluate_params_worker, grid, chunksize=100)):
+                results.append(result)
+
+                if (i + 1) % report_interval == 0 or i == len(grid) - 1:
+                    elapsed = time.time() - start_time
+                    pct = 100 * (i + 1) / len(grid)
+                    rate = (i + 1) / elapsed
+                    eta = (len(grid) - i - 1) / rate if rate > 0 else 0
+                    print(f"  {i+1:,}/{len(grid):,} ({pct:.0f}%) - {elapsed:.1f}s elapsed, ~{eta:.0f}s remaining", flush=True)
+    else:
+        # Sequential evaluation (original code path)
+        results = []
+        for i, params in enumerate(grid):
+            result = evaluate_parameters(
+                params, sim_data, T_weighted, hours, T_outdoor, pv_gen, dates, timestamps
+            )
+            results.append(result)
+
+            if (i + 1) % report_interval == 0 or i == len(grid) - 1:
+                elapsed = time.time() - start_time
+                pct = 100 * (i + 1) / len(grid)
+                rate = (i + 1) / elapsed
+                eta = (len(grid) - i - 1) / rate if rate > 0 else 0
+                print(f"  {i+1:,}/{len(grid):,} ({pct:.0f}%) - {elapsed:.1f}s elapsed, ~{eta:.0f}s remaining", flush=True)
 
     # Convert to DataFrame
     results_df = pd.DataFrame(results)
